@@ -22,3 +22,6 @@
 [submodule "src/SDL_GameControllerDB"]
 	path = src/SDL_GameControllerDB
 	url = https://github.com/gabomdq/SDL_GameControllerDB.git
+[submodule "src/IconFontCppHeaders"]
+	path = src/IconFontCppHeaders
+	url = https://github.com/juliettef/IconFontCppHeaders.git
