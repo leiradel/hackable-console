@@ -1,0 +1,21 @@
+[submodule "src/imgui"]
+	path = src/imgui
+	url = https://github.com/ocornut/imgui.git
+[submodule "src/ImGuiAl"]
+	path = src/ImGuiAl
+	url = https://github.com/leiradel/ImGuiAl.git
+[submodule "src/lrcpp"]
+	path = src/lrcpp
+	url = https://github.com/leiradel/lrcpp.git
+[submodule "src/libretro-common"]
+	path = src/libretro-common
+	url = https://github.com/libretro/libretro-common.git
+[submodule "src/lua"]
+	path = src/lua
+	url = https://github.com/lua/lua.git
+[submodule "src/imgui_club"]
+	path = src/imgui_club
+	url = https://github.com/ocornut/imgui_club.git
+[submodule "src/ImGui-Addons"]
+	path = src/ImGui-Addons
+	url = https://github.com/Flix01/imgui.git
