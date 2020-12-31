@@ -77,6 +77,6 @@ src/gamecontrollerdb.h: src/SDL_GameControllerDB/gamecontrollerdb.txt
 		| sed "s/src_SDL_GameControllerDB_gamecontrollerdb_txt/gamecontrollerdb/" > $@
 
 clean:
-	rm -f hackcon $(HC_OBJS) $(IMGUI_OBJS) $(IMGUIEXTRA_OBJS) $(LUA_OBJS)
+	rm -f hackcon $(HC_OBJS) $(IMGUI_OBJS) $(IMGUIEXTRA_OBJS) $(LUA_OBJS) src/gamecontrollerdb.h
 
 .PHONY: clean
