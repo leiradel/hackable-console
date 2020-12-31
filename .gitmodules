@@ -19,3 +19,6 @@
 [submodule "src/ImGui-Addons"]
 	path = src/ImGui-Addons
 	url = https://github.com/Flix01/imgui.git
+[submodule "src/SDL_GameControllerDB"]
+	path = src/SDL_GameControllerDB
+	url = https://github.com/gabomdq/SDL_GameControllerDB.git
