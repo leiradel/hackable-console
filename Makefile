@@ -71,6 +71,11 @@ all: hackcon
 hackcon: $(HC_OBJS) $(IMGUI_OBJS) $(IMGUIEXTRA_OBJS) $(LUA_OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $+ $(LIBS)
 
+src/gamecontrollerdb.h: src/SDL_GameControllerDB/gamecontrollerdb.txt
+	xxd -i $< | sed "s/unsigned char/static char const/" \
+		| sed "s/unsigned int/static size_t const/" \
+		| sed "s/src_SDL_GameControllerDB_gamecontrollerdb_txt/gamecontrollerdb/" > $@
+
 clean:
 	rm -f hackcon $(HC_OBJS) $(IMGUI_OBJS) $(IMGUIEXTRA_OBJS) $(LUA_OBJS)
 
