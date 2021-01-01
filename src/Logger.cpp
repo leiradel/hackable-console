@@ -2,7 +2,7 @@
 
 #include <IconsFontAwesome4.h>
 
-bool Logger::init() {
+bool hc::Logger::init() {
     static char const* actions[] = {
         ICON_FA_FILES_O " Copy",
         ICON_FA_FILE_O " Clear",
@@ -22,13 +22,13 @@ bool Logger::init() {
     return true;
 }
 
-void Logger::destroy() {}
+void hc::Logger::destroy() {}
 
-void Logger::reset() {
+void hc::Logger::reset() {
     _logger.clear();
 }
 
-void Logger::draw() {
+void hc::Logger::draw() {
     switch (_logger.draw()) {
         case 1: {
             std::string buffer;
@@ -58,7 +58,7 @@ void Logger::draw() {
     }
 }
 
-void Logger::vprintf(enum retro_log_level level, const char* fmt, va_list args) {
+void hc::Logger::vprintf(enum retro_log_level level, const char* fmt, va_list args) {
     switch (level) {
         case RETRO_LOG_DEBUG: _logger.debug(fmt, args); break;
         case RETRO_LOG_INFO:  _logger.info(fmt, args); break;
