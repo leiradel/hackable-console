@@ -134,10 +134,8 @@ bool hc::Config::getVariable(retro_variable* variable) {
 }
 
 bool hc::Config::getVariableUpdate(bool* const updated) {
-    _logger->debug("%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, updated);
     bool const previous = _optionsUpdated;
     _optionsUpdated = false;
-    _logger->info("Returning %s for variables updated", previous ? "true" : "false");
     return previous;
 }
 
