@@ -19,6 +19,7 @@ bool hc::Logger::init() {
     _logger.setFilterHeaderLabel(ICON_FA_FILTER " Filters");
     _logger.setFilterLabel(ICON_FA_SEARCH " Filter (inc,-exc)");
 
+    _logger.setLevel(ImGuiAl::Log::Level::Info);
     return true;
 }
 
