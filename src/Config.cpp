@@ -94,7 +94,7 @@ void hc::Config::draw() {
         int selected = static_cast<int>(option.selected);
         int old = selected;
 
-        ImGui::Combo(option.key.c_str(), &selected, getter, (void*)&option, option.values.size());
+        ImGui::Combo(option.label.c_str(), &selected, getter, (void*)&option, option.values.size());
 
         if (old != selected) {
             option.selected = static_cast<unsigned>(selected);
