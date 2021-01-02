@@ -31,7 +31,7 @@ LIBS+=`sdl2-config --libs`
 
 # hackable-console
 HC_OBJS=\
-	src/main.o \
+	src/main.o src/Fifo.o \
 	src/Config.o src/Logger.o src/Video.o \
 	src/dynlib/dynlib.o src/fnkdat/fnkdat.o src/speex/resample.o
 
