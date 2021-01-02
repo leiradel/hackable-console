@@ -11,10 +11,10 @@
 namespace hc {
     class Config: public lrcpp::Config {
     public:
-        Config(Logger* logger) : _logger(logger) {}
+        Config() : _logger(nullptr) {}
         virtual ~Config() {}
 
-        bool init();
+        bool init(Logger* logger);
         void destroy();
         void reset();
         void draw();

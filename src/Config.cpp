@@ -4,7 +4,8 @@
 
 #include <inttypes.h>
 
-bool hc::Config::init() {
+bool hc::Config::init(Logger* logger) {
+    _logger = logger;
     _logger->debug("%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
 
     if (fnkdat(NULL, 0, 0, FNKDAT_INIT) != 0) {
