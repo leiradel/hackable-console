@@ -21,7 +21,7 @@ void hc::Video::reset() {
 
     _rotation = 0;
     _pixelFormat = RETRO_PIXEL_FORMAT_UNKNOWN;
-    memset(&_systemAvInfo, 0, sizeof(_systemAvInfo));
+    memset(&_geometry, 0, sizeof(_geometry));
 
     if (_texture != 0) {
         glDeleteTextures(1, &_texture);
@@ -39,11 +39,11 @@ void hc::Video::draw() {
         ImVec2 const max = ImGui::GetWindowContentRegionMax();
 
         float height = max.y - min.y;
-        float width = height * _systemAvInfo.geometry.aspect_ratio;
+        float width = height * _geometry.aspect_ratio;
 
         if (width > max.x - min.x) {
             width = max.x - min.x;
-            height = width / _systemAvInfo.geometry.aspect_ratio;
+            height = width / _geometry.aspect_ratio;
         }
 
         ImVec2 const size = ImVec2(width, height);
@@ -113,35 +113,26 @@ bool hc::Video::setFrameTimeCallback(retro_frame_time_callback const* callback) 
 
 bool hc::Video::setSystemAvInfo(retro_system_av_info const* info) {
     _logger->debug("%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, info);
-    _systemAvInfo = *info;
-
-    _logger->info("Setting system av info");
-
-    _logger->info("    geometry.base_width   = %u", _systemAvInfo.geometry.base_width);
-    _logger->info("    geometry.base_height  = %u", _systemAvInfo.geometry.base_height);
-    _logger->info("    geometry.max_width    = %u", _systemAvInfo.geometry.max_width);
-    _logger->info("    geometry.max_height   = %u", _systemAvInfo.geometry.max_height);
-    _logger->info("    geometry.aspect_ratio = %f", _systemAvInfo.geometry.aspect_ratio);
-    _logger->info("    timing.fps            = %f", _systemAvInfo.timing.fps);
-    _logger->info("    timing.sample_rate    = %f", _systemAvInfo.timing.sample_rate);
-
-    setupTexture(info->geometry.max_width, info->geometry.max_height);
-    return true;
+    return setGeometry(&info->geometry);
 }
 
 bool hc::Video::setGeometry(retro_game_geometry const* geometry) {
     _logger->debug("%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, geometry);
-    _systemAvInfo.geometry = *geometry;
+    _geometry = *geometry;
+
+    if (_geometry.aspect_ratio <= 0) {
+        _geometry.aspect_ratio = (float)_geometry.base_width / (float)_geometry.base_height;
+    }
 
     _logger->info("Setting geometry");
 
-    _logger->info("    base_width   = %u", _systemAvInfo.geometry.base_width);
-    _logger->info("    base_height  = %u", _systemAvInfo.geometry.base_height);
-    _logger->info("    max_width    = %u", _systemAvInfo.geometry.max_width);
-    _logger->info("    max_height   = %u", _systemAvInfo.geometry.max_height);
-    _logger->info("    aspect_ratio = %f", _systemAvInfo.geometry.aspect_ratio);
+    _logger->info("    base_width   = %u", _geometry.base_width);
+    _logger->info("    base_height  = %u", _geometry.base_height);
+    _logger->info("    max_width    = %u", _geometry.max_width);
+    _logger->info("    max_height   = %u", _geometry.max_height);
+    _logger->info("    aspect_ratio = %f", _geometry.aspect_ratio);
 
-    setupTexture(geometry->max_width, geometry->max_height);
+    setupTexture(_geometry.max_width, _geometry.max_height);
     return true;
 }
 
