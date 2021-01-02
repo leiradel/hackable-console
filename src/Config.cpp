@@ -65,8 +65,6 @@ void hc::Config::reset() {
 }
 
 void hc::Config::draw() {
-    _logger->debug("%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
-
     for (auto& pair : _coreOptions) {
         auto& option = pair.second;
 
