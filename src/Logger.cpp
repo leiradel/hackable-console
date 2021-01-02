@@ -69,3 +69,31 @@ void hc::Logger::vprintf(enum retro_log_level level, const char* format, va_list
 
     _logger.scrollToBottom();
 }
+
+void hc::Logger::debug(char const* format, ...) {
+    va_list args;
+    va_start(args, format);
+    vprintf(RETRO_LOG_DEBUG, format, args);
+    va_end(args);
+}
+
+void hc::Logger::info(char const* format, ...) {
+    va_list args;
+    va_start(args, format);
+    vprintf(RETRO_LOG_INFO, format, args);
+    va_end(args);
+}
+
+void hc::Logger::warn(char const* format, ...) {
+    va_list args;
+    va_start(args, format);
+    vprintf(RETRO_LOG_WARN, format, args);
+    va_end(args);
+}
+
+void hc::Logger::error(char const* format, ...) {
+    va_list args;
+    va_start(args, format);
+    vprintf(RETRO_LOG_ERROR, format, args);
+    va_end(args);
+}
