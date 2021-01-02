@@ -249,6 +249,8 @@ class Application final {
                 // Setup ImGui
                 IMGUI_CHECKVERSION();
                 ImGui::CreateContext();
+                ImGuiIO& io = ImGui::GetIO();
+                io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
                 ImGui::StyleColorsDark();
 
@@ -256,7 +258,7 @@ class Application final {
                 ImGui_ImplOpenGL2_Init();
 
                 // Set Proggy Tiny as the default font
-                ImGuiIO& io = ImGui::GetIO();
+                io = ImGui::GetIO();
 
                 io.Fonts->AddFontFromMemoryCompressedTTF(
                     ProggyTiny_compressed_data,
@@ -369,6 +371,8 @@ class Application final {
         }
 
         void draw() {
+            ImGui::DockSpaceOverViewport();
+
             if (ImGui::Begin(ICON_FA_COMMENT " Log")) {
                 _logger.draw();
             }
