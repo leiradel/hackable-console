@@ -39,6 +39,14 @@ bool hc::Config::init(Logger* logger) {
     _savePath = path;
     _logger->info("The save path is %s", path);
 
+    if (fnkdat("cores", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
+        _logger->error("Error getting the cores path");
+        return false;
+    }
+
+    _coresPath = path;
+    _logger->info("The cores path is %s", path);
+
     reset();
     return true;
 }
@@ -96,12 +104,6 @@ void hc::Config::draw() {
     }
 }
 
-void hc::Config::setCorePath(std::string const& corePath) {
-    _logger->debug("%s:%u: %s(\"%s\")", __FILE__, __LINE__, __FUNCTION__, corePath.c_str());
-    _corePath = corePath;
-    _logger->info("Set core path to \"%s\"", corePath.c_str());
-}
-
 bool hc::Config::setPerformanceLevel(unsigned level) {
     _logger->debug("%s:%u: %s(%u)", __FILE__, __LINE__, __FUNCTION__, level);
     _performanceLevel = level;
@@ -148,7 +150,7 @@ bool hc::Config::setSupportNoGame(bool const supports) {
 
 bool hc::Config::getLibretroPath(char const** path) {
     _logger->debug("%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, path);
-    *path = _corePath.c_str();
+    *path = _coresPath.c_str();
     return true;
 }
 

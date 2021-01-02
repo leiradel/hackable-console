@@ -19,8 +19,6 @@ namespace hc {
         void reset();
         void draw();
 
-        void setCorePath(std::string const& corePath);
-
         virtual bool setPerformanceLevel(unsigned level) override;
         virtual bool getSystemDirectory(char const** directory) override;
         virtual bool getVariable(retro_variable* variable) override;
@@ -95,7 +93,7 @@ namespace hc {
         std::string _systemPath;
         std::string _coreAssetsPath;
         std::string _savePath;
-        std::string _corePath;
+        std::string _coresPath;
 
         unsigned _performanceLevel;
         bool _supportsNoGame;
