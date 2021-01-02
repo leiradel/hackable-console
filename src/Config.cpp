@@ -65,6 +65,36 @@ void hc::Config::reset() {
 
 void hc::Config::draw() {
     _logger->debug("%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
+
+    for (auto& pair : _coreOptions) {
+        auto& option = pair.second;
+
+        if (!option.visible) {
+            continue;
+        }
+
+        auto const getter = [](void* const data, int const idx, char const** text) -> bool {
+            auto const option = (CoreOption const*)data;
+
+            if ((size_t)idx < option->values.size()) {
+                *text = option->values[idx].value.c_str();
+                return true;
+            }
+
+            return false;
+        };
+
+        int selected = static_cast<int>(option.selected);
+        int old = selected;
+
+        ImGui::Combo(option.key.c_str(), &selected, getter, (void*)&option, option.values.size());
+
+        if (old != selected) {
+            option.selected = static_cast<unsigned>(selected);
+            _optionsUpdated = true;
+            _logger->info("Variable \"%s\" changed to \"%s\"", option.key.c_str(), option.values[selected].value.c_str());
+        }
+    }
 }
 
 void hc::Config::setCorePath(std::string const& corePath) {
