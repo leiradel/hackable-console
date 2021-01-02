@@ -392,6 +392,12 @@ error:
             }
 
             ImGui::End();
+
+            if (ImGui::Begin(ICON_FA_DESKTOP " Video")) {
+              _video.draw();
+            }
+
+            ImGui::End();
         }
 };
 
