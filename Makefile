@@ -37,8 +37,8 @@ HC_OBJS=\
 
 # lrcpp
 LRCPP_OBJS=\
-	src/lrcpp/src/Frontend.cpp src/lrcpp/src/Core.cpp src/lrcpp/src/Components.cpp \
-	src/lrcpp/src/CoreFsm.cpp
+	src/lrcpp/src/Frontend.o src/lrcpp/src/Core.o src/lrcpp/src/Components.o \
+	src/lrcpp/src/CoreFsm.o
 
 # imgui
 IMGUI_OBJS=\
