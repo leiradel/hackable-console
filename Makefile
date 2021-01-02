@@ -18,9 +18,9 @@ endif
 CC=gcc
 CXX=g++
 INCLUDES=\
-	-Isrc -Isrc/imgui -Isrc/lua -Isrc/ImGuiAl/term -Isrc/ImGuiAl/fonts \
-	-Isrc/IconFontCppHeaders -Isrc/lrcpp/src -Isrc/ImGui-Addons/addons/imguifilesystem \
-	-Isrc/fnkdat
+	-Isrc -Isrc/imgui -Isrc/imgui/backends -Isrc/ImGuiAl/term -Isrc/ImGuiAl/fonts \
+	-Isrc/IconFontCppHeaders -Isrc/ImGui-Addons/addons/imguifilesystem \
+	-Isrc/fnkdat -Isrc/lrcpp/src -Isrc/lua
 DEFINES=-DIMGUI_DISABLE_WIN32_DEFAULT_IME_FUNCS -D"IM_ASSERT(x)=do{(void)(x);}while(0)"
 DEFINES+=-DOUTSIDE_SPEEX -DRANDOM_PREFIX=speex -DEXPORT= -D_USE_SSE2 -DFIXED_POINT
 DEFINES+=-DPACKAGE=\"hackable-console\"
@@ -31,8 +31,14 @@ LIBS+=`sdl2-config --libs`
 
 # hackable-console
 HC_OBJS=\
+	src/main.o \
 	src/Config.o src/Logger.o \
 	src/dynlib/dynlib.o src/fnkdat/fnkdat.o src/speex/resample.o
+
+# lrcpp
+LRCPP_OBJS=\
+	src/lrcpp/src/Frontend.cpp src/lrcpp/src/Core.cpp src/lrcpp/src/Components.cpp \
+	src/lrcpp/src/CoreFsm.cpp
 
 # imgui
 IMGUI_OBJS=\
@@ -70,7 +76,7 @@ src/ImGui-Addons/addons/imguifilesystem/%.o: src/ImGui-Addons/addons/imguifilesy
 
 all: hackcon
 
-hackcon: $(HC_OBJS) $(IMGUI_OBJS) $(IMGUIEXTRA_OBJS) $(LUA_OBJS)
+hackcon: $(HC_OBJS) $(LRCPP_OBJS) $(IMGUI_OBJS) $(IMGUIEXTRA_OBJS) $(LUA_OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $+ $(LIBS)
 
 src/gamecontrollerdb.h: src/SDL_GameControllerDB/gamecontrollerdb.txt
@@ -78,7 +84,9 @@ src/gamecontrollerdb.h: src/SDL_GameControllerDB/gamecontrollerdb.txt
 		| sed "s/unsigned int/static size_t const/" \
 		| sed "s/src_SDL_GameControllerDB_gamecontrollerdb_txt/gamecontrollerdb/" > $@
 
+src/main.cpp: src/gamecontrollerdb.h
+
 clean:
-	rm -f hackcon $(HC_OBJS) $(IMGUI_OBJS) $(IMGUIEXTRA_OBJS) $(LUA_OBJS) src/gamecontrollerdb.h
+	rm -f hackcon $(HC_OBJS) $(LRCPP_OBJS) $(IMGUI_OBJS) $(IMGUIEXTRA_OBJS) $(LUA_OBJS) src/gamecontrollerdb.h
 
 .PHONY: clean
