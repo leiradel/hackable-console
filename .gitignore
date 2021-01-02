@@ -1,5 +1,7 @@
 # Custom
 
+hackcon
+imgui.ini
 src/gamecontrollerdb.h
 
 # Created by https://www.toptal.com/developers/gitignore/api/c,c++,lua
