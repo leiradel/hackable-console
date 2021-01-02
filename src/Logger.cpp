@@ -58,13 +58,13 @@ void hc::Logger::draw() {
     }
 }
 
-void hc::Logger::vprintf(enum retro_log_level level, const char* fmt, va_list args) {
+void hc::Logger::vprintf(enum retro_log_level level, const char* format, va_list args) {
     switch (level) {
-        case RETRO_LOG_DEBUG: _logger.debug(fmt, args); break;
-        case RETRO_LOG_INFO:  _logger.info(fmt, args); break;
-        case RETRO_LOG_WARN:  _logger.warning(fmt, args); break;
+        case RETRO_LOG_DEBUG: _logger.debug(format, args); break;
+        case RETRO_LOG_INFO:  _logger.info(format, args); break;
+        case RETRO_LOG_WARN:  _logger.warning(format, args); break;
         default: // fallthrough
-        case RETRO_LOG_ERROR: _logger.error(fmt, args); break;
+        case RETRO_LOG_ERROR: _logger.error(format, args); break;
     }
 
     _logger.scrollToBottom();
