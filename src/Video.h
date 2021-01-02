@@ -4,6 +4,8 @@
 
 #include <Components.h>
 
+#include <SDL_opengl.h>
+
 namespace hc {
     class Video: public lrcpp::Video {
     public:
@@ -37,10 +39,16 @@ namespace hc {
         virtual retro_proc_address_t getProcAddress(char const* symbol) override;
 
     protected:
+        void setupTexture();
+
         Logger* _logger;
 
         unsigned _rotation;
         retro_pixel_format _pixelFormat;
         retro_system_av_info _systemAvInfo;
+
+        GLuint _texture;
+        unsigned _width;
+        unsigned _height;
     };
 }

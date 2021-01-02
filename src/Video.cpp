@@ -3,19 +3,53 @@
 bool hc::Video::init(Logger* logger) {
     _logger = logger;
     _logger->debug("%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
+
+    reset();
     return true;
 }
 
 void hc::Video::destroy() {
     _logger->debug("%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
+
+    if (_texture != 0) {
+        glDeleteTextures(1, &_texture);
+    }
 }
 
 void hc::Video::reset() {
     _logger->debug("%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
+
+    _rotation = 0;
+    _pixelFormat = RETRO_PIXEL_FORMAT_UNKNOWN;
+    memset(&_systemAvInfo, 0, sizeof(_systemAvInfo));
+
+    if (_texture != 0) {
+        glDeleteTextures(1, &_texture);
+    }
 }
 
 void hc::Video::draw() {
-    _logger->debug("%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
+    if (_texture != 0) {
+        ImVec2 const min = ImGui::GetWindowContentRegionMin();
+        ImVec2 const max = ImGui::GetWindowContentRegionMax();
+
+        float height = max.y - min.y;
+        float width = height * _systemAvInfo.geometry.aspect_ratio;
+
+        if (width > max.x - min.x) {
+            width = max.x - min.x;
+            height = width / _systemAvInfo.geometry.aspect_ratio;
+        }
+
+        unsigned const max_width = _systemAvInfo.geometry.max_width;
+        unsigned const max_height = _systemAvInfo.geometry.max_height;
+
+        ImVec2 const size = ImVec2(width, height);
+        ImVec2 const uv0 = ImVec2(0.0f, 0.0f);
+        ImVec2 const uv1 = ImVec2((float)_width / max_width, (float)_height / max_height);
+
+        ImGui::Image((ImTextureID)(uintptr_t)_texture, size, uv0, uv1);
+    }
 }
 
 bool hc::Video::setRotation(unsigned rotation) {
@@ -146,7 +180,36 @@ bool hc::Video::getPreferredHwRender(unsigned* preferred) {
 }
 
 void hc::Video::refresh(void const* data, unsigned width, unsigned height, size_t pitch) {
-    // TODO
+    if (data == nullptr || data == RETRO_HW_FRAME_BUFFER_VALID) {
+        return;
+    }
+
+    GLint previous_texture;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &previous_texture);
+    glBindTexture(GL_TEXTURE_2D, _texture);
+
+    switch (_pixelFormat) {
+        case RETRO_PIXEL_FORMAT_XRGB8888:
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / 4);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, data);
+            break;
+
+        case RETRO_PIXEL_FORMAT_RGB565:
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / 2);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, data);
+            break;
+
+        case RETRO_PIXEL_FORMAT_0RGB1555:
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / 2);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, data);
+            break;
+
+        case RETRO_PIXEL_FORMAT_UNKNOWN:
+            break;
+    }
+
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    glBindTexture(GL_TEXTURE_2D, previous_texture);
 }
 
 uintptr_t hc::Video::getCurrentFramebuffer() {
@@ -155,4 +218,41 @@ uintptr_t hc::Video::getCurrentFramebuffer() {
 
 retro_proc_address_t hc::Video::getProcAddress(char const* symbol) {
     return nullptr;
+}
+
+void hc::Video::setupTexture() {
+    if (_texture != 0) {
+        glDeleteTextures(1, &_texture);
+    }
+
+    GLint previous_texture;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &previous_texture);
+
+    glGenTextures(1, &_texture);
+    glBindTexture(GL_TEXTURE_2D, _texture);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    GLsizei const width = static_cast<GLsizei>(_systemAvInfo.geometry.max_width);
+    GLsizei const height = static_cast<GLsizei>(_systemAvInfo.geometry.max_height);
+
+    switch (_pixelFormat) {
+        case RETRO_PIXEL_FORMAT_XRGB8888:
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+            break;
+
+        case RETRO_PIXEL_FORMAT_RGB565:
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, NULL);
+            break;
+
+        case RETRO_PIXEL_FORMAT_0RGB1555:
+        default:
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
+            break;
+    }
+
+    glBindTexture(GL_TEXTURE_2D, previous_texture);
+
+    _logger->info("Texture set to %d x %d", width, height);
 }
