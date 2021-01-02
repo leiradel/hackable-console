@@ -1,5 +1,6 @@
 #include "Logger.h"
 #include "Config.h"
+#include "Video.h"
 
 #include "gamecontrollerdb.h"
 
@@ -130,6 +131,7 @@ class Application final {
 
         hc::Logger _logger;
         hc::Config _config;
+        hc::Video _video;
 
         Fifo _fifo;
 
@@ -291,16 +293,22 @@ class Application final {
 
             {
                 // Initialize components
-                bool ok = _config.init(&_logger);
-
-                if (!ok) {
-                    _logger.error("Error initializing the Config component");
+                if (!_config.init(&_logger)) {
+error:
                     SDL_CloseAudioDevice(_audioDev);
                     _fifo.destroy();
                     SDL_GL_DeleteContext(_glContext);
                     SDL_DestroyWindow(_window);
                     return false;
                 }
+
+                if (!_video.init(&_logger)) {
+                    goto error;
+                }
+
+                _frontend.setLogger(&_logger);
+                _frontend.setConfig(&_config);
+                _frontend.setVideo(&_video);
             }
 
             return true;
