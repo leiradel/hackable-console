@@ -20,7 +20,7 @@ CXX=g++
 INCLUDES=\
 	-Isrc -Isrc/imgui -Isrc/imgui/backends -Isrc/ImGuiAl/term -Isrc/ImGuiAl/fonts \
 	-Isrc/IconFontCppHeaders -Isrc/ImGui-Addons/addons/imguifilesystem \
-	-Isrc/fnkdat -Isrc/lrcpp/src -Isrc/lua
+	-Isrc/fnkdat -Isrc/speex -Isrc/lrcpp/src -Isrc/lua
 DEFINES=-DIMGUI_DISABLE_WIN32_DEFAULT_IME_FUNCS -D"IM_ASSERT(x)=do{(void)(x);}while(0)"
 DEFINES+=-DOUTSIDE_SPEEX -DRANDOM_PREFIX=speex -DEXPORT= -D_USE_SSE2 -DFIXED_POINT
 DEFINES+=-DPACKAGE=\"hackable-console\"
@@ -32,7 +32,7 @@ LIBS+=`sdl2-config --libs`
 # hackable-console
 HC_OBJS=\
 	src/main.o src/Fifo.o \
-	src/Config.o src/Logger.o src/Video.o \
+	src/Audio.o src/Config.o src/Logger.o src/Video.o \
 	src/dynlib/dynlib.o src/fnkdat/fnkdat.o src/speex/resample.o
 
 # lrcpp

@@ -1,5 +1,6 @@
 #include "Logger.h"
 #include "Config.h"
+#include "Audio.h"
 #include "Video.h"
 #include "Fifo.h"
 
@@ -34,6 +35,7 @@ protected:
     hc::Logger _logger;
 public:
     hc::Config _config;
+    hc::Audio _audio;
 protected:
     hc::Video _video;
 
@@ -212,8 +214,13 @@ error:
                 goto error;
             }
 
+            if (!_audio.init(&_logger, _audioSpec.freq, &_fifo)) {
+                goto error;
+            }
+
             _frontend.setLogger(&_logger);
             _frontend.setConfig(&_config);
+            _frontend.setAudio(&_audio);
             _frontend.setVideo(&_video);
         }
 
@@ -295,6 +302,12 @@ error:
 
         if (ImGui::Begin(ICON_FA_WRENCH " Configuration")) {
             _config.draw();
+        }
+
+        ImGui::End();
+
+        if (ImGui::Begin(ICON_FA_VOLUME_UP " Audio")) {
+            _audio.draw();
         }
 
         ImGui::End();
