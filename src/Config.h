@@ -104,7 +104,8 @@ namespace hc {
         std::vector<SubsystemInfo> _subsystemInfo;
         std::vector<MemoryDescriptor> _memoryMap;
 
-        std::unordered_map<std::string, CoreOption> _coreOptions;
+        std::vector<CoreOption> _coreOptions;
+        std::unordered_map<std::string, size_t> _coreMap;
         bool _optionsUpdated;
     };
 }

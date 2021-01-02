@@ -69,13 +69,12 @@ void hc::Config::reset() {
     _memoryMap.clear();
 
     _coreOptions.clear();
+    _coreMap.clear();
     _optionsUpdated = false;
 }
 
 void hc::Config::draw() {
-    for (auto& pair : _coreOptions) {
-        auto& option = pair.second;
-
+    for (auto& option : _coreOptions) {
         if (!option.visible) {
             continue;
         }
@@ -84,7 +83,7 @@ void hc::Config::draw() {
             auto const option = (CoreOption const*)data;
 
             if ((size_t)idx < option->values.size()) {
-                *text = option->values[idx].value.c_str();
+                *text = option->values[idx].label.c_str();
                 return true;
             }
 
@@ -120,12 +119,13 @@ bool hc::Config::getSystemDirectory(char const** directory) {
 bool hc::Config::getVariable(retro_variable* variable) {
     _logger->debug("%s:%u: %s(%p) // variable->key = \"%s\"", __FILE__, __LINE__, __FUNCTION__, variable, variable->key);
 
-    for (auto const& pair : _coreOptions) {
-        if (pair.first == variable->key) {
-            variable->value = pair.second.values[pair.second.selected].value.c_str();
-            _logger->info("Found value \"%s\" for variable \"%s\"", variable->value, variable->key);
-            return true;
-        }
+    auto const found = _coreMap.find(variable->key);
+
+    if (found != _coreMap.end()) {
+        auto const& option = _coreOptions[found->second];
+        variable->value = option.values[option.selected].value.c_str();
+        _logger->info("Found value \"%s\" for variable \"%s\"", variable->value, variable->key);
+        return true;
     }
 
     variable->value = nullptr;
@@ -369,12 +369,13 @@ bool hc::Config::setCoreOptions(retro_core_option_definition const* options) {
 
             CoreOption::Value tempval;
             tempval.value = value->value;
-            tempval.label = value->label != nullptr ? value->label : "";
+            tempval.label = value->label != nullptr ? value->label : value->value;
 
             tempopt.values.emplace_back(tempval);
         }
 
-        _coreOptions.emplace(tempopt.key, tempopt);
+        _coreMap.emplace(tempopt.key, _coreOptions.size());
+        _coreOptions.emplace_back(tempopt);
     }
 
     return true;
@@ -394,10 +395,11 @@ bool hc::Config::setCoreOptionsDisplay(retro_core_option_display const* display)
         // Yoda quote
         _logger->info("    %s \"%s\" is", display->visible ? "visible  " : "invisible", display->key);
 
-        auto found = _coreOptions.find(display->key);
+        auto found = _coreMap.find(display->key);
 
-        if (found != _coreOptions.end()) {
-            found->second.visible = display->visible;
+        if (found != _coreMap.end()) {
+            auto& option = _coreOptions[found->second];
+            option.visible = display->visible;
         }
         else {
             _logger->warn("        key not found in core options");
