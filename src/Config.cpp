@@ -38,13 +38,7 @@ bool hc::Config::init() {
     _savePath = path;
     _logger->info("The save path is %s", path);
 
-    _performanceLevel = 0;
-    _supportsNoGame = false;
-    _getCoreProc = nullptr;
-    _supportAchievements = false;
-    _serializationQuirks = 0;
-    _optionsUpdated = false;
-
+    reset();
     return true;
 }
 
@@ -55,6 +49,17 @@ void hc::Config::destroy() {
 
 void hc::Config::reset() {
     _logger->debug("%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
+
+    _performanceLevel = 0;
+    _supportsNoGame = false;
+    _getCoreProc = nullptr;
+    _supportAchievements = false;
+    _serializationQuirks = 0;
+
+    _subsystemInfo.clear();
+    _memoryMap.clear();
+
+    _coreOptions.clear();
     _optionsUpdated = false;
 }
 
