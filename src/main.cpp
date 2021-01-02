@@ -195,7 +195,7 @@ class Application final {
                 }
 
                 SDL_GL_MakeCurrent(_window, _glContext);
-                SDL_GL_SetSwapInterval(0);
+                SDL_GL_SetSwapInterval(1);
 
                 // Init audio
                 SDL_AudioSpec want;
