@@ -26,6 +26,11 @@ void hc::Video::reset() {
     if (_texture != 0) {
         glDeleteTextures(1, &_texture);
     }
+
+    _maxWidth = 0;
+    _maxHeight = 0;
+    _width = 0;
+    _height = 0;
 }
 
 void hc::Video::draw() {
@@ -41,12 +46,9 @@ void hc::Video::draw() {
             height = width / _systemAvInfo.geometry.aspect_ratio;
         }
 
-        unsigned const max_width = _systemAvInfo.geometry.max_width;
-        unsigned const max_height = _systemAvInfo.geometry.max_height;
-
         ImVec2 const size = ImVec2(width, height);
         ImVec2 const uv0 = ImVec2(0.0f, 0.0f);
-        ImVec2 const uv1 = ImVec2((float)_width / max_width, (float)_height / max_height);
+        ImVec2 const uv1 = ImVec2((float)_width / _maxWidth, (float)_height / _maxHeight);
 
         ImGui::Image((ImTextureID)(uintptr_t)_texture, size, uv0, uv1);
     }
@@ -123,6 +125,7 @@ bool hc::Video::setSystemAvInfo(retro_system_av_info const* info) {
     _logger->info("    timing.fps            = %f", _systemAvInfo.timing.fps);
     _logger->info("    timing.sample_rate    = %f", _systemAvInfo.timing.sample_rate);
 
+    setupTexture(info->geometry.max_width, info->geometry.max_height);
     return true;
 }
 
@@ -138,6 +141,7 @@ bool hc::Video::setGeometry(retro_game_geometry const* geometry) {
     _logger->info("    max_height   = %u", _systemAvInfo.geometry.max_height);
     _logger->info("    aspect_ratio = %f", _systemAvInfo.geometry.aspect_ratio);
 
+    setupTexture(geometry->max_width, geometry->max_height);
     return true;
 }
 
@@ -210,6 +214,9 @@ void hc::Video::refresh(void const* data, unsigned width, unsigned height, size_
 
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
     glBindTexture(GL_TEXTURE_2D, previous_texture);
+
+    _width = width;
+    _height = height;
 }
 
 uintptr_t hc::Video::getCurrentFramebuffer() {
@@ -220,7 +227,14 @@ retro_proc_address_t hc::Video::getProcAddress(char const* symbol) {
     return nullptr;
 }
 
-void hc::Video::setupTexture() {
+void hc::Video::setupTexture(unsigned width, unsigned height) {
+    if (width <= _maxWidth && height <= _maxHeight) {
+        return;
+    }
+
+    _maxWidth = width;
+    _maxHeight = height;
+
     if (_texture != 0) {
         glDeleteTextures(1, &_texture);
     }
@@ -233,9 +247,6 @@ void hc::Video::setupTexture() {
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    GLsizei const width = static_cast<GLsizei>(_systemAvInfo.geometry.max_width);
-    GLsizei const height = static_cast<GLsizei>(_systemAvInfo.geometry.max_height);
 
     switch (_pixelFormat) {
         case RETRO_PIXEL_FORMAT_XRGB8888:
@@ -254,5 +265,5 @@ void hc::Video::setupTexture() {
 
     glBindTexture(GL_TEXTURE_2D, previous_texture);
 
-    _logger->info("Texture set to %d x %d", width, height);
+    _logger->info("Texture set to %u x %u", width, height);
 }
