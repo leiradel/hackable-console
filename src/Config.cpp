@@ -371,7 +371,7 @@ bool hc::Config::setCoreOptions(retro_core_option_definition const* options) {
 
             CoreOption::Value tempval;
             tempval.value = value->value;
-            tempval.label = value->label;
+            tempval.label = value->label != nullptr ? value->label : "";
 
             tempopt.values.emplace_back(tempval);
         }
