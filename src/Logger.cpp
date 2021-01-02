@@ -9,6 +9,8 @@ bool hc::Logger::init() {
         NULL
     };
 
+    reset();
+
     _logger.setActions(actions);
 
     _logger.setLabel(ImGuiAl::Log::Level::Debug, ICON_FA_BUG " Debug");

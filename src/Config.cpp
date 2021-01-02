@@ -8,6 +8,8 @@ bool hc::Config::init(Logger* logger) {
     _logger = logger;
     _logger->debug("%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
 
+    reset();
+
     if (fnkdat(NULL, 0, 0, FNKDAT_INIT) != 0) {
         _logger->error("Error initializing fnkdat");
         return false;
@@ -47,7 +49,6 @@ bool hc::Config::init(Logger* logger) {
     _coresPath = path;
     _logger->info("The cores path is %s", path);
 
-    reset();
     return true;
 }
 
