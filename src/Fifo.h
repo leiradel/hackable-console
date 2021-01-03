@@ -20,10 +20,10 @@ namespace hc {
 
     protected:
         SDL_mutex* _mutex;
-        uint8_t*   _buffer;
-        size_t     _size;
-        size_t     _avail;
-        size_t     _first;
-        size_t     _last;
+        uint8_t* _buffer;
+        size_t _size;
+        size_t _avail;
+        size_t _first;
+        size_t _last;
     };
 }

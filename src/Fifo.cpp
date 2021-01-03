@@ -3,7 +3,7 @@
 bool hc::Fifo::init(size_t const size) {
     _mutex = SDL_CreateMutex();
 
-    if (!_mutex) {
+    if (_mutex == nullptr) {
         return false;
     }
 
