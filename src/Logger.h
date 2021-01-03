@@ -24,7 +24,7 @@ namespace hc {
         void error(char const* format, ...);
 
     protected:
-        ImGuiAl::BufferedLog<65536> _logger;
+        ImGuiAl::BufferedLog<1024 * 1024> _logger;
         SDL_mutex* _mutex;
     };
 }
