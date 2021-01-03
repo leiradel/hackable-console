@@ -355,7 +355,7 @@ bool hc::Config::setCoreOptions(retro_core_option_definition const* options) {
         CoreOption tempopt;
         tempopt.key = options->key;
         tempopt.label = options->desc;
-        tempopt.sublabel = options->info;
+        tempopt.sublabel = options->info != nullptr ? options->info : "";
         tempopt.selected = 0;
         tempopt.visible = true;
 
