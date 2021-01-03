@@ -6,6 +6,12 @@ bool hc::Audio::init(Logger* logger, double sample_rate, Fifo* fifo) {
 
     reset();
 
+    _mutex = SDL_CreateMutex();
+
+    if (_mutex == nullptr) {
+        return false;
+    }
+
     _sampleRate = sample_rate;
     _fifo = fifo;
     return true;
@@ -17,12 +23,17 @@ void hc::Audio::destroy() {
     if (_resampler != NULL) {
         speex_resampler_destroy(_resampler);
     }
+
+    SDL_DestroyMutex(_mutex);
 }
 
 void hc::Audio::reset() {
     _logger->debug("%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
 
     memset(&_timing, 0, sizeof(_timing));
+
+    _min = 0.0f;
+    _max = 0.0f;
 
     _mute = false;
     _sampleRate = 0.0;
@@ -35,11 +46,9 @@ void hc::Audio::reset() {
 }
 
 void hc::Audio::draw() {
-    _logger->debug("%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
-
     ImGui::Checkbox("Mute", &_mute);
 
-    /*auto const left = [](void* const data, int const idx) -> float {
+    auto const left = [](void* const data, int const idx) -> float {
         auto const self = static_cast<Audio*>(data);
 
         float sample = self->_samples[idx * 2];
@@ -59,30 +68,17 @@ void hc::Audio::draw() {
         return sample;
     };
 
-    auto const zero = [](void* data, int idx) -> float {
-        (void)data;
-        (void)idx;
-        return 0.0f;
-    };
-
     ImVec2 max = ImGui::GetContentRegionAvail();
 
     if (max.y > 0.0f) {
         max.x /= 2;
 
-        if (_samples != NULL) {
-            ImGui::PlotLines("", left, this, _frames, 0, NULL, _min, _max, max);
-            ImGui::SameLine(0.0f, 0.0f);
-            ImGui::PlotLines("", right, this, _frames, 0, NULL, _min, _max, max);
-        }
-        else {
-            ImGui::PlotLines("", zero, NULL, 2, 0, NULL, _min, _max, max);
-            ImGui::SameLine(0.0f, 0.0f);
-            ImGui::PlotLines("", zero, NULL, 2, 0, NULL, _min, _max, max);
-        }
-    }
+        size_t const size = _samples.size() / 2;
 
-    _samples = NULL;*/
+        ImGui::PlotLines("", left, this, size, 0, nullptr, _min, _max, max);
+        ImGui::SameLine(0.0f, 0.0f);
+        ImGui::PlotLines("", right, this, size, 0, nullptr, _min, _max, max);
+    }
 }
 
 bool hc::Audio::setSystemAvInfo(retro_system_av_info const* info) {
@@ -105,6 +101,30 @@ bool hc::Audio::setAudioCallback(retro_audio_callback const* callback) {
 }
 
 size_t hc::Audio::sampleBatch(int16_t const* data, size_t frames) {
+    SDL_LockMutex(_mutex);
+
+    size_t const size = _samples.size();
+    _samples.resize(size + frames * 2);
+    memcpy(_samples.data() + size, data, frames * 4);
+
+    SDL_UnlockMutex(_mutex);
+    return frames;
+}
+
+void hc::Audio::sample(int16_t left, int16_t right) {
+    int16_t frame[2] = {left, right};
+    sampleBatch(frame, 1);
+}
+
+void hc::Audio::flush() {
+    std::vector<int16_t> samples;
+    SDL_LockMutex(_mutex);
+    samples.swap(_samples);
+    SDL_UnlockMutex(_mutex);
+
+    int16_t const* const data = samples.data();
+    size_t const frames = samples.size() / 2;
+
     size_t const avail = _fifo->free();
 
     // Readjust the audio input rate
@@ -122,7 +142,7 @@ size_t hc::Audio::sampleBatch(int16_t const* data, size_t frames) {
 
     if (output == NULL) {
         _logger->error("Error allocating temporary output buffer");
-        return 0;
+        return;
     }
 
     if (_mute) {
@@ -150,12 +170,6 @@ size_t hc::Audio::sampleBatch(int16_t const* data, size_t frames) {
     }
 
     _fifo->write(output, size);
-    return frames;
-}
-
-void hc::Audio::sample(int16_t left, int16_t right) {
-    int16_t frame[2] = {left, right};
-    sampleBatch(frame, 1);
 }
 
 void hc::Audio::setupResampler(double const rate) {

@@ -7,6 +7,8 @@
 
 #include <speex_resampler.h>
 
+#include <vector>
+
 namespace hc {
     class Audio: public lrcpp::Audio {
     public:
@@ -24,10 +26,18 @@ namespace hc {
         virtual size_t sampleBatch(int16_t const* data, size_t frames) override;
         virtual void sample(int16_t left, int16_t right) override;
 
+        void flush();
+
     protected:
         void setupResampler(double const rate);
 
         Logger* _logger;
+
+        std::vector<int16_t> _samples;
+        SDL_mutex* _mutex;
+
+        float _min;
+        float _max;
 
         retro_system_timing _timing;
         bool _mute;

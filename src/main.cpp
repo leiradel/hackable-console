@@ -276,6 +276,7 @@ error:
             ImGui::NewFrame();
 
             draw();
+            _audio.flush();
 
             ImGui::Render();
 
