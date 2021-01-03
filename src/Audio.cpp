@@ -153,6 +153,7 @@ void hc::Audio::flush() {
 
         if (error != RESAMPLER_ERR_SUCCESS) {
             memset(output, 0, out_len * 2);
+            _logger->error("Error resampling: %s", speex_resampler_strerror(error));
         }
     }
 
