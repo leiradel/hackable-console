@@ -45,7 +45,7 @@ namespace hc {
 
         unsigned _rotation;
         retro_pixel_format _pixelFormat;
-        retro_game_geometry _geometry;
+        retro_system_av_info _systemAvInfo;
 
         GLuint _texture;
         unsigned _maxWidth;
