@@ -331,9 +331,6 @@ bool hc::Config::setSerializationQuirks(uint64_t quirks) {
 }
 
 bool hc::Config::getAudioVideoEnable(int* enabled) {
-    _logger->debug("%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, enabled);
-    _logger->warn("Returning 0b0011 for audio/video enable");
-
     *enabled = 3;
     return true;
 }
