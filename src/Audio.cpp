@@ -1,6 +1,6 @@
 #include "Audio.h"
 
-bool hc::Audio::init(Logger* logger, double sample_rate, Fifo* fifo) {
+bool hc::Audio::init(Logger* logger, double sampleRate, Fifo* fifo) {
     _logger = logger;
     _logger->debug("%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
 
@@ -12,7 +12,7 @@ bool hc::Audio::init(Logger* logger, double sample_rate, Fifo* fifo) {
         return false;
     }
 
-    _sampleRate = sample_rate;
+    _sampleRate = sampleRate;
     _fifo = fifo;
     return true;
 }
@@ -177,8 +177,9 @@ void hc::Audio::setupResampler(double const rate) {
         return;
     }
 
-    if (_resampler != NULL) {
+    if (_resampler != nullptr) {
         speex_resampler_destroy(_resampler);
+        _resampler = nullptr;
     }
 
     _coreRate = rate;
@@ -188,7 +189,7 @@ void hc::Audio::setupResampler(double const rate) {
     int error;
     _resampler = speex_resampler_init(2, _coreRate, _sampleRate, SPEEX_RESAMPLER_QUALITY_DEFAULT, &error);
 
-    if (_resampler == NULL) {
+    if (_resampler == nullptr) {
         _logger->error("speex_resampler_init: %s", speex_resampler_strerror(error));
         return;
     }

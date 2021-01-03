@@ -15,7 +15,7 @@ namespace hc {
         Audio() : _logger(nullptr), _fifo(nullptr) {}
         virtual ~Audio() {}
 
-        bool init(Logger* logger, double sample_rate, Fifo* fifo);
+        bool init(Logger* logger, double sampleRate, Fifo* fifo);
         void destroy();
         void reset();
         void draw();
