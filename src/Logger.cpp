@@ -11,6 +11,12 @@ bool hc::Logger::init() {
 
     reset();
 
+    _mutex = SDL_CreateMutex();
+
+    if (_mutex == nullptr) {
+        return false;
+    }
+
     _logger.setActions(actions);
 
     _logger.setLabel(ImGuiAl::Log::Level::Debug, ICON_FA_BUG " Debug");
@@ -25,14 +31,20 @@ bool hc::Logger::init() {
     return true;
 }
 
-void hc::Logger::destroy() {}
+void hc::Logger::destroy() {
+    SDL_DestroyMutex(_mutex);
+}
 
 void hc::Logger::reset() {
     _logger.clear();
 }
 
 void hc::Logger::draw() {
-    switch (_logger.draw()) {
+    SDL_LockMutex(_mutex);
+    int const button = _logger.draw();
+    SDL_UnlockMutex(_mutex);
+
+    switch (button) {
         case 1: {
             std::string buffer;
 
@@ -70,6 +82,8 @@ void hc::Logger::vprintf(enum retro_log_level level, const char* format, va_list
         va_end(copy);
     }
 
+    SDL_LockMutex(_mutex);
+
     switch (level) {
         case RETRO_LOG_DEBUG: _logger.debug(format, args); break;
         case RETRO_LOG_INFO:  _logger.info(format, args); break;
@@ -79,6 +93,7 @@ void hc::Logger::vprintf(enum retro_log_level level, const char* format, va_list
     }
 
     _logger.scrollToBottom();
+    SDL_UnlockMutex(_mutex);
 }
 
 void hc::Logger::debug(char const* format, ...) {

@@ -1,7 +1,9 @@
 #pragma once
 
-#include <imguial_term.h>
 #include <Components.h>
+#include <imguial_term.h>
+
+#include <SDL.h>
 
 namespace hc {
     class Logger: public lrcpp::Logger {
@@ -23,5 +25,6 @@ namespace hc {
 
     protected:
         ImGuiAl::BufferedLog<65536> _logger;
+        SDL_mutex* _mutex;
     };
 }
