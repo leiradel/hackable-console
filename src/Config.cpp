@@ -17,15 +17,23 @@ bool hc::Config::init(Logger* logger) {
 
     char path[1024];
 
-    if (fnkdat("system", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
-        _logger->error("Error Getting the system path");
+    if (fnkdat("autorun.lua", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
+        _logger->error("Error getting the autorun.lua file path");
+        return false;
+    }
+
+    _autorunPath = path;
+    _logger->info("The autorun.lua file path is %s", path);
+
+    if (fnkdat("system/", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
+        _logger->error("Error getting the system path");
         return false;
     }
 
     _systemPath = path;
     _logger->info("The system path is %s", path);
 
-    if (fnkdat("assets", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
+    if (fnkdat("assets/", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
         _logger->error("Error getting the core assets path");
         return false;
     }
@@ -33,7 +41,7 @@ bool hc::Config::init(Logger* logger) {
     _coreAssetsPath = path;
     _logger->info("The core assets path is %s", path);
 
-    if (fnkdat("saves", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
+    if (fnkdat("saves/", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
         _logger->error("Error getting the saves path");
         return false;
     }
@@ -41,7 +49,7 @@ bool hc::Config::init(Logger* logger) {
     _savePath = path;
     _logger->info("The save path is %s", path);
 
-    if (fnkdat("cores", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
+    if (fnkdat("cores/", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
         _logger->error("Error getting the cores path");
         return false;
     }
@@ -405,4 +413,8 @@ bool hc::Config::setCoreOptionsDisplay(retro_core_option_display const* display)
     }
 
     return true;
+}
+
+const std::string& hc::Config::getAutorunPath() {
+    return _autorunPath;
 }

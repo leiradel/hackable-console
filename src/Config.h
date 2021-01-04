@@ -40,6 +40,8 @@ namespace hc {
         virtual bool setCoreOptionsIntl(retro_core_options_intl const* intl) override;
         virtual bool setCoreOptionsDisplay(retro_core_option_display const* display) override;
 
+        const std::string& getAutorunPath();
+
     protected:
         struct SubsystemInfo {
             struct Rom {
@@ -90,6 +92,7 @@ namespace hc {
 
         Logger* _logger;
 
+        std::string _autorunPath;
         std::string _systemPath;
         std::string _coreAssetsPath;
         std::string _savePath;
