@@ -4,6 +4,8 @@
 #include "Video.h"
 #include "Fifo.h"
 
+#include "LuaBind.h"
+
 #include "gamecontrollerdb.h"
 
 #include <imgui.h>
@@ -327,7 +329,7 @@ static bool init(std::string const& title, int const width, int const height) {
         undo.add([]() { lua_close(L); });
 
         luaL_openlibs(L);
-        luaL_requiref(L, "hc", luaopen_hc, 0);
+        RegisterSearcher(L);
 
         static auto const traceback = [](lua_State* const L) -> int {
             luaL_traceback(L, L, lua_tostring(L, -1), 1);
