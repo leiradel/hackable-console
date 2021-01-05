@@ -25,3 +25,6 @@
 [submodule "src/IconFontCppHeaders"]
 	path = src/IconFontCppHeaders
 	url = https://github.com/juliettef/IconFontCppHeaders.git
+[submodule "src/luafilesystem"]
+	path = src/luafilesystem
+	url = https://github.com/keplerproject/luafilesystem.git
