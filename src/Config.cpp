@@ -2,6 +2,10 @@
 
 #include <fnkdat.h>
 
+extern "C" {
+    #include "lauxlib.h"
+}
+
 #include <inttypes.h>
 
 bool hc::Config::init(Logger* logger) {
@@ -415,6 +419,73 @@ bool hc::Config::setCoreOptionsDisplay(retro_core_option_display const* display)
     return true;
 }
 
+const std::string& hc::Config::getRootPath() {
+    return _rootPath;
+}
+
 const std::string& hc::Config::getAutorunPath() {
     return _autorunPath;
+}
+
+int hc::Config::push(lua_State* L) {
+    auto const self = static_cast<Config**>(lua_newuserdata(L, sizeof(Config*)));
+    *self = this;
+
+    if (luaL_newmetatable(L, "hc::Config")) {
+        static luaL_Reg const methods[] = {
+            {"getRootPath", l_getRootPath},
+            {"getAutorunPath", l_getAutorunPath},
+            {"getSystemPath", l_getSystemPath},
+            {"getCoreAssetsPath", l_getCoreAssetsPath},
+            {"getSavePath", l_getSavePath},
+            {"getCoresPath", l_getCoresPath},
+            {nullptr, nullptr}
+        };
+
+        luaL_newlib(L, methods);
+        lua_setfield(L, -2, "__index");
+    }
+
+    lua_setmetatable(L, -2);
+    return 1;
+}
+
+hc::Config* hc::Config::check(lua_State* L, int index) {
+    return *(Config**)luaL_checkudata(L, index, "hc::Config");
+}
+
+int hc::Config::l_getRootPath(lua_State* L) {
+    Config* const self = check(L, 1);
+    lua_pushlstring(L, self->_rootPath.c_str(), self->_rootPath.length());
+    return 1;
+}
+
+int hc::Config::l_getAutorunPath(lua_State* L) {
+    Config* const self = check(L, 1);
+    lua_pushlstring(L, self->_autorunPath.c_str(), self->_autorunPath.length());
+    return 1;
+}
+
+int hc::Config::l_getSystemPath(lua_State* L) {
+    Config* const self = check(L, 1);
+    lua_pushlstring(L, self->_systemPath.c_str(), self->_systemPath.length());
+    return 1;
+}
+
+int hc::Config::l_getCoreAssetsPath(lua_State* L) {
+    Config* const self = check(L, 1);
+    lua_pushlstring(L, self->_coreAssetsPath.c_str(), self->_coreAssetsPath.length());
+    return 1;
+}
+
+int hc::Config::l_getSavePath(lua_State* L) {
+    Config* const self = check(L, 1);
+    lua_pushlstring(L, self->_savePath.c_str(), self->_savePath.length());
+    return 1;
+}
+
+int hc::Config::l_getCoresPath(lua_State* L) {
+    Config* const self = check(L, 1);
+    lua_pushlstring(L, self->_coresPath.c_str(), self->_coresPath.length());
+    return 1;
 }

@@ -4,6 +4,10 @@
 
 #include <Components.h>
 
+extern "C" {
+    #include <lua.h>
+}
+
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -40,9 +44,20 @@ namespace hc {
         virtual bool setCoreOptionsIntl(retro_core_options_intl const* intl) override;
         virtual bool setCoreOptionsDisplay(retro_core_option_display const* display) override;
 
+        const std::string& getRootPath();
         const std::string& getAutorunPath();
 
+        int push(lua_State* L);
+        static Config* check(lua_State* L, int index);
+
     protected:
+        static int l_getRootPath(lua_State* L);
+        static int l_getAutorunPath(lua_State* L);
+        static int l_getSystemPath(lua_State* L);
+        static int l_getCoreAssetsPath(lua_State* L);
+        static int l_getSavePath(lua_State* L);
+        static int l_getCoresPath(lua_State* L);
+
         struct SubsystemInfo {
             struct Rom {
                 struct Memory {
@@ -92,6 +107,7 @@ namespace hc {
 
         Logger* _logger;
 
+        std::string _rootPath;
         std::string _autorunPath;
         std::string _systemPath;
         std::string _coreAssetsPath;
