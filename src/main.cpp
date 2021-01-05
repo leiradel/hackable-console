@@ -22,378 +22,452 @@
 #include <MaterialDesign.inl>
 #include <IconsMaterialDesign.h>
 
+extern "C" {
+    #include <lua.h>
+    #include <lauxlib.h>
+    #include <lualib.h>
+}
+
 #include <stdlib.h>
 #include <sys/stat.h>
 
-class Application final {
-protected:
-    SDL_Window* _window;
-    SDL_GLContext _glContext;
-    SDL_AudioSpec _audioSpec;
-    SDL_AudioDeviceID _audioDev;
+static SDL_Window* window;
+static SDL_GLContext glContext;
+static SDL_AudioSpec audioSpec;
+static SDL_AudioDeviceID audioDev;
 
-    hc::Logger _logger;
-public:
-    hc::Config _config;
-    hc::Audio _audio;
-protected:
-    hc::Video _video;
+static hc::Logger logger;
+static hc::Config config;
+static hc::Audio audio;
+static hc::Video video;
 
-    hc::Fifo _fifo;
+static lrcpp::Frontend frontend;
 
-public:
-    lrcpp::Frontend _frontend;
-protected:
+static hc::Fifo fifo;
 
-    static void audioCallback(void* const udata, Uint8* const stream, int const len) {
-        auto const app = static_cast<Application*>(udata);
-        size_t const avail = app->_fifo.occupied();
+static lua_State* L;
 
-        if (avail < (size_t)len) {
-            app->_fifo.read(static_cast<void*>(stream), avail);
-            memset(static_cast<void*>(stream + avail), 0, len - avail);
-        }
-        else {
-            app->_fifo.read(static_cast<void*>(stream), len);
-        }
+static void audioCallback(void* const udata, Uint8* const stream, int const len) {
+    (void)udata;
+    size_t const avail = fifo.occupied();
+
+    if (avail < (size_t)len) {
+        fifo.read(static_cast<void*>(stream), avail);
+        memset(static_cast<void*>(stream + avail), 0, len - avail);
+    }
+    else {
+        fifo.read(static_cast<void*>(stream), len);
+    }
+}
+
+static int luaopen_hc(lua_State* const L) {
+    //static luaL_Reg const functions[] = {};
+
+    static struct {char const* const name; std::function<void(lua_State* const L)> const pusher;} const constants[] = {
+        {"logger", [](lua_State* const L) { logger.push(L); }},
+        {"config", [](lua_State* const L) { config.push(L); }}
+    };
+
+    static struct {char const* const name; char const* const value;} const info[] = {
+        {"_COPYRIGHT", "Copyright (c) 2020 Andre Leiradella"},
+        {"_LICENSE", "MIT"},
+        {"_VERSION", "1.0.0"},
+        {"_NAME", "hc"},
+        {"_URL", "https://github.com/leiradel/hackable-console"},
+        {"_DESCRIPTION", "Hackable Console bindings"}
+    };
+
+    size_t const functions_count = 0; //sizeof(functions) / sizeof(functions[0]) - 1;
+    size_t const constants_count = sizeof(constants) / sizeof(constants[0]);
+    size_t const info_count = sizeof(info) / sizeof(info[0]);
+
+    lua_createtable(L, 0, functions_count + constants_count + info_count);
+    //luaL_setfuncs(L, functions, 0);
+
+    for (size_t i = 0; i < constants_count; i++) {
+        constants[i].pusher(L);
+        lua_setfield(L, -2, constants[i].name);
     }
 
-public:
-    Application() {}
+    for (size_t i = 0; i < info_count; i++) {
+        lua_pushstring(L, info[i].value);
+        lua_setfield(L, -2, info[i].name);
+    }
 
-    bool init(std::string const& title, int const width, int const height) {
-        if (!_logger.init()) {
+    return 1;
+}
+
+static bool init(std::string const& title, int const width, int const height) {
+    class Undo {
+    public:
+        ~Undo() {
+            for (size_t i = _list.size(); i != 0; i--) {
+                _list[i - 1]();
+            }
+        }
+
+        void add(void (*undo)()) {
+            _list.emplace_back(undo);
+        }
+
+        void clear() {
+            _list.clear();
+        }
+
+    protected:
+        std::vector<void (*)()> _list;
+    }
+    undo;
+
+    if (!logger.init()) {
+        return false;
+    }
+
+    undo.add([]() { logger.destroy(); });
+
+    {
+        // Setup SDL
+        if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
+            logger.error("Error in SDL_Init: %s", SDL_GetError());
             return false;
         }
 
-        {
-            // Setup SDL
-            if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
-                _logger.error("Error in SDL_Init: %s", SDL_GetError());
-                return false;
+        undo.add([]() { SDL_Quit(); });
+
+        // Setup window
+        SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+        SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+        SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+
+        Uint32 const windowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_MAXIMIZED;
+
+        window = SDL_CreateWindow(
+            title.c_str(),
+            SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+            width, height,
+            windowFlags
+        );
+
+        if (window == nullptr) {
+            logger.error("Error in SDL_CreateWindow: %s", SDL_GetError());
+            return false;
+        }
+
+        undo.add([]() { SDL_DestroyWindow(window); });
+
+        glContext = SDL_GL_CreateContext(window);
+
+        if (glContext == nullptr) {
+            logger.error("Error in SDL_GL_CreateContext: %s", SDL_GetError());
+            return false;
+        }
+
+        undo.add([]() { SDL_GL_DeleteContext(glContext); });
+
+        SDL_GL_MakeCurrent(window, glContext);
+        SDL_GL_SetSwapInterval(1);
+
+        // Init audio
+        SDL_AudioSpec want;
+        memset(&want, 0, sizeof(want));
+
+        want.freq = 44100;
+        want.format = AUDIO_S16SYS;
+        want.channels = 2;
+        want.samples = 1024;
+        want.callback = audioCallback;
+        want.userdata = nullptr;
+
+        audioDev = SDL_OpenAudioDevice(
+            nullptr, 0,
+            &want, &audioSpec,
+            SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_CHANNELS_CHANGE
+        );
+
+        if (audioDev == 0) {
+            logger.error("Error in SDL_OpenAudioDevice: %s", SDL_GetError());
+            return false;
+        }
+
+        SDL_PauseAudioDevice(audioDev, 0);
+
+        undo.add([]() { SDL_CloseAudioDevice(audioDev); });
+
+        if (!fifo.init(audioSpec.size * 2)) {
+            logger.error("Error in audio FIFO init");
+            return false;
+        }
+
+        undo.add([]() { fifo.destroy(); });
+
+        // Add controller mappings
+        SDL_RWops* const ctrldb = SDL_RWFromMem(
+            const_cast<void*>(static_cast<void const*>(gamecontrollerdb)),
+            static_cast<int>(gamecontrollerdb_len)
+        );
+
+        if (SDL_GameControllerAddMappingsFromRW(ctrldb, 1) < 0) {
+            logger.error("Error in SDL_GameControllerAddMappingsFromRW: %s", SDL_GetError());
+            return false;
+        }
+    }
+
+    {
+        // Setup ImGui
+        IMGUI_CHECKVERSION();
+        if (ImGui::CreateContext() == nullptr) {
+            logger.error("Error creating ImGui context");
+            return false;
+        }
+
+        undo.add([]() { ImGui::DestroyContext(); });
+
+        ImGuiIO& io = ImGui::GetIO();
+        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
+        ImGui::StyleColorsDark();
+
+        if (!ImGui_ImplSDL2_InitForOpenGL(window, glContext)) {
+            logger.error("Error initializing ImGui for OpenGL");
+            return false;
+        }
+
+        undo.add([]() { ImGui_ImplSDL2_Shutdown(); });
+
+        if (!ImGui_ImplOpenGL2_Init()) {
+            logger.error("Error initializing ImGui OpenGL implementation");
+            return false;
+        }
+
+        undo.add([]() { ImGui_ImplOpenGL2_Shutdown(); });
+
+        // Set Proggy Tiny as the default font
+        io = ImGui::GetIO();
+
+        ImFont* const proggyTiny = io.Fonts->AddFontFromMemoryCompressedTTF(
+            ProggyTiny_compressed_data,
+            ProggyTiny_compressed_size,
+            10.0f
+        );
+
+        if (proggyTiny == nullptr) {
+            logger.error("Error adding Proggy Tiny font");
+            return false;
+        }
+
+        // Add icons from Font Awesome
+        ImFontConfig config;
+        config.MergeMode = true;
+        config.PixelSnapH = true;
+
+        static ImWchar const ranges1[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
+
+        ImFont* const fontAwesome = io.Fonts->AddFontFromMemoryCompressedTTF(
+            FontAwesome4_compressed_data,
+            FontAwesome4_compressed_size,
+            12.0f, &config, ranges1
+        );
+
+        if (fontAwesome == nullptr) {
+            logger.error("Error adding Font Awesome 4 font");
+            return false;
+        }
+
+        // Add Icons from Material Design
+        static ImWchar const ranges2[] = {ICON_MIN_MD, ICON_MAX_MD, 0};
+
+        ImFont* const materialDesign = io.Fonts->AddFontFromMemoryCompressedTTF(
+            MaterialDesign_compressed_data,
+            MaterialDesign_compressed_size,
+            24.0f, &config, ranges2
+        );
+
+        if (materialDesign == nullptr) {
+            logger.error("Error adding Material Design font");
+            return false;
+        }
+    }
+
+    {
+        // Initialize components
+        if (!config.init(&logger)) {
+            return false;
+        }
+
+        undo.add([]() { config.destroy(); });
+
+        if (!video.init(&logger)) {
+            return false;
+        }
+
+        undo.add([]() { video.destroy(); });
+
+        if (!audio.init(&logger, audioSpec.freq, &fifo)) {
+            return false;
+        }
+
+        undo.add([]() { audio.destroy(); });
+
+        frontend.setLogger(&logger);
+        frontend.setConfig(&config);
+        frontend.setAudio(&audio);
+        frontend.setVideo(&video);
+    }
+
+    {
+        // Initialize Lua
+        L = luaL_newstate();
+
+        if (L == nullptr) {
+            return false;
+        }
+
+        undo.add([]() { lua_close(L); });
+
+        luaL_openlibs(L);
+        luaL_requiref(L, "hc", luaopen_hc, 0);
+
+        static auto const traceback = [](lua_State* const L) -> int {
+            luaL_traceback(L, L, lua_tostring(L, -1), 1);
+            return 1;
+        };
+
+        static auto const main = [](lua_State* const L) -> int {
+            char const* const path = luaL_checkstring(L, 1);
+
+            if (luaL_loadfilex(L, path, "t") != LUA_OK) {
+                return lua_error(L);
             }
 
-            // Setup window
-            SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-            SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-            SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-            SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-            SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+            lua_call(L, 0, 0);
+            return 0;
+        };
 
-            Uint32 const windowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_MAXIMIZED;
+        std::string const& autorun = config.getAutorunPath();
 
-            _window = SDL_CreateWindow(
-                title.c_str(),
-                SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                width, height,
-                windowFlags
-            );
+        lua_pushcfunction(L, traceback);
+        lua_pushcfunction(L, main);
+        lua_pushlstring(L, autorun.c_str(), autorun.length());
+        
+        logger.info("Running \"%s\"", autorun.c_str());
 
-            if (_window == nullptr) {
-                _logger.error("Error in SDL_CreateWindow: %s", SDL_GetError());
-                return false;
-            }
+        if (lua_pcall(L, 1, 0, -3) != LUA_OK) {
+            logger.error("%s", lua_tostring(L, -1));
+            lua_pop(L, 1);
+        }
 
-            _glContext = SDL_GL_CreateContext(_window);
+        lua_pop(L, 1);
+    }
 
-            if (_glContext == nullptr) {
-                _logger.error("Error in SDL_GL_CreateContext: %s", SDL_GetError());
-                SDL_DestroyWindow(_window);
-                return false;
-            }
+    undo.clear();
+    return true;
+}
 
-            SDL_GL_MakeCurrent(_window, _glContext);
-            SDL_GL_SetSwapInterval(1);
+static void destroy() {
+    lua_close(L);
 
-            // Init audio
-            SDL_AudioSpec want;
-            memset(&want, 0, sizeof(want));
+    video.destroy();
+    audio.destroy();
+    config.destroy();
+    logger.destroy();
 
-            want.freq = 44100;
-            want.format = AUDIO_S16SYS;
-            want.channels = 2;
-            want.samples = 1024;
-            want.callback = audioCallback;
-            want.userdata = this;
+    ImGui_ImplOpenGL2_Shutdown();
+    ImGui_ImplSDL2_Shutdown();
+    ImGui::DestroyContext();
 
-            _audioDev = SDL_OpenAudioDevice(
-                nullptr, 0,
-                &want, &_audioSpec,
-                SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_CHANNELS_CHANGE
-            );
+    SDL_CloseAudioDevice(audioDev);
+    fifo.destroy();
 
-            if (_audioDev == 0) {
-                _logger.error("Error in SDL_OpenAudioDevice: %s", SDL_GetError());
-                SDL_GL_DeleteContext(_glContext);
-                SDL_DestroyWindow(_window);
-                return false;
-            }
+    SDL_GL_DeleteContext(glContext);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+}
 
-            if (!_fifo.init(_audioSpec.size * 2)) {
-                _logger.error("Error in audio FIFO init");
-                SDL_CloseAudioDevice(_audioDev);
-                SDL_GL_DeleteContext(_glContext);
-                SDL_DestroyWindow(_window);
-                return false;
-            }
+static void draw() {
+    ImGui::DockSpaceOverViewport();
 
-            SDL_PauseAudioDevice(_audioDev, 0);
+    if (ImGui::Begin(ICON_FA_COMMENT " Log")) {
+        logger.draw();
+    }
 
-            // Add controller mappings
-            SDL_RWops* const ctrldb = SDL_RWFromMem(
-                const_cast<void*>(static_cast<void const*>(gamecontrollerdb)),
-                static_cast<int>(gamecontrollerdb_len)
-            );
+    ImGui::End();
 
-            if (SDL_GameControllerAddMappingsFromRW(ctrldb, 1) < 0) {
-                _logger.error("Error in SDL_GameControllerAddMappingsFromRW: %s", SDL_GetError());
-                SDL_CloseAudioDevice(_audioDev);
-                _fifo.destroy();
-                SDL_GL_DeleteContext(_glContext);
-                SDL_DestroyWindow(_window);
-                return false;
+    if (ImGui::Begin(ICON_FA_WRENCH " Configuration")) {
+        config.draw();
+    }
+
+    ImGui::End();
+
+    if (ImGui::Begin(ICON_FA_VOLUME_UP " Audio")) {
+        audio.draw();
+    }
+
+    ImGui::End();
+
+    if (ImGui::Begin(ICON_FA_DESKTOP " Video")) {
+        video.draw();
+    }
+
+    ImGui::End();
+}
+
+static void run() {
+    bool done = false;
+
+    do {
+        SDL_Event event;
+
+        while (SDL_PollEvent(&event)) {
+            ImGui_ImplSDL2_ProcessEvent(&event);
+
+            switch (event.type) {
+                case SDL_QUIT:
+                    done = true;
+                    break;
+
+                case SDL_CONTROLLERDEVICEADDED:
+                case SDL_CONTROLLERDEVICEREMOVED:
+                case SDL_CONTROLLERBUTTONUP:
+                case SDL_CONTROLLERBUTTONDOWN:
+                case SDL_CONTROLLERAXISMOTION:
+                case SDL_KEYUP:
+                case SDL_KEYDOWN:
+                    // _input.processEvent(&event);
+                    break;
             }
         }
 
-        {
-            // Setup ImGui
-            IMGUI_CHECKVERSION();
-            ImGui::CreateContext();
-            ImGuiIO& io = ImGui::GetIO();
-            io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+        frontend.run();
 
-            ImGui::StyleColorsDark();
+        ImGui_ImplOpenGL2_NewFrame();
+        ImGui_ImplSDL2_NewFrame(window);
+        ImGui::NewFrame();
 
-            ImGui_ImplSDL2_InitForOpenGL(_window, _glContext);
-            ImGui_ImplOpenGL2_Init();
+        draw();
+        audio.flush();
 
-            // Set Proggy Tiny as the default font
-            io = ImGui::GetIO();
+        ImGui::Render();
 
-            io.Fonts->AddFontFromMemoryCompressedTTF(
-                ProggyTiny_compressed_data,
-                ProggyTiny_compressed_size,
-                10.0f
-            );
+        glViewport(0, 0, (int)ImGui::GetIO().DisplaySize.x, (int)ImGui::GetIO().DisplaySize.y);
+        glClearColor(0.05f, 0.05f, 0.05f, 0);
+        glClear(GL_COLOR_BUFFER_BIT);
 
-            // Add icons from Font Awesome
-            ImFontConfig config;
-            config.MergeMode = true;
-            config.PixelSnapH = true;
+        ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
 
-            static ImWchar const ranges1[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
-
-            io.Fonts->AddFontFromMemoryCompressedTTF(
-                FontAwesome4_compressed_data,
-                FontAwesome4_compressed_size,
-                12.0f, &config, ranges1
-            );
-
-            // Add Icons from Material Design
-            static ImWchar const ranges2[] = {ICON_MIN_MD, ICON_MAX_MD, 0};
-
-            io.Fonts->AddFontFromMemoryCompressedTTF(
-                MaterialDesign_compressed_data,
-                MaterialDesign_compressed_size,
-                24.0f, &config, ranges2
-            );
-        }
-
-        {
-            // Initialize components
-            if (!_config.init(&_logger)) {
-error:
-                SDL_CloseAudioDevice(_audioDev);
-                _fifo.destroy();
-                SDL_GL_DeleteContext(_glContext);
-                SDL_DestroyWindow(_window);
-                return false;
-            }
-
-            if (!_video.init(&_logger)) {
-                goto error;
-            }
-
-            if (!_audio.init(&_logger, _audioSpec.freq, &_fifo)) {
-                goto error;
-            }
-
-            _frontend.setLogger(&_logger);
-            _frontend.setConfig(&_config);
-            _frontend.setAudio(&_audio);
-            _frontend.setVideo(&_video);
-        }
-
-        return true;
+        SDL_GL_SwapWindow(window);
+        SDL_Delay(1);
     }
-
-    void destroy() {
-        _config.destroy();
-        _logger.destroy();
-
-        ImGui_ImplOpenGL2_Shutdown();
-        ImGui_ImplSDL2_Shutdown();
-        ImGui::DestroyContext();
-
-        SDL_CloseAudioDevice(_audioDev);
-        _fifo.destroy();
-
-        SDL_GL_DeleteContext(_glContext);
-        SDL_DestroyWindow(_window);
-        SDL_Quit();
-    }
-
-    void run() {
-        bool done = false;
-
-        do {
-            SDL_Event event;
-
-            while (SDL_PollEvent(&event)) {
-                ImGui_ImplSDL2_ProcessEvent(&event);
-
-                switch (event.type) {
-                    case SDL_QUIT:
-                        done = true;
-                        break;
-
-                    case SDL_CONTROLLERDEVICEADDED:
-                    case SDL_CONTROLLERDEVICEREMOVED:
-                    case SDL_CONTROLLERBUTTONUP:
-                    case SDL_CONTROLLERBUTTONDOWN:
-                    case SDL_CONTROLLERAXISMOTION:
-                    case SDL_KEYUP:
-                    case SDL_KEYDOWN:
-                        // _input.processEvent(&event);
-                        break;
-                }
-            }
-
-            _frontend.run();
-
-            ImGui_ImplOpenGL2_NewFrame();
-            ImGui_ImplSDL2_NewFrame(_window);
-            ImGui::NewFrame();
-
-            draw();
-            _audio.flush();
-
-            ImGui::Render();
-
-            glViewport(0, 0, (int)ImGui::GetIO().DisplaySize.x, (int)ImGui::GetIO().DisplaySize.y);
-            glClearColor(0.05f, 0.05f, 0.05f, 0);
-            glClear(GL_COLOR_BUFFER_BIT);
-
-            ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
-
-            SDL_GL_SwapWindow(_window);
-            SDL_Delay(1);
-        }
-        while (!done);
-    }
-
-    void draw() {
-        ImGui::DockSpaceOverViewport();
-
-        if (ImGui::Begin(ICON_FA_COMMENT " Log")) {
-            _logger.draw();
-        }
-
-        ImGui::End();
-
-        if (ImGui::Begin(ICON_FA_WRENCH " Configuration")) {
-            _config.draw();
-        }
-
-        ImGui::End();
-
-        if (ImGui::Begin(ICON_FA_VOLUME_UP " Audio")) {
-            _audio.draw();
-        }
-
-        ImGui::End();
-
-        if (ImGui::Begin(ICON_FA_DESKTOP " Video")) {
-          _video.draw();
-        }
-
-        ImGui::End();
-    }
-};
-
-static void const* readAll(char const* const path, size_t* const size) {
-    struct stat statbuf;
-
-    if (stat(path, &statbuf) != 0) {
-        //logger->printf(RETRO_LOG_ERROR, "Error getting content info: %s", strerror(errno));
-        return nullptr;
-    }
-
-    void* const data = malloc(statbuf.st_size);
-
-    if (data == nullptr) {
-        //logger->printf(RETRO_LOG_ERROR, "Out of memory allocating %u bytes", statbuf.st_size);
-        return nullptr;
-    }
-
-    FILE* file = fopen(path, "rb");
-
-    if (file == nullptr) {
-        //logger->printf(RETRO_LOG_ERROR, "Error opening content: %s", strerror(errno));
-        free(data);
-        return nullptr;
-    }
-
-    size_t numread = fread(data, 1, statbuf.st_size, file);
-
-    if (numread != (size_t)statbuf.st_size) {
-        //logger->printf(RETRO_LOG_ERROR, "Error reading content: %s", strerror(errno));
-        fclose(file);
-        free(data);
-        return nullptr;
-    }
-
-    fclose(file);
-
-    *size = numread;
-    return data;
+    while (!done);
 }
 
 int main(int, char**) {
-    Application app;
-
-    if (!app.init("Hackable Console", 1024, 640)) {
+    if (!init("Hackable Console", 1024, 640)) {
         return EXIT_FAILURE;
     }
 
-    // TEST load a core and a game
-    char const* coresPath;
-    app._config.getLibretroPath(&coresPath);
-    std::string pico = coresPath;
-    pico += "/picodrive_libretro.so";
-
-    if (!app._frontend.load(pico.c_str())) {
-        fprintf(stderr, "Error loading core from %s\n", pico.c_str());
-        app.destroy();
-        return EXIT_FAILURE;
-    }
-
-    size_t size = 0;
-    void const* const data = readAll("/home/leiradel/ZombiesAteMyNeighbors/genesis_cartridge.bin", &size);
-
-    if (data == nullptr) {
-        fprintf(stderr, "Error loading game\n");
-        app.destroy();
-        return EXIT_FAILURE;
-    }
-
-    if (!app._frontend.loadGame("/home/leiradel/ZombiesAteMyNeighbors/genesis_cartridge.bin", data, size)) {
-        fprintf(stderr, "Error loading game 2\n");
-        app.destroy();
-        return EXIT_FAILURE;
-    }
-
-    app.run();
-    app.destroy();
+    run();
+    destroy();
     return EXIT_SUCCESS;
 }
