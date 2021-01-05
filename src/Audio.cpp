@@ -48,7 +48,7 @@ void hc::Audio::reset() {
 void hc::Audio::draw() {
     ImGui::Checkbox("Mute", &_mute);
 
-    auto const left = [](void* const data, int const idx) -> float {
+    static auto const left = [](void* const data, int const idx) -> float {
         auto const self = static_cast<Audio*>(data);
 
         float sample = self->_samples[idx * 2];
@@ -58,7 +58,7 @@ void hc::Audio::draw() {
         return sample;
     };
 
-    auto const right = [](void* data, int idx) -> float {
+    static auto const right = [](void* data, int idx) -> float {
         auto const self = static_cast<Audio*>(data);
 
         float sample = self->_samples[idx * 2 + 1];

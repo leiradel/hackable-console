@@ -92,7 +92,7 @@ void hc::Config::draw() {
             continue;
         }
 
-        auto const getter = [](void* const data, int const idx, char const** text) -> bool {
+        static auto const getter = [](void* const data, int const idx, char const** text) -> bool {
             auto const option = (CoreOption const*)data;
 
             if ((size_t)idx < option->values.size()) {
