@@ -20,7 +20,7 @@ CXX=g++
 INCLUDES=\
 	-Isrc -Isrc/imgui -Isrc/imgui/backends -Isrc/ImGuiAl/term -Isrc/ImGuiAl/fonts \
 	-Isrc/IconFontCppHeaders -Isrc/ImGui-Addons/addons/imguifilesystem \
-	-Isrc/fnkdat -Isrc/speex -Isrc/lrcpp/src -Isrc/lua
+	-Isrc/fnkdat -Isrc/speex -Isrc/lrcpp/src -Isrc/lua -Isrc/luafilesystem/src
 DEFINES=-DIMGUI_DISABLE_WIN32_DEFAULT_IME_FUNCS -D"IM_ASSERT(x)=do{(void)(x);}while(0)"
 DEFINES+=-DOUTSIDE_SPEEX -DRANDOM_PREFIX=speex -DEXPORT= -D_USE_SSE2 -DFIXED_POINT
 DEFINES+=-DPACKAGE=\"hackable-console\"
@@ -31,7 +31,7 @@ LIBS+=`sdl2-config --libs`
 
 # hackable-console
 HC_OBJS=\
-	src/main.o src/Fifo.o \
+	src/main.o src/Fifo.o src/LuaBind.o \
 	src/Audio.o src/Config.o src/Logger.o src/Video.o \
 	src/dynlib/dynlib.o src/fnkdat/fnkdat.o src/speex/resample.o
 
@@ -60,7 +60,8 @@ LUA_OBJS=\
 	src/lua/lundump.o src/lua/lvm.o src/lua/lzio.o src/lua/lauxlib.o \
 	src/lua/lbaselib.o src/lua/lcorolib.o src/lua/ldblib.o \
 	src/lua/liolib.o src/lua/lmathlib.o src/lua/loslib.o src/lua/lstrlib.o \
-	src/lua/ltablib.o src/lua/lutf8lib.o src/lua/loadlib.o src/lua/linit.o
+	src/lua/ltablib.o src/lua/lutf8lib.o src/lua/loadlib.o src/lua/linit.o \
+	src/luafilesystem/src/lfs.o
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -Wall -Wpedantic -Werror -c $< -o $@
