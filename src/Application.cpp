@@ -385,7 +385,8 @@ void hc::Application::audioCallback(void* const udata, Uint8* const stream, int 
 
 int hc::Application::luaopen_hc(lua_State* const L) {
     static luaL_Reg const functions[] = {
-        {"registerSystem", l_registerSystem}
+        {"registerSystem", l_registerSystem},
+        {nullptr, nullptr}
     };
 
     static struct {char const* const name; std::function<void(lua_State* const L)> const pusher;} const constants[] = {
