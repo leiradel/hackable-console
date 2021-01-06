@@ -45,7 +45,7 @@ static int searcher(lua_State* const L) {
     if (strcmp(modname, "hc") == 0) {
         // It's the hc instance
         lua_Integer const hcRef = lua_tointeger(L, lua_upvalueindex(1));
-        lua_pushcfunction(L, [](lua_State* const L) {lua_pushvalue(L, 1); return 1; });
+        lua_pushcfunction(L, [](lua_State* const L) { lua_pushvalue(L, 2); return 1; });
         lua_rawgeti(L, LUA_REGISTRYINDEX, hcRef);
         return 2;
     }
