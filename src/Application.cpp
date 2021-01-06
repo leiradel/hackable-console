@@ -315,29 +315,10 @@ void hc::Application::destroy() {
 void hc::Application::draw() {
     ImGui::DockSpaceOverViewport();
 
-    if (ImGui::Begin(ICON_FA_COMMENT " Log")) {
-        _logger.draw();
-    }
-
-    ImGui::End();
-
-    if (ImGui::Begin(ICON_FA_WRENCH " Configuration")) {
-        _config.draw();
-    }
-
-    ImGui::End();
-
-    if (ImGui::Begin(ICON_FA_VOLUME_UP " Audio")) {
-        _audio.draw();
-    }
-
-    ImGui::End();
-
-    if (ImGui::Begin(ICON_FA_DESKTOP " Video")) {
-        _video.draw();
-    }
-
-    ImGui::End();
+    _logger.draw();
+    _config.draw();
+    _audio.draw();
+    _video.draw();
 }
 
 void hc::Application::run() {

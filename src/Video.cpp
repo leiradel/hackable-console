@@ -1,5 +1,7 @@
 #include "Video.h"
 
+#include <IconsFontAwesome4.h>
+
 bool hc::Video::init(Logger* logger) {
     _logger = logger;
     _logger->debug("%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
@@ -34,6 +36,10 @@ void hc::Video::reset() {
 }
 
 void hc::Video::draw() {
+    if (!ImGui::Begin(ICON_FA_DESKTOP " Video")) {
+        return;
+    }
+
     if (_texture != 0) {
         ImVec2 const min = ImGui::GetWindowContentRegionMin();
         ImVec2 const max = ImGui::GetWindowContentRegionMax();
@@ -52,6 +58,8 @@ void hc::Video::draw() {
 
         ImGui::Image((ImTextureID)(uintptr_t)_texture, size, uv0, uv1);
     }
+
+    ImGui::End();
 }
 
 bool hc::Video::setRotation(unsigned rotation) {

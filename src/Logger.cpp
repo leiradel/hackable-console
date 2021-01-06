@@ -44,6 +44,10 @@ void hc::Logger::reset() {
 }
 
 void hc::Logger::draw() {
+    if (!ImGui::Begin(ICON_FA_COMMENT " Log")) {
+        return;
+    }
+
     SDL_LockMutex(_mutex);
     int const button = _logger.draw();
     SDL_UnlockMutex(_mutex);
@@ -75,6 +79,8 @@ void hc::Logger::draw() {
             break;
         }
     }
+
+    ImGui::End();
 }
 
 void hc::Logger::vprintf(enum retro_log_level level, const char* format, va_list args) {

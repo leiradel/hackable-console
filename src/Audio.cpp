@@ -1,5 +1,7 @@
 #include "Audio.h"
 
+#include <IconsFontAwesome4.h>
+
 bool hc::Audio::init(Logger* logger, double sampleRate, Fifo* fifo) {
     _logger = logger;
     _logger->debug("%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
@@ -46,6 +48,10 @@ void hc::Audio::reset() {
 }
 
 void hc::Audio::draw() {
+    if (!ImGui::Begin(ICON_FA_VOLUME_UP " Audio")) {
+        return;
+    }
+
     ImGui::Checkbox("Mute", &_mute);
 
     static auto const left = [](void* const data, int const idx) -> float {
@@ -79,6 +85,8 @@ void hc::Audio::draw() {
         ImGui::SameLine(0.0f, 0.0f);
         ImGui::PlotLines("", right, this, size, 0, nullptr, _min, _max, max);
     }
+
+    ImGui::End();
 }
 
 bool hc::Audio::setSystemAvInfo(retro_system_av_info const* info) {

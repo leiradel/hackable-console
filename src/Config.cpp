@@ -1,6 +1,7 @@
 #include "Config.h"
 
 #include <fnkdat.h>
+#include <IconsFontAwesome4.h>
 
 extern "C" {
     #include "lauxlib.h"
@@ -87,12 +88,16 @@ void hc::Config::reset() {
 }
 
 void hc::Config::draw() {
+    if (!ImGui::Begin(ICON_FA_WRENCH " Configuration")) {
+        return;
+    }
+
     for (auto& option : _coreOptions) {
         if (!option.visible) {
             continue;
         }
 
-        static auto const getter = [](void* const data, int const idx, char const** text) -> bool {
+        static auto const getter = [](void* const data, int const idx, char const** const text) -> bool {
             auto const option = (CoreOption const*)data;
 
             if ((size_t)idx < option->values.size()) {
@@ -114,6 +119,8 @@ void hc::Config::draw() {
             _logger->info("Variable \"%s\" changed to \"%s\"", option.key.c_str(), option.values[selected].value.c_str());
         }
     }
+
+    ImGui::End();
 }
 
 bool hc::Config::setPerformanceLevel(unsigned level) {
