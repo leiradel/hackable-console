@@ -96,5 +96,5 @@ void RegisterSearcher(lua_State* const L) {
     lua_rawseti(L, -2, length + 1);
 
     // Remove everything from the stack, including the hc value.
-    lua_settop(L, top + 1);
+    lua_settop(L, top - 1);
 }
