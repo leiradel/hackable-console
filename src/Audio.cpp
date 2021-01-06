@@ -135,10 +135,10 @@ void hc::Audio::flush() {
 
     _currentRatio = _originalRatio * adjust;
 
-    spx_uint32_t in_len = frames * 2;
-    spx_uint32_t out_len = (spx_uint32_t)(in_len * _currentRatio);
-    out_len += out_len & 1; // request an even number of samples (stereo)
-    int16_t* const output = (int16_t*)alloca(out_len * 2);
+    spx_uint32_t inLen = frames * 2;
+    spx_uint32_t outLen = (spx_uint32_t)(inLen * _currentRatio);
+    outLen += outLen & 1; // request an even number of samples (stereo)
+    int16_t* const output = (int16_t*)alloca(outLen * 2);
 
     if (output == NULL) {
         _logger->error("Error allocating temporary output buffer");
@@ -146,19 +146,19 @@ void hc::Audio::flush() {
     }
 
     if (_mute) {
-        memset(output, 0, out_len * 2);
+        memset(output, 0, outLen * 2);
     }
     else {
-        int const error = speex_resampler_process_int(_resampler, 0, data, &in_len, output, &out_len);
+        int const error = speex_resampler_process_int(_resampler, 0, data, &inLen, output, &outLen);
 
         if (error != RESAMPLER_ERR_SUCCESS) {
-            memset(output, 0, out_len * 2);
+            memset(output, 0, outLen * 2);
             _logger->error("Error resampling: %s", speex_resampler_strerror(error));
         }
     }
 
-    out_len &= ~1; // don't send incomplete audio frames
-    size_t const size = out_len * 2;
+    outLen &= ~1; // don't send incomplete audio frames
+    size_t const size = outLen * 2;
 
     if (size > avail) {
         for (;;) {
