@@ -117,6 +117,10 @@ void hc::Audio::sample(int16_t left, int16_t right) {
 }
 
 void hc::Audio::flush() {
+    if (_resampler == nullptr) {
+        return;
+    }
+
     std::vector<int16_t> samples;
     SDL_LockMutex(_mutex);
     samples.swap(_samples);
