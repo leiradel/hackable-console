@@ -12,8 +12,6 @@ extern "C" {
     int luaopen_lfs(lua_State*);
 }
 
-int luaopen_hc(lua_State*);
-
 typedef struct {
     const char* name;
 
@@ -34,8 +32,7 @@ module_t;
 #define MODC(name, openf) {name, {(char*)openf}, 0}
 
 static const module_t modules[] = {
-    MODC("lfs", luaopen_lfs),
-    MODC("hc", luaopen_hc)
+    MODC("lfs", luaopen_lfs)
 };
 
 #undef MODL
@@ -44,6 +41,11 @@ static const module_t modules[] = {
 static int searcher(lua_State* const L) {
     // Get the module name.
     char const* const modname = lua_tostring(L, 1);
+
+    if (strcmp(modname, "hc") == 0) {
+        // It's the hc instance
+        lua_pushvalue(L, lua_upvalueindex(1));
+    }
 
     // Iterates over all modules we know.
     for (size_t i = 0; i < sizeof(modules) / sizeof(modules[0]); i++) {
@@ -79,6 +81,8 @@ static int searcher(lua_State* const L) {
 
 // Registers the searcher function.
 void RegisterSearcher(lua_State* const L) {
+    int const top = lua_gettop(L);
+
     // Get the package global table.
     lua_getglobal(L, "package");
     // Get the list of searchers in the package table.
@@ -87,9 +91,10 @@ void RegisterSearcher(lua_State* const L) {
     size_t const length = lua_rawlen(L, -1);
 
     // Add our own searcher to the list.
-    lua_pushcfunction(L, searcher);
+    lua_pushvalue(L, top);
+    lua_pushcclosure(L, searcher, 1);
     lua_rawseti(L, -2, length + 1);
 
-    // Remove the seachers and the package tables from the stack.
-    lua_pop(L, 2);
+    // Remove everything from the stack, including the hc value.
+    lua_settop(L, top + 1);
 }
