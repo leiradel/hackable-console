@@ -44,7 +44,10 @@ static int searcher(lua_State* const L) {
 
     if (strcmp(modname, "hc") == 0) {
         // It's the hc instance
-        lua_pushvalue(L, lua_upvalueindex(1));
+        lua_Integer const hcRef = lua_tointeger(L, lua_upvalueindex(1));
+        lua_pushcfunction(L, [](lua_State* const L) {lua_pushvalue(L, 1); return 1; });
+        lua_rawgeti(L, LUA_REGISTRYINDEX, hcRef);
+        return 2;
     }
 
     // Iterates over all modules we know.
@@ -92,6 +95,8 @@ void RegisterSearcher(lua_State* const L) {
 
     // Add our own searcher to the list.
     lua_pushvalue(L, top);
+    int const hcRef = luaL_ref(L, LUA_REGISTRYINDEX);
+    lua_pushinteger(L, hcRef);
     lua_pushcclosure(L, searcher, 1);
     lua_rawseti(L, -2, length + 1);
 
