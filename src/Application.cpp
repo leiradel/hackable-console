@@ -389,11 +389,6 @@ int hc::Application::luaopen_hc(lua_State* const L) {
         {nullptr, nullptr}
     };
 
-    static struct {char const* const name; std::function<void(lua_State* const L)> const pusher;} const constants[] = {
-        {"logger", [this](lua_State* const L) { _logger.push(L); }},
-        {"config", [this](lua_State* const L) { _config.push(L); }}
-    };
-
     static struct {char const* const name; char const* const value;} const info[] = {
         {"_COPYRIGHT", "Copyright (c) 2020 Andre Leiradella"},
         {"_LICENSE", "MIT"},
@@ -404,23 +399,23 @@ int hc::Application::luaopen_hc(lua_State* const L) {
     };
 
     size_t const functionsCount = sizeof(functions) / sizeof(functions[0]) - 1;
-    size_t const constantsCount = sizeof(constants) / sizeof(constants[0]);
     size_t const infoCount = sizeof(info) / sizeof(info[0]);
 
-    lua_createtable(L, 0, functionsCount + constantsCount + infoCount);
+    lua_createtable(L, 0, functionsCount + infoCount + 2);
 
     lua_pushlightuserdata(L, this);
     luaL_setfuncs(L, functions, 1);
-
-    for (size_t i = 0; i < constantsCount; i++) {
-        constants[i].pusher(L);
-        lua_setfield(L, -2, constants[i].name);
-    }
 
     for (size_t i = 0; i < infoCount; i++) {
         lua_pushstring(L, info[i].value);
         lua_setfield(L, -2, info[i].name);
     }
+
+    _logger.push(L);
+    lua_setfield(L, -2, "logger");
+
+    _config.push(L);
+    lua_setfield(L, -2, "config");
 
     return 1;
 }
