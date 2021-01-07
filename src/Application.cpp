@@ -1,4 +1,5 @@
 #include "Application.h"
+#include "Control.h"
 
 #include "gamecontrollerdb.h"
 
@@ -21,6 +22,8 @@ extern "C" {
     #include "lauxlib.h"
     #include "lualib.h"
 }
+
+hc::Application::Application() : _fsm(*this) {}
 
 bool hc::Application::init(std::string const& title, int const width, int const height) {
     class Undo {
@@ -218,6 +221,10 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
     {
         // Initialize components (logger has already been initialized)
+        if (!_control.init(&_logger)) {
+            return false;
+        }
+
         if (!_config.init(&_logger)) {
             return false;
         }
@@ -316,6 +323,7 @@ void hc::Application::draw() {
     ImGui::DockSpaceOverViewport();
 
     _logger.draw();
+    _control.draw();
     _config.draw();
     _audio.draw();
     _video.draw();
@@ -370,6 +378,44 @@ void hc::Application::run() {
     while (!done);
 }
 
+bool hc::Application::loadConsole(char const* name) {
+    (void)name;
+    return false;
+}
+
+bool hc::Application::loadGame(char const* path) {
+    (void)path;
+    return false;
+}
+
+bool hc::Application::pauseGame() {
+    return false;
+}
+
+bool hc::Application::quit() {
+    return false;
+}
+
+bool hc::Application::resetGame() {
+    return false;
+}
+
+bool hc::Application::resumeGame() {
+    return false;
+}
+
+bool hc::Application::step() {
+    return false;
+}
+
+bool hc::Application::unloadConsole() {
+    return false;
+}
+
+bool hc::Application::unloadGame() {
+    return false;
+}
+
 void hc::Application::audioCallback(void* const udata, Uint8* const stream, int const len) {
     auto const self = static_cast<Application*>(udata);
     size_t const avail = self->_fifo.occupied();
@@ -385,30 +431,38 @@ void hc::Application::audioCallback(void* const udata, Uint8* const stream, int 
 
 int hc::Application::luaopen_hc(lua_State* const L) {
     static luaL_Reg const functions[] = {
-        {"registerSystem", l_registerSystem},
+        {"addConsole", l_addConsole},
         {nullptr, nullptr}
     };
 
-    static struct {char const* const name; char const* const value;} const info[] = {
+    static struct {char const* const name; char const* const value;} const stringConsts[] = {
         {"_COPYRIGHT", "Copyright (c) 2020 Andre Leiradella"},
         {"_LICENSE", "MIT"},
         {"_VERSION", "1.0.0"},
         {"_NAME", "hc"},
         {"_URL", "https://github.com/leiradel/hackable-console"},
-        {"_DESCRIPTION", "Hackable Console bindings"}
+        {"_DESCRIPTION", "Hackable Console bindings"},
+
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
+        {"soExtension", "dll"}
+#elif __linux__
+        {"soExtension", "so"}
+#else
+        #error Unsupported platform
+#endif
     };
 
     size_t const functionsCount = sizeof(functions) / sizeof(functions[0]) - 1;
-    size_t const infoCount = sizeof(info) / sizeof(info[0]);
+    size_t const stringCount = sizeof(stringConsts) / sizeof(stringConsts[0]);
 
-    lua_createtable(L, 0, functionsCount + infoCount + 2);
+    lua_createtable(L, 0, functionsCount + stringCount + 2);
 
     lua_pushlightuserdata(L, this);
     luaL_setfuncs(L, functions, 1);
 
-    for (size_t i = 0; i < infoCount; i++) {
-        lua_pushstring(L, info[i].value);
-        lua_setfield(L, -2, info[i].name);
+    for (size_t i = 0; i < stringCount; i++) {
+        lua_pushstring(L, stringConsts[i].value);
+        lua_setfield(L, -2, stringConsts[i].name);
     }
 
     _logger.push(L);
@@ -420,10 +474,22 @@ int hc::Application::luaopen_hc(lua_State* const L) {
     return 1;
 }
 
-int hc::Application::l_registerSystem(lua_State* const L) {
+int hc::Application::l_addConsole(lua_State* const L) {
     auto const self = static_cast<Application*>(lua_touserdata(L, lua_upvalueindex(1)));
-    (void)self;
-    //char const* const name = luaL_checkstring(L, 2);
-    //self->_consoles.emplace(name, 0);
+    luaL_argexpected(L, lua_type(L, 1) == LUA_TTABLE, 1, "table");
+
+    lua_getfield(L, 1, "name");
+
+    if (!lua_isstring(L, -1)) {
+        return luaL_error(L, "table for registerConsole must have a field \"name\"");
+    }
+
+    char const* const name = lua_tostring(L, -1);
+
+    lua_pushvalue(L, 1);
+    int const ref = luaL_ref(L, LUA_REGISTRYINDEX);
+
+    self->_control.addConsole(name);
+    self->_consoleRefs.emplace(name, ref);
     return 0;
 }

@@ -31,8 +31,8 @@ LIBS+=`sdl2-config --libs`
 
 # hackable-console
 HC_OBJS=\
-	src/main.o src/Application.o src/Fifo.o src/LuaBind.o \
-	src/Audio.o src/Config.o src/Logger.o src/Video.o \
+	src/main.o src/Application.o src/LifeCycle.o src/Fifo.o src/LuaBind.o \
+	src/Audio.o src/Config.o src/Control.o src/Logger.o src/Video.o \
 	src/dynlib/dynlib.o src/fnkdat/fnkdat.o src/speex/resample.o
 
 # lrcpp

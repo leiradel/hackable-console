@@ -1,0 +1,76 @@
+header {
+    namespace hc {
+        class Application;
+    }
+
+    typedef hc::Application Application;
+    typedef char const* const_cstr;
+}
+
+cpp {
+    #include "Application.h"
+}
+
+fsm LifeCycle {
+    class Application as ctx;
+
+    Start {
+        loadConsole(const_cstr name) => ConsoleLoaded {
+            if (!ctx.loadConsole(name)) {
+                forbid;
+            }
+        }
+
+        quit() => Quit;
+    }
+
+    Quit {}
+
+    ConsoleLoaded {
+        unloadConsole() => Start {
+            ctx.unloadConsole();
+        }
+
+        loadGame(const_cstr path) => GamePaused {
+            if (!ctx.loadGame(path)) {
+                forbid;
+            }
+        }
+
+        quit() => unloadConsole() => quit();
+    }
+
+    GamePaused {
+        resumeGame() => GameRunning;
+
+        resetGame() => resumeGame() => resetGame() => pauseGame();
+
+        step() => GamePaused  {
+            ctx.step();
+        }
+
+        unloadGame() => ConsoleLoaded {
+            if (!ctx.unloadGame()) {
+                forbid;
+            }
+        }
+
+        quit() => unloadGame() => quit();
+    }
+
+    GameRunning {
+        pauseGame() => GamePaused;
+
+        resetGame() => GameRunning {
+            ctx.resetGame();
+        }
+
+        unloadGame() => ConsoleLoaded {
+            if (!ctx.unloadGame()) {
+                forbid;
+            }
+        }
+
+        quit() => unloadGame() => quit();
+    }
+}
