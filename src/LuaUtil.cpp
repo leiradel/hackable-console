@@ -33,12 +33,12 @@ static int Traceback(lua_State* const L) {
     return 1;
 }
 
-bool hc::ProtectedCall(lua_State* const L, const int nargs, const int nres, Logger* const logger) {
+bool hc::ProtectedCall(lua_State* const L, const int nargs, const int nresults, Logger* const logger) {
     lua_pushcfunction(L, Traceback);
     int const msgh = lua_gettop(L) - 1 - nargs;
     lua_insert(L, msgh);
 
-    if (lua_pcall(L, nargs, nres, msgh) != LUA_OK) {
+    if (lua_pcall(L, nargs, nresults, msgh) != LUA_OK) {
         if (logger != nullptr) {
             logger->error("%s", lua_tostring(L, -1));
         }
@@ -49,4 +49,25 @@ bool hc::ProtectedCall(lua_State* const L, const int nargs, const int nres, Logg
 
     lua_remove(L, msgh);
     return true;
+}
+
+bool hc::ProtectedCallField(
+    lua_State* const L,
+    int const tableIndex,
+    char const* const fieldName,
+    int const nargs,
+    int const nresults,
+    Logger* const logger
+) {
+    if (GetField(L, tableIndex, fieldName) != LUA_TFUNCTION) {
+        if (logger != nullptr) {
+            logger->error("Field \"%s\" is not a function", fieldName);
+        }
+
+        lua_pop(L, nargs + 1);
+        return false;
+    }
+
+    lua_insert(L, lua_gettop(L) - nargs);
+    return ProtectedCall(L, nargs, nresults, logger);
 }

@@ -412,6 +412,8 @@ void hc::Application::run() {
 }
 
 bool hc::Application::loadConsole(char const* name) {
+    LuaRewinder rewinder(_L);
+
     _logger.info("Loading console \"%s\"", name);
 
     auto const found = _consoleRefs.find(name);
@@ -422,47 +424,58 @@ bool hc::Application::loadConsole(char const* name) {
     }
 
     lua_rawgeti(_L, LUA_REGISTRYINDEX, found->second);
+    int const tableIndex = lua_gettop(_L);
 
-    if (GetField(_L, -1, "onLoadCore", &_logger) != LUA_TFUNCTION) {
-        lua_pop(_L, 1);
+    if (!ProtectedCallField(_L, tableIndex, "onLoadCore", 0, 1, &_logger)) {
         lua_pushboolean(_L, 1);
-    }
-    else if (!ProtectedCall(_L, 0, 1, &_logger)) {
-        lua_pop(_L, 2);
-        return false;
     }
 
     if (!lua_toboolean(_L, -1)) {
         _logger.warn("onLoadCore prevented loading the console");
-        lua_pop(_L, 2);
         return false;
     }
 
-    lua_pop(_L, 1);
-    // TODO call onCoreLoaded with the loaded core (or the frontend, more likely)
-    
-    if (GetField(_L, -1, "path", &_logger) != LUA_TSTRING) {
-        lua_pop(_L, 2);
+    if (GetField(_L, tableIndex, "path", &_logger) != LUA_TSTRING) {
         return false;
     }
 
     char const* const path = lua_tostring(_L, -1);
     _logger.info("Loading core from \"%s\"", path);
 
+    if (!_frontend.load(path)) {
+        return false;
+    }
+
+    lua_pushnil(_L); // TODO push the frontend
+
+    if (!ProtectedCallField(_L, tableIndex, "onCoreLoaded", 1, 1, &_logger)) {
+        lua_pushboolean(_L, 1);
+    }
+
+    if (!lua_toboolean(_L, -1)) {
+        _logger.warn("onCoreLoaded prevented loading the console");
+
+        if (_frontend.unload()) {
+            return false;
+        }
+
+        _logger.error("Couldn't unload the core, will continue loading!");
+    }
+    
     _currentConsole = name;
-    bool const ok = _frontend.load(path);
-    lua_pop(_L, 2);
 
     retro_system_info info;
 
-    if (ok && _frontend.getSystemInfo(&info)) {
+    if (_frontend.getSystemInfo(&info)) {
         _control.setSystemInfo(&info);
     }
 
-    return ok;
+    return true;
 }
 
 bool hc::Application::loadGame(char const* path) {
+    LuaRewinder rewinder(_L);
+
     _logger.info("Loading game from \"%s\"", path);
 
     auto const found = _consoleRefs.find(_currentConsole);
@@ -479,28 +492,19 @@ bool hc::Application::loadGame(char const* path) {
     }
 
     lua_rawgeti(_L, LUA_REGISTRYINDEX, found->second);
+    int const tableIndex = lua_gettop(_L);
     
-    if (GetField(_L, -1, "onLoadGame", &_logger) != LUA_TFUNCTION) {
-        lua_pop(_L, 1);
-        lua_pushboolean(_L, 1);
-    }
-    else {
-        lua_pushnil(_L); // TODO push frontend
-        lua_pushstring(_L, path);
+    lua_pushnil(_L); // TODO push frontend
+    lua_pushstring(_L, path);
 
-        if (!ProtectedCall(_L, 2, 1, &_logger)) {
-            lua_pop(_L, 2);
-            return false;
-        }
+    if (!ProtectedCallField(_L, tableIndex, "onLoadGame", 2, 1, &_logger)) {
+        lua_pushboolean(_L, 1);
     }
 
     if (!lua_toboolean(_L, -1)) {
-        _logger.warn("onLoadGame prevented loading the console");
-        lua_pop(_L, 2);
+        _logger.warn("onLoadGame prevented loading the game");
         return false;
     }
-
-    lua_pop(_L, 2);
 
     if (info.need_fullpath) {
         return _frontend.loadGame(path);
