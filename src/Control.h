@@ -26,5 +26,6 @@ namespace hc {
         std::set<std::string> _consoles;
         int _selected;
         std::string _extensions;
+        std::string _lastGameFolder;
     };
 }

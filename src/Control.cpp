@@ -59,16 +59,31 @@ void hc::Control::draw() {
 
         static ImGuiFs::Dialog gameDialog;
 
+        ImVec2 const gameDialogSize = ImVec2(
+            ImGui::GetIO().DisplaySize.x / 2.0f,
+            ImGui::GetIO().DisplaySize.y / 2.0f
+        );
+
+        ImVec2 const gameDialogPos = ImVec2(
+            (ImGui::GetIO().DisplaySize.x - gameDialogSize.x) / 2.0f,
+            (ImGui::GetIO().DisplaySize.y - gameDialogSize.y) / 2.0f
+        );
+
         char const* const path = gameDialog.chooseFileDialog(
             loadGamePressed,
-            nullptr,
+            _lastGameFolder.c_str(),
             _extensions.c_str(),
             ICON_FA_FOLDER_OPEN" Open Game",
-            gameDialog.WindowSize
+            gameDialogSize,
+            gameDialogPos
         );
 
         if (path != nullptr && path[0] != 0) {
-            _fsm->loadGame(path);
+            if (_fsm->loadGame(path)) {
+                char temp[ImGuiFs::MAX_PATH_BYTES];
+                ImGuiFs::PathGetDirectoryName(path, temp);
+                _lastGameFolder = temp;
+            }
         }
 
         if (_fsm->currentState() == LifeCycle::State::GameRunning) {
