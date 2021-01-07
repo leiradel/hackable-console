@@ -452,6 +452,13 @@ bool hc::Application::loadConsole(char const* name) {
     _currentConsole = name;
     bool const ok = _frontend.load(path);
     lua_pop(_L, 2);
+
+    retro_system_info info;
+
+    if (ok && _frontend.getSystemInfo(&info)) {
+        _control.setSystemInfo(&info);
+    }
+
     return ok;
 }
 

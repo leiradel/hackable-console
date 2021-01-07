@@ -7,6 +7,7 @@
 bool hc::Control::init(LifeCycle* fsm, Logger* logger) {
     _fsm = fsm;
     _logger = logger;
+
     return true;
 }
 
@@ -14,6 +15,7 @@ void hc::Control::destroy() {}
 
 void hc::Control::reset() {
     _selected = 0;
+    _extensions.clear();
 }
 
 void hc::Control::draw() {
@@ -56,7 +58,14 @@ void hc::Control::draw() {
         }
 
         static ImGuiFs::Dialog gameDialog;
-        char const* const path = gameDialog.chooseFileDialog(loadGamePressed, nullptr, nullptr, ICON_FA_FOLDER_OPEN" Open Game");
+
+        char const* const path = gameDialog.chooseFileDialog(
+            loadGamePressed,
+            nullptr,
+            _extensions.c_str(),
+            ICON_FA_FOLDER_OPEN" Open Game",
+            gameDialog.WindowSize
+        );
 
         if (path != nullptr && path[0] != 0) {
             _fsm->loadGame(path);
@@ -100,6 +109,30 @@ void hc::Control::draw() {
     }
 
     ImGui::End();
+}
+
+void hc::Control::setSystemInfo(retro_system_info const* info) {
+    char const* ext = info->valid_extensions;
+
+    if (ext != nullptr) {
+        for (;;) {
+            char const* const begin = ext;
+
+            while (*ext != 0 && *ext != '|') {
+                ext++;
+            }
+
+            _extensions.append(".");
+            _extensions.append(begin, ext - begin);
+
+            if (*ext == 0) {
+                break;
+            }
+
+            _extensions.append( ";" );
+            ext++;
+        }
+    }
 }
 
 void hc::Control::addConsole(char const* const name) {

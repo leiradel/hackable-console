@@ -16,6 +16,7 @@ namespace hc {
         void reset();
         void draw();
 
+        void setSystemInfo(retro_system_info const* info);
         void addConsole(char const* const name);
 
     protected:
@@ -24,5 +25,6 @@ namespace hc {
 
         std::set<std::string> _consoles;
         int _selected;
+        std::string _extensions;
     };
 }
