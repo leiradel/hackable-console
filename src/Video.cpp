@@ -6,7 +6,9 @@ bool hc::Video::init(Logger* logger) {
     _logger = logger;
     _logger->debug("%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
 
+    _texture = 0;
     reset();
+
     return true;
 }
 

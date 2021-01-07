@@ -6,6 +6,7 @@ bool hc::Audio::init(Logger* logger, double sampleRate, Fifo* fifo) {
     _logger = logger;
     _logger->debug("%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
 
+    _resampler = nullptr;
     reset();
 
     _mutex = SDL_CreateMutex();
@@ -34,16 +35,22 @@ void hc::Audio::reset() {
 
     memset(&_timing, 0, sizeof(_timing));
 
+    _samples.clear();
+
     _min = 0.0f;
     _max = 0.0f;
 
     _mute = false;
-    _sampleRate = 0.0;
     _coreRate = 0.0;
 
     _rateControlDelta = 0.005;
     _currentRatio = 0.0;
     _originalRatio = 0.0;
+
+    if (_resampler != NULL) {
+        speex_resampler_destroy(_resampler);
+    }
+
     _resampler = nullptr;
 }
 
