@@ -19,7 +19,7 @@ CC=gcc
 CXX=g++
 INCLUDES=\
 	-Isrc -Isrc/imgui -Isrc/imgui/backends -Isrc/ImGuiAl/term -Isrc/ImGuiAl/fonts \
-	-Isrc/IconFontCppHeaders -Isrc/ImGui-Addons/addons/imguifilesystem \
+	-Isrc/ImGuiAl/button -Isrc/IconFontCppHeaders -Isrc/ImGui-Addons/addons/imguifilesystem \
 	-Isrc/fnkdat -Isrc/speex -Isrc/lrcpp/src -Isrc/lua -Isrc/luafilesystem/src
 DEFINES=-DIMGUI_DISABLE_WIN32_DEFAULT_IME_FUNCS -D"IM_ASSERT(x)=do{(void)(x);}while(0)"
 DEFINES+=-DOUTSIDE_SPEEX -DRANDOM_PREFIX=speex -DEXPORT= -D_USE_SSE2 -DFIXED_POINT
@@ -88,6 +88,9 @@ src/gamecontrollerdb.h: src/SDL_GameControllerDB/gamecontrollerdb.txt
 src/main.cpp: src/gamecontrollerdb.h
 
 clean:
+	rm -f hackcon $(HC_OBJS)
+
+realclean:
 	rm -f hackcon $(HC_OBJS) $(LRCPP_OBJS) $(IMGUI_OBJS) $(IMGUIEXTRA_OBJS) $(LUA_OBJS) src/gamecontrollerdb.h
 
 .PHONY: clean
