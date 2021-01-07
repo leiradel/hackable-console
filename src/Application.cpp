@@ -506,18 +506,44 @@ bool hc::Application::loadGame(char const* path) {
         return false;
     }
 
+    bool ok = false;
+
     if (info.need_fullpath) {
-        return _frontend.loadGame(path);
+        ok = _frontend.loadGame(path);
+    }
+    else {
+        size_t size = 0;
+        void const* data = readAll(&_logger, path, &size);
+
+        if (data == nullptr) {
+            return false;
+        }
+
+        ok = _frontend.loadGame(path, data, size);
+        free(const_cast<void*>(data));
     }
 
-    size_t size = 0;
-    void const* data = readAll(&_logger, path, &size);
-
-    if (data == nullptr) {
+    if (!ok) {
         return false;
     }
 
-    return _frontend.loadGame(path, data, size);
+    lua_pushnil(_L); // TODO push frontend
+
+    if (!ProtectedCallField(_L, tableIndex, "onGameLoaded", 1, 1, &_logger)) {
+        lua_pushboolean(_L, 1);
+    }
+
+    if (!lua_toboolean(_L, -1)) {
+        _logger.warn("onGameLoaded prevented loading the game");
+
+        if (_frontend.unloadGame()) {
+            return false;
+        }
+
+        _logger.error("Couldn't unload the game, will continue loading!");
+    }
+
+    return true;
 }
 
 bool hc::Application::pauseGame() {
