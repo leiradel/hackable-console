@@ -1,5 +1,6 @@
 #include "Application.h"
 #include "Control.h"
+#include "LuaUtil.h"
 
 #include "gamecontrollerdb.h"
 
@@ -21,6 +22,45 @@
 extern "C" {
     #include "lauxlib.h"
     #include "lualib.h"
+}
+
+static void const* readAll(hc::Logger* logger, char const* const path, size_t* const size) {
+    struct stat statbuf;
+
+    if (stat(path, &statbuf) != 0) {
+        logger->error("Error getting content info: %s", strerror(errno));
+        return nullptr;
+    }
+
+    void* const data = malloc(statbuf.st_size);
+
+    if (data == nullptr) {
+        logger->error("Out of memory allocating %zu bytes", statbuf.st_size);
+        return nullptr;
+    }
+
+    FILE* file = fopen(path, "rb");
+
+    if (file == nullptr) {
+        logger->error("Error opening content: %s", strerror(errno));
+        free(data);
+        return nullptr;
+    }
+
+    size_t numread = fread(data, 1, statbuf.st_size, file);
+
+    if (numread != (size_t)statbuf.st_size) {
+        logger->error("Error reading content: %s", strerror(errno));
+        fclose(file);
+        free(data);
+        return nullptr;
+    }
+
+    fclose(file);
+
+    logger->info("Loaded content from \"%s\", %zu bytes", path, numread);
+    *size = numread;
+    return data;
 }
 
 hc::Application::Application() : _fsm(*this) {}
@@ -263,11 +303,6 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         luaopen_hc(_L);
         RegisterSearcher(_L);
 
-        static auto const traceback = [](lua_State* const L) -> int {
-            luaL_traceback(L, L, lua_tostring(L, -1), 1);
-            return 1;
-        };
-
         static auto const main = [](lua_State* const L) -> int {
             char const* const path = luaL_checkstring(L, 1);
 
@@ -281,18 +316,14 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
         std::string const& autorun = _config.getAutorunPath();
 
-        lua_pushcfunction(_L, traceback);
         lua_pushcfunction(_L, main);
         lua_pushlstring(_L, autorun.c_str(), autorun.length());
         
         _logger.info("Running \"%s\"", autorun.c_str());
 
-        if (lua_pcall(_L, 1, 0, -3) != LUA_OK) {
-            _logger.error("%s", lua_tostring(_L, -1));
-            lua_pop(_L, 1);
+        if (!ProtectedCall(_L, 1, 0, &_logger)) {
+            return false;
         }
-
-        lua_pop(_L, 1);
     }
 
     undo.clear();
@@ -340,7 +371,7 @@ void hc::Application::run() {
 
             switch (event.type) {
                 case SDL_QUIT:
-                    done = true;
+                    done = _fsm.quit();
                     break;
 
                 case SDL_CONTROLLERDEVICEADDED:
@@ -355,7 +386,9 @@ void hc::Application::run() {
             }
         }
 
-        _frontend.run();
+        if (_fsm.currentState() == LifeCycle::State::GameRunning) {
+            _frontend.run();
+        }
 
         ImGui_ImplOpenGL2_NewFrame();
         ImGui_ImplSDL2_NewFrame(_window);
@@ -389,15 +422,12 @@ bool hc::Application::loadConsole(char const* name) {
     }
 
     lua_rawgeti(_L, LUA_REGISTRYINDEX, found->second);
-    lua_getfield(_L, -1, "onLoadCore");
 
-    if (!lua_isfunction(_L, -1)) {
-        _logger.info("Console doesn't have an onLoadCore callback");
+    if (GetField(_L, -1, "onLoadCore", &_logger) != LUA_TFUNCTION) {
         lua_pop(_L, 1);
         lua_pushboolean(_L, 1);
     }
-    else if (lua_pcall(_L, 0, 1, 0) != LUA_OK) {
-        _logger.error("%s", lua_tostring(_L, -1));
+    else if (!ProtectedCall(_L, 0, 1, &_logger)) {
         lua_pop(_L, 2);
         return false;
     }
@@ -409,10 +439,9 @@ bool hc::Application::loadConsole(char const* name) {
     }
 
     lua_pop(_L, 1);
-    lua_getfield(_L, -1, "path");
-
-    if (!lua_isstring(_L, -1)) {
-        _logger.error("The path for the console's core must be a string");
+    // TODO call onCoreLoaded with the loaded core (or the frontend, more likely)
+    
+    if (GetField(_L, -1, "path", &_logger) != LUA_TSTRING) {
         lua_pop(_L, 2);
         return false;
     }
@@ -420,42 +449,110 @@ bool hc::Application::loadConsole(char const* name) {
     char const* const path = lua_tostring(_L, -1);
     _logger.info("Loading core from \"%s\"", path);
 
+    _currentConsole = name;
     bool const ok = _frontend.load(path);
     lua_pop(_L, 2);
     return ok;
 }
 
 bool hc::Application::loadGame(char const* path) {
-    (void)path;
-    return false;
+    _logger.info("Loading game from \"%s\"", path);
+
+    auto const found = _consoleRefs.find(_currentConsole);
+
+    if (found == _consoleRefs.end()) {
+        _logger.error("Unknown console \"%s\"", _currentConsole.c_str());
+        return false;
+    }
+
+    retro_system_info info;
+
+    if (!_frontend.getSystemInfo(&info)) {
+        return false;
+    }
+
+    lua_rawgeti(_L, LUA_REGISTRYINDEX, found->second);
+    
+    if (GetField(_L, -1, "onLoadGame", &_logger) != LUA_TFUNCTION) {
+        lua_pop(_L, 1);
+        lua_pushboolean(_L, 1);
+    }
+    else {
+        lua_pushnil(_L); // TODO push frontend
+        lua_pushstring(_L, path);
+
+        if (!ProtectedCall(_L, 2, 1, &_logger)) {
+            lua_pop(_L, 2);
+            return false;
+        }
+    }
+
+    if (!lua_toboolean(_L, -1)) {
+        _logger.warn("onLoadGame prevented loading the console");
+        lua_pop(_L, 2);
+        return false;
+    }
+
+    lua_pop(_L, 2);
+
+    if (info.need_fullpath) {
+        return _frontend.loadGame(path);
+    }
+
+    size_t size = 0;
+    void const* data = readAll(&_logger, path, &size);
+
+    if (data == nullptr) {
+        return false;
+    }
+
+    return _frontend.loadGame(path, data, size);
 }
 
 bool hc::Application::pauseGame() {
-    return false;
+    return true;
 }
 
 bool hc::Application::quit() {
-    return false;
+    return true;
 }
 
 bool hc::Application::resetGame() {
-    return false;
+    return _frontend.reset();
 }
 
 bool hc::Application::resumeGame() {
-    return false;
+    return true;
 }
 
 bool hc::Application::step() {
-    return false;
+    return _frontend.run();
 }
 
 bool hc::Application::unloadConsole() {
+    if (_frontend.unload()) {
+        _config.reset();
+        return true;
+    }
+
     return false;
 }
 
 bool hc::Application::unloadGame() {
+    if (_frontend.unloadGame()) {
+        _audio.reset();
+        _video.reset();
+        return true;
+    }
+
     return false;
+}
+
+void hc::Application::printf(char const* fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    _logger.vprintf(RETRO_LOG_DEBUG, fmt, args);
+    va_end(args);
 }
 
 void hc::Application::audioCallback(void* const udata, Uint8* const stream, int const len) {

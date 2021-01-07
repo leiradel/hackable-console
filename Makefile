@@ -23,7 +23,7 @@ INCLUDES=\
 	-Isrc/fnkdat -Isrc/speex -Isrc/lrcpp/src -Isrc/lua -Isrc/luafilesystem/src
 DEFINES=-DIMGUI_DISABLE_WIN32_DEFAULT_IME_FUNCS -D"IM_ASSERT(x)=do{(void)(x);}while(0)"
 DEFINES+=-DOUTSIDE_SPEEX -DRANDOM_PREFIX=speex -DEXPORT= -D_USE_SSE2 -DFIXED_POINT
-DEFINES+=-DPACKAGE=\"hackable-console\"
+DEFINES+=-DPACKAGE=\"hackable-console\" -DDEBUG_FSM
 CFLAGS+=$(INCLUDES) $(DEFINES) `sdl2-config --cflags`
 CXXFLAGS=$(CFLAGS) -std=c++11
 LDFLAGS=
@@ -31,9 +31,9 @@ LIBS+=`sdl2-config --libs`
 
 # hackable-console
 HC_OBJS=\
-	src/main.o src/Application.o src/LifeCycle.o src/Fifo.o src/LuaBind.o \
+	src/main.o src/Application.o src/LifeCycle.o src/Fifo.o src/LuaBind.o src/LuaUtil.o \
 	src/Audio.o src/Config.o src/Control.o src/Logger.o src/Video.o \
-	src/dynlib/dynlib.o src/fnkdat/fnkdat.o src/speex/resample.o
+	src/dynlib/dynlib.o src/fnkdat/fnkdat.o src/speex/resample.o 
 
 # lrcpp
 LRCPP_OBJS=\

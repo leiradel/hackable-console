@@ -41,6 +41,7 @@ namespace hc {
         bool step();
         bool unloadConsole();
         bool unloadGame();
+        void printf(char const* fmt, ...);
 
         int luaopen_hc(lua_State* const L);
 
@@ -65,6 +66,7 @@ namespace hc {
 
         Fifo _fifo;
         std::unordered_map<std::string, int> _consoleRefs;
+        std::string _currentConsole;
         lua_State* _L;
     };
 }
