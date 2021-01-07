@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Logger.h"
+#include "LifeCycle.h"
 
 #include <string>
 #include <set>
@@ -10,7 +11,7 @@ namespace hc {
     public:
         Control() : _logger(nullptr), _selected(0) {}
 
-        bool init(Logger* logger);
+        bool init(LifeCycle* fsm, Logger* logger);
         void destroy();
         void reset();
         void draw();
@@ -18,6 +19,7 @@ namespace hc {
         void addConsole(char const* const name);
 
     protected:
+        LifeCycle* _fsm;
         Logger* _logger;
 
         std::set<std::string> _consoles;

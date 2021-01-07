@@ -221,7 +221,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
     {
         // Initialize components (logger has already been initialized)
-        if (!_control.init(&_logger)) {
+        if (!_control.init(&_fsm, &_logger)) {
             return false;
         }
 
@@ -379,8 +379,50 @@ void hc::Application::run() {
 }
 
 bool hc::Application::loadConsole(char const* name) {
-    (void)name;
-    return false;
+    _logger.info("Loading console \"%s\"", name);
+
+    auto const found = _consoleRefs.find(name);
+
+    if (found == _consoleRefs.end()) {
+        _logger.error("Unknown console \"%s\"", name);
+        return false;
+    }
+
+    lua_rawgeti(_L, LUA_REGISTRYINDEX, found->second);
+    lua_getfield(_L, -1, "onLoadCore");
+
+    if (!lua_isfunction(_L, -1)) {
+        _logger.info("Console doesn't have an onLoadCore callback");
+        lua_pop(_L, 1);
+        lua_pushboolean(_L, 1);
+    }
+    else if (lua_pcall(_L, 0, 1, 0) != LUA_OK) {
+        _logger.error("%s", lua_tostring(_L, -1));
+        lua_pop(_L, 2);
+        return false;
+    }
+
+    if (!lua_toboolean(_L, -1)) {
+        _logger.warn("onLoadCore prevented loading the console");
+        lua_pop(_L, 2);
+        return false;
+    }
+
+    lua_pop(_L, 1);
+    lua_getfield(_L, -1, "path");
+
+    if (!lua_isstring(_L, -1)) {
+        _logger.error("The path for the console's core must be a string");
+        lua_pop(_L, 2);
+        return false;
+    }
+
+    char const* const path = lua_tostring(_L, -1);
+    _logger.info("Loading core from \"%s\"", path);
+
+    bool const ok = _frontend.load(path);
+    lua_pop(_L, 2);
+    return ok;
 }
 
 bool hc::Application::loadGame(char const* path) {
