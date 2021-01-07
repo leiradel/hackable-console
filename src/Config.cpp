@@ -28,7 +28,7 @@ bool hc::Config::init(Logger* logger) {
     }
 
     _autorunPath = path;
-    _logger->info("The autorun.lua file path is %s", path);
+    _logger->info("The autorun.lua file path is \"%s\"", path);
 
     if (fnkdat("system/", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
         _logger->error("Error getting the system path");
@@ -36,7 +36,7 @@ bool hc::Config::init(Logger* logger) {
     }
 
     _systemPath = path;
-    _logger->info("The system path is %s", path);
+    _logger->info("The system path is \"%s\"", path);
 
     if (fnkdat("assets/", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
         _logger->error("Error getting the core assets path");
@@ -44,7 +44,7 @@ bool hc::Config::init(Logger* logger) {
     }
 
     _coreAssetsPath = path;
-    _logger->info("The core assets path is %s", path);
+    _logger->info("The core assets path is \"%s\"", path);
 
     if (fnkdat("saves/", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
         _logger->error("Error getting the saves path");
@@ -52,7 +52,7 @@ bool hc::Config::init(Logger* logger) {
     }
 
     _savePath = path;
-    _logger->info("The save path is %s", path);
+    _logger->info("The save path is \"%s\"", path);
 
     if (fnkdat("cores/", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
         _logger->error("Error getting the cores path");
@@ -60,7 +60,7 @@ bool hc::Config::init(Logger* logger) {
     }
 
     _coresPath = path;
-    _logger->info("The cores path is %s", path);
+    _logger->info("The cores path is \"%s\"", path);
 
     return true;
 }
