@@ -483,6 +483,13 @@ bool hc::Application::loadConsole(char const* name) {
         _control.setSystemInfo(&info);
     }
 
+    _logger.info("System Info");
+    _logger.info("    library_name     = %s", info.library_name);
+    _logger.info("    library_version  = %s", info.library_version);
+    _logger.info("    valid_extensions = %s", info.valid_extensions);
+    _logger.info("    need_fullpath    = %s", info.need_fullpath ? "true" : "false");
+    _logger.info("    block_extract    = %s", info.block_extract ? "true" : "false");
+
     return true;
 }
 
