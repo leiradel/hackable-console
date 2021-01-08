@@ -21,13 +21,7 @@ namespace hc {
 
     protected:
         struct Region {
-            Region(char const* name, void* data, size_t base, size_t size, bool readOnly)
-                : name(name)
-                , data(data)
-                , base(base)
-                , size(size)
-                , readOnly(readOnly)
-            {}
+            Region(char const* name, void* data, size_t base, size_t size, bool readOnly);
 
             std::string name;
             void* data;
@@ -37,11 +31,9 @@ namespace hc {
         };
 
         struct View {
-            View(Region* region) : region(region) {
-                editor.ReadOnly = region->readOnly;
-            }
+            View(Region const& region);
 
-            Region* region;
+            Region region;
             MemoryEditor editor;
         };
 

@@ -35,7 +35,7 @@ void hc::Memory::draw() {
         ImGui::Combo("Regions", &_selected, getter, &_regions, count);
 
         if (ImGuiAl::Button(ICON_FA_EYE " View", _selected < count, size)) {
-            _views.emplace_back(&_regions[_selected]);
+            _views.emplace_back(_regions[_selected]);
         }
     }
 
@@ -45,12 +45,12 @@ void hc::Memory::draw() {
         auto& view = _views[i];
 
         char label[128];
-        snprintf(label, sizeof(label), ICON_FA_EYE" %s##%zu", view.region->name.c_str(), i);
+        snprintf(label, sizeof(label), ICON_FA_EYE" %s##%zu", view.region.name.c_str(), i);
 
         bool open = true;
 
         if (ImGui::Begin(label, &open)) {
-            view.editor.DrawContents(view.region->data, view.region->size, view.region->base);
+            view.editor.DrawContents(view.region.data, view.region.size, view.region.base);
         }
 
         if (open) {
@@ -66,4 +66,16 @@ void hc::Memory::draw() {
 
 void hc::Memory::addRegion(char const* const name, void* data, size_t const base, size_t const size, bool const readOnly) {
     _regions.emplace_back(name, data, base, size, readOnly);
+}
+
+hc::Memory::Region::Region(char const* name, void* data, size_t base, size_t size, bool readOnly)
+    : name(name)
+    , data(data)
+    , base(base)
+    , size(size)
+    , readOnly(readOnly)
+{}
+
+hc::Memory::View::View(Region const& region) : region(region) {
+    editor.ReadOnly = region.readOnly;
 }
