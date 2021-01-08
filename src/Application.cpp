@@ -446,7 +446,7 @@ bool hc::Application::loadConsole(char const* name) {
         return false;
     }
 
-    lua_pushnil(_L); // TODO push the frontend
+    hc::PushFrontend(_L, &_frontend);
 
     if (!ProtectedCallField(_L, tableIndex, "onCoreLoaded", 1, 1, &_logger)) {
         lua_pushboolean(_L, 1);
@@ -494,7 +494,7 @@ bool hc::Application::loadGame(char const* path) {
     lua_rawgeti(_L, LUA_REGISTRYINDEX, found->second);
     int const tableIndex = lua_gettop(_L);
     
-    lua_pushnil(_L); // TODO push frontend
+    hc::PushFrontend(_L, &_frontend);
     lua_pushstring(_L, path);
 
     if (!ProtectedCallField(_L, tableIndex, "onLoadGame", 2, 1, &_logger)) {
@@ -527,7 +527,7 @@ bool hc::Application::loadGame(char const* path) {
         return false;
     }
 
-    lua_pushnil(_L); // TODO push frontend
+    hc::PushFrontend(_L, &_frontend);
 
     if (!ProtectedCallField(_L, tableIndex, "onGameLoaded", 1, 1, &_logger)) {
         lua_pushboolean(_L, 1);

@@ -2,6 +2,8 @@
 
 #include "Logger.h"
 
+#include <Frontend.h>
+
 extern "C" {
     #include "lua.h"
 }
@@ -28,4 +30,6 @@ namespace hc {
         int const nresults,
         Logger* const logger = nullptr
     );
+
+    int PushFrontend(lua_State* const L, lrcpp::Frontend* const frontend);
 }
