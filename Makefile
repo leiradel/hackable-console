@@ -34,6 +34,7 @@ LIBS+=`sdl2-config --libs`
 HC_OBJS=\
 	src/main.o src/Application.o src/LifeCycle.o src/Fifo.o src/LuaBind.o src/LuaUtil.o \
 	src/Audio.o src/Config.o src/Control.o src/Logger.o src/Memory.o src/Video.o \
+	src/Led.o \
 	src/dynlib/dynlib.o src/fnkdat/fnkdat.o src/speex/resample.o 
 
 # lrcpp

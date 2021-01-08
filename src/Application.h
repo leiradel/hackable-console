@@ -6,6 +6,7 @@
 #include "Config.h"
 #include "Audio.h"
 #include "Video.h"
+#include "Led.h"
 #include "Memory.h"
 #include "Fifo.h"
 
@@ -63,6 +64,7 @@ namespace hc {
         Config _config;
         Audio _audio;
         Video _video;
+        Led _led;
         Memory _memory;
 
         lrcpp::Frontend _frontend;

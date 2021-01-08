@@ -285,6 +285,12 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
         undo.add([this]() { _audio.destroy(); });
 
+        if (!_led.init(&_logger)) {
+            return false;
+        }
+
+        undo.add([this]() { _led.destroy(); });
+
         if (!_memory.init(&_logger)) {
             return false;
         }
@@ -295,6 +301,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         _frontend.setConfig(&_config);
         _frontend.setAudio(&_audio);
         _frontend.setVideo(&_video);
+        _frontend.setLed(&_led);
     }
 
     {
@@ -342,6 +349,7 @@ void hc::Application::destroy() {
     lua_close(_L);
 
     _memory.destroy();
+    _led.destroy();
     _audio.destroy();
     _video.destroy();
     _config.destroy();
@@ -368,6 +376,7 @@ void hc::Application::draw() {
     _config.draw();
     _audio.draw();
     _video.draw();
+    _led.draw();
     _memory.draw();
 }
 
