@@ -36,13 +36,13 @@ void hc::Control::draw() {
         return false;
     };
 
-    if (ImGui::Begin(ICON_FA_COGS " Control")) {
+    if (ImGui::Begin(ICON_FA_COG " Control")) {
         int const count = static_cast<int>(_consoles.size());
         ImVec2 const size = ImVec2(120.0f, 0.0f);
 
         ImGui::Combo("Consoles", &_selected, getter, &_consoles, count);
 
-        if (ImGuiAl::Button(ICON_FA_COG " Load Console", _fsm->currentState() == LifeCycle::State::Start && _selected < count, size)) {
+        if (ImGuiAl::Button(ICON_FA_FOLDER_OPEN " Load Console", _fsm->currentState() == LifeCycle::State::Start && _selected < count, size)) {
             char const* name = nullptr;
 
             if (getter(&_consoles, _selected, &name)) {
