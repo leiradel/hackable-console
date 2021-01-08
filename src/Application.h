@@ -6,6 +6,7 @@
 #include "Config.h"
 #include "Audio.h"
 #include "Video.h"
+#include "Memory.h"
 #include "Fifo.h"
 
 #include "LuaBind.h"
@@ -49,6 +50,7 @@ namespace hc {
         static void audioCallback(void* const udata, Uint8* const stream, int const len);
 
         static int l_addConsole(lua_State* const L);
+        static int l_addMemoryRegion(lua_State* const L);
 
         SDL_Window* _window;
         SDL_GLContext _glContext;
@@ -61,6 +63,7 @@ namespace hc {
         Config _config;
         Audio _audio;
         Video _video;
+        Memory _memory;
 
         lrcpp::Frontend _frontend;
 

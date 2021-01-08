@@ -265,6 +265,8 @@ bool hc::Application::init(std::string const& title, int const width, int const 
             return false;
         }
 
+        undo.add([this]() { _control.destroy(); });
+
         if (!_config.init(&_logger)) {
             return false;
         }
@@ -282,6 +284,12 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         }
 
         undo.add([this]() { _audio.destroy(); });
+
+        if (!_memory.init(&_logger)) {
+            return false;
+        }
+
+        undo.add([this]() { _memory.destroy(); });
 
         _frontend.setLogger(&_logger);
         _frontend.setConfig(&_config);
@@ -333,9 +341,11 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 void hc::Application::destroy() {
     lua_close(_L);
 
-    _video.destroy();
+    _memory.destroy();
     _audio.destroy();
+    _video.destroy();
     _config.destroy();
+    _control.destroy();
     _logger.destroy();
 
     ImGui_ImplOpenGL2_Shutdown();
@@ -358,6 +368,7 @@ void hc::Application::draw() {
     _config.draw();
     _audio.draw();
     _video.draw();
+    _memory.draw();
 }
 
 void hc::Application::run() {
@@ -583,6 +594,7 @@ bool hc::Application::unloadGame() {
     if (_frontend.unloadGame()) {
         _audio.reset();
         _video.reset();
+        _memory.reset();
         return true;
     }
 
@@ -612,6 +624,7 @@ void hc::Application::audioCallback(void* const udata, Uint8* const stream, int 
 int hc::Application::luaopen_hc(lua_State* const L) {
     static luaL_Reg const functions[] = {
         {"addConsole", l_addConsole},
+        {"addMemoryRegion", l_addMemoryRegion},
         {nullptr, nullptr}
     };
 
@@ -671,5 +684,21 @@ int hc::Application::l_addConsole(lua_State* const L) {
 
     self->_control.addConsole(name);
     self->_consoleRefs.emplace(name, ref);
+    return 0;
+}
+
+int hc::Application::l_addMemoryRegion(lua_State* const L) {
+    auto const self = static_cast<Application*>(lua_touserdata(L, lua_upvalueindex(1)));
+    char const* const name = luaL_checkstring(L, 1);
+    void* const data = lua_touserdata(L, 2);
+    lua_Integer const base = luaL_checkinteger(L, 3);
+    lua_Integer const size = luaL_checkinteger(L, 4);
+    int const readOnly = lua_toboolean(L, 5);
+
+    if (data == nullptr || size <= 0) {
+        return luaL_error(L, "invalid data or size: %p, %d", data, size);
+    }
+
+    self->_memory.addRegion(name, data, base, size, readOnly != 0);
     return 0;
 }

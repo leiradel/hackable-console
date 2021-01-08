@@ -20,7 +20,8 @@ CXX=g++
 INCLUDES=\
 	-Isrc -Isrc/imgui -Isrc/imgui/backends -Isrc/ImGuiAl/term -Isrc/ImGuiAl/fonts \
 	-Isrc/ImGuiAl/button -Isrc/IconFontCppHeaders -Isrc/ImGui-Addons/addons/imguifilesystem \
-	-Isrc/fnkdat -Isrc/speex -Isrc/lrcpp/src -Isrc/lua -Isrc/luafilesystem/src
+	-Isrc/fnkdat -Isrc/speex -Isrc/lrcpp/src -Isrc/lua -Isrc/luafilesystem/src \
+	-Isrc/imgui_club/imgui_memory_editor
 DEFINES=-DIMGUI_DISABLE_WIN32_DEFAULT_IME_FUNCS -D"IM_ASSERT(x)=do{(void)(x);}while(0)"
 DEFINES+=-DOUTSIDE_SPEEX -DRANDOM_PREFIX=speex -DEXPORT= -D_USE_SSE2 -DFIXED_POINT
 DEFINES+=-DPACKAGE=\"hackable-console\" -DDEBUG_FSM
@@ -32,7 +33,7 @@ LIBS+=`sdl2-config --libs`
 # hackable-console
 HC_OBJS=\
 	src/main.o src/Application.o src/LifeCycle.o src/Fifo.o src/LuaBind.o src/LuaUtil.o \
-	src/Audio.o src/Config.o src/Control.o src/Logger.o src/Video.o \
+	src/Audio.o src/Config.o src/Control.o src/Logger.o src/Memory.o src/Video.o \
 	src/dynlib/dynlib.o src/fnkdat/fnkdat.o src/speex/resample.o 
 
 # lrcpp
