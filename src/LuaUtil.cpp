@@ -76,6 +76,16 @@ static lrcpp::Frontend* checkFrontend(lua_State* const L, int index) {
     return *(lrcpp::Frontend**)luaL_checkudata(L, index, "lrcpp::Frontend");
 }
 
+static int l_run(lua_State* const L) {
+    auto const self = checkFrontend(L, 1);
+
+    if (!self->run()) {
+        return luaL_error(L, "error getting the API version");
+    }
+
+    return 0;
+}
+
 static int l_apiVersion(lua_State* const L) {
     auto const self = checkFrontend(L, 1);
     unsigned version;
@@ -318,6 +328,7 @@ int hc::PushFrontend(lua_State* const L, lrcpp::Frontend* const frontend) {
 
     if (luaL_newmetatable(L, "lrcpp::Frontend")) {
         static luaL_Reg const methods[] = {
+            {"run", l_run},
             {"apiVersion", l_apiVersion},
             {"getSystemInfo", l_getSystemInfo},
             {"getSystemAvInfo", l_getSystemAvInfo},
