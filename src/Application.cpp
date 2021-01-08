@@ -582,6 +582,7 @@ bool hc::Application::loadGame(char const* path) {
     };
 
     _logger.info("Core memory");
+    bool any = false;
 
     for (size_t i = 0; i < sizeof(memory) / sizeof(memory[0]); i++) {
         void* data = nullptr;
@@ -589,7 +590,12 @@ bool hc::Application::loadGame(char const* path) {
 
         if (_frontend.getMemoryData(memory[i].id, &data) && _frontend.getMemorySize(memory[i].id, &size) && size != 0) {
             _logger.info("    %-4s %p %zu bytes", memory[i].name, data, size);
+            any = true;
         }
+    }
+
+    if (!any) {
+        _logger.info("    No core memory exposed via the get_memory interface");
     }
 
     return true;
