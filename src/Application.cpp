@@ -427,6 +427,7 @@ bool hc::Application::loadConsole(char const* name) {
     int const tableIndex = lua_gettop(_L);
 
     if (!ProtectedCallField(_L, tableIndex, "onLoadCore", 0, 1, &_logger)) {
+        _logger.warn("onLoadCore crashed, will continue loading!");
         lua_pushboolean(_L, 1);
     }
 
@@ -449,6 +450,7 @@ bool hc::Application::loadConsole(char const* name) {
     hc::PushFrontend(_L, &_frontend);
 
     if (!ProtectedCallField(_L, tableIndex, "onCoreLoaded", 1, 1, &_logger)) {
+        _logger.warn("onCoreLoaded crashed, will continue loading!");
         lua_pushboolean(_L, 1);
     }
 
@@ -498,6 +500,7 @@ bool hc::Application::loadGame(char const* path) {
     lua_pushstring(_L, path);
 
     if (!ProtectedCallField(_L, tableIndex, "onLoadGame", 2, 1, &_logger)) {
+        _logger.warn("onLoadGame crashed, will continue loading!");
         lua_pushboolean(_L, 1);
     }
 
@@ -530,6 +533,7 @@ bool hc::Application::loadGame(char const* path) {
     hc::PushFrontend(_L, &_frontend);
 
     if (!ProtectedCallField(_L, tableIndex, "onGameLoaded", 1, 1, &_logger)) {
+        _logger.warn("onGameLoaded crashed, will continue loading!");
         lua_pushboolean(_L, 1);
     }
 
