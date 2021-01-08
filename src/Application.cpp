@@ -558,6 +558,24 @@ bool hc::Application::loadGame(char const* path) {
         _logger.error("Couldn't unload the game, will continue loading!");
     }
 
+    static struct {char const* const name; unsigned const id;} memory[] = {
+        {"save", RETRO_MEMORY_SAVE_RAM},
+        {"rtc", RETRO_MEMORY_RTC},
+        {"sram", RETRO_MEMORY_SYSTEM_RAM},
+        {"vram", RETRO_MEMORY_VIDEO_RAM}
+    };
+
+    _logger.info("Core memory");
+
+    for (size_t i = 0; i < sizeof(memory) / sizeof(memory[0]); i++) {
+        void* data = nullptr;
+        size_t size = 0;
+
+        if (_frontend.getMemoryData(memory[i].id, &data) && _frontend.getMemorySize(memory[i].id, &size) && size != 0) {
+            _logger.info("    %-4s %p %zu bytes", memory[i].name, data, size);
+        }
+    }
+
     return true;
 }
 
