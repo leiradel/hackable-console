@@ -77,5 +77,6 @@ hc::Memory::Region::Region(char const* name, void* data, size_t base, size_t siz
 {}
 
 hc::Memory::View::View(Region const& region) : region(region) {
+    editor.OptUpperCaseHex = false;
     editor.ReadOnly = region.readOnly;
 }
