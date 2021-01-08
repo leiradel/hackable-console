@@ -409,8 +409,7 @@ bool hc::Config::setCoreOptionsDisplay(retro_core_option_display const* display)
     _logger->info("Setting core options display");
 
     for (; display->key != nullptr; display++) {
-        // Yoda quote
-        _logger->info("    %s \"%s\" is", display->visible ? "visible  " : "invisible", display->key);
+        _logger->info("    \"%s\" is %s", display->key, display->visible ? "visible" : "invisible");
 
         auto found = _coreMap.find(display->key);
 
