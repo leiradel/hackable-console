@@ -22,7 +22,7 @@ void hc::Control::draw() {
     static auto const getter = [](void* const data, int idx, char const** const text) -> bool {
         auto const consoles = (std::set<std::string>*)data;
 
-        if (idx < (int)consoles->size()) {
+        if (idx < static_cast<int>(consoles->size())) {
             for (auto const& name : *consoles) {
                 if (idx == 0) {
                     *text = name.c_str();
