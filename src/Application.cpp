@@ -21,25 +21,27 @@ extern "C" {
     #include "lualib.h"
 }
 
+#define TAG "[HC ] "
+
 static void const* readAll(hc::Logger* logger, char const* const path, size_t* const size) {
     struct stat statbuf;
 
     if (stat(path, &statbuf) != 0) {
-        logger->error("Error getting content info: %s", strerror(errno));
+        logger->error(TAG "Error getting content info: %s", strerror(errno));
         return nullptr;
     }
 
     void* const data = malloc(statbuf.st_size);
 
     if (data == nullptr) {
-        logger->error("Out of memory allocating %zu bytes", statbuf.st_size);
+        logger->error(TAG "Out of memory allocating %zu bytes", statbuf.st_size);
         return nullptr;
     }
 
     FILE* file = fopen(path, "rb");
 
     if (file == nullptr) {
-        logger->error("Error opening content: %s", strerror(errno));
+        logger->error(TAG "Error opening content: %s", strerror(errno));
         free(data);
         return nullptr;
     }
@@ -47,7 +49,7 @@ static void const* readAll(hc::Logger* logger, char const* const path, size_t* c
     size_t numread = fread(data, 1, statbuf.st_size, file);
 
     if (numread != (size_t)statbuf.st_size) {
-        logger->error("Error reading content: %s", strerror(errno));
+        logger->error(TAG "Error reading content: %s", strerror(errno));
         fclose(file);
         free(data);
         return nullptr;
@@ -55,7 +57,7 @@ static void const* readAll(hc::Logger* logger, char const* const path, size_t* c
 
     fclose(file);
 
-    logger->info("Loaded content from \"%s\", %zu bytes", path, numread);
+    logger->info(TAG "Loaded content from \"%s\", %zu bytes", path, numread);
     *size = numread;
     return data;
 }
