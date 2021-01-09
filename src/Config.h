@@ -44,8 +44,8 @@ namespace hc {
         virtual bool setCoreOptionsIntl(retro_core_options_intl const* intl) override;
         virtual bool setCoreOptionsDisplay(retro_core_option_display const* display) override;
 
-        const std::string& getRootPath();
-        const std::string& getAutorunPath();
+        const std::string& getRootPath() const;
+        const std::string& getAutorunPath() const;
 
         int push(lua_State* L);
         static Config* check(lua_State* L, int index);

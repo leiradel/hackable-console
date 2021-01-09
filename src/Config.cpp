@@ -425,11 +425,11 @@ bool hc::Config::setCoreOptionsDisplay(retro_core_option_display const* display)
     return true;
 }
 
-const std::string& hc::Config::getRootPath() {
+const std::string& hc::Config::getRootPath() const {
     return _rootPath;
 }
 
-const std::string& hc::Config::getAutorunPath() {
+const std::string& hc::Config::getAutorunPath() const {
     return _autorunPath;
 }
 
