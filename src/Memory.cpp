@@ -32,9 +32,10 @@ void hc::Memory::draw() {
         int const count = static_cast<int>(_regions.size());
         ImVec2 const size = ImVec2(120.0f, 0.0f);
 
-        ImGui::Combo("Regions", &_selected, getter, &_regions, count);
+        ImGui::Combo("##Regions", &_selected, getter, &_regions, count);
+        ImGui::SameLine();
 
-        if (ImGuiAl::Button(ICON_FA_EYE " View", _selected < count, size)) {
+        if (ImGuiAl::Button(ICON_FA_EYE " View Region", _selected < count, size)) {
             _views.emplace_back(_regions[_selected]);
         }
     }
