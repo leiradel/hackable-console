@@ -96,7 +96,11 @@ void hc::Logger::vprintf(enum retro_log_level level, const char* format, va_list
         va_list copy;
         va_copy(copy, args);
         vfprintf(stderr, format, copy);
-        fputc('\n', stderr);
+
+        if (format[0] != 0 && format[strlen(format) - 1] != '\n') {
+            fputc('\n', stderr);
+        }
+
         va_end(copy);
     }
 
