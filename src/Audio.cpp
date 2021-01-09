@@ -2,9 +2,11 @@
 
 #include <IconsFontAwesome4.h>
 
+#define TAG "[AUD] "
+
 bool hc::Audio::init(Logger* logger, double sampleRate, Fifo* fifo) {
     _logger = logger;
-    _logger->debug("%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
+    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
 
     _resampler = nullptr;
     reset();
@@ -21,7 +23,7 @@ bool hc::Audio::init(Logger* logger, double sampleRate, Fifo* fifo) {
 }
 
 void hc::Audio::destroy() {
-    _logger->debug("%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
+    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
 
     if (_resampler != NULL) {
         speex_resampler_destroy(_resampler);
@@ -31,7 +33,7 @@ void hc::Audio::destroy() {
 }
 
 void hc::Audio::reset() {
-    _logger->debug("%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
+    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
 
     memset(&_timing, 0, sizeof(_timing));
 
@@ -98,21 +100,21 @@ void hc::Audio::draw() {
 }
 
 bool hc::Audio::setSystemAvInfo(retro_system_av_info const* info) {
-    _logger->debug("%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
+    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
     _timing = info->timing;
 
-    _logger->info("Setting timing");
+    _logger->info(TAG "Setting timing");
 
-    _logger->info("    fps         = %f", _timing.fps);
-    _logger->info("    sample_rate = %f", _timing.sample_rate);
+    _logger->info(TAG "    fps         = %f", _timing.fps);
+    _logger->info(TAG "    sample_rate = %f", _timing.sample_rate);
 
     setupResampler(_timing.sample_rate);
     return true;
 }
 
 bool hc::Audio::setAudioCallback(retro_audio_callback const* callback) {
-    _logger->debug("%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, callback);
-    _logger->warn("TODO: RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK");
+    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, callback);
+    _logger->warn(TAG "TODO: RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK");
     return false;
 }
 
@@ -161,7 +163,7 @@ void hc::Audio::flush() {
     int16_t* const output = (int16_t*)alloca(outLen * 2);
 
     if (output == NULL) {
-        _logger->error("Error allocating temporary output buffer");
+        _logger->error(TAG "Error allocating temporary output buffer");
         return;
     }
 
@@ -173,7 +175,7 @@ void hc::Audio::flush() {
 
         if (error != RESAMPLER_ERR_SUCCESS) {
             memset(output, 0, outLen * 2);
-            _logger->error("Error resampling: %s", speex_resampler_strerror(error));
+            _logger->error(TAG "Error resampling: %s", speex_resampler_strerror(error));
         }
     }
 
@@ -200,9 +202,9 @@ void hc::Audio::setupResampler(double const rate) {
     _resampler = speex_resampler_init(2, _coreRate, _sampleRate, SPEEX_RESAMPLER_QUALITY_DEFAULT, &error);
 
     if (_resampler == nullptr) {
-        _logger->error("speex_resampler_init: %s", speex_resampler_strerror(error));
+        _logger->error(TAG "speex_resampler_init: %s", speex_resampler_strerror(error));
         return;
     }
 
-    _logger->info("Resampler initialized to convert from %f to %f", _coreRate, _sampleRate);
+    _logger->info(TAG "Resampler initialized to convert from %f to %f", _coreRate, _sampleRate);
 }
