@@ -4,6 +4,8 @@
 #include <imguifilesystem.h>
 #include <IconsFontAwesome4.h>
 
+#define TAG "[CTR] "
+
 bool hc::Control::init(LifeCycle* fsm, Logger* logger) {
     _fsm = fsm;
     _logger = logger;
@@ -153,5 +155,6 @@ void hc::Control::setSystemInfo(retro_system_info const* info) {
 }
 
 void hc::Control::addConsole(char const* const name) {
+    _logger->info(TAG "Adding console %s", name);
     _consoles.emplace(name);
 }
