@@ -60,6 +60,7 @@ void hc::Audio::draw() {
     }
 
     ImGui::Checkbox("Mute", &_mute);
+    ImGui::SameLine();
 
     static auto const left = [](void* const data, int const idx) -> float {
         auto const self = static_cast<Audio*>(data);
