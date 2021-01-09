@@ -2,6 +2,8 @@
 
 #include <IconsFontAwesome4.h>
 
+#define TAG "[LED] "
+
 bool hc::Led::init(hc::Logger* logger) {
     _logger = logger;
     return true;
@@ -36,6 +38,7 @@ void hc::Led::draw() {
 }
 
 void hc::Led::setState(int led, int state) {
+    _logger->info(TAG "Set LED %d to %s", led, state ? "on" : "off");
     _states.resize(led + 1);
     _states[led] = state;
 }
