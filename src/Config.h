@@ -44,6 +44,8 @@ namespace hc {
         virtual bool setCoreOptionsIntl(retro_core_options_intl const* intl) override;
         virtual bool setCoreOptionsDisplay(retro_core_option_display const* display) override;
 
+        bool getSupportNoGame() const;
+
         const std::string& getRootPath() const;
         const std::string& getAutorunPath() const;
 

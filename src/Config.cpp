@@ -425,6 +425,10 @@ bool hc::Config::setCoreOptionsDisplay(retro_core_option_display const* display)
     return true;
 }
 
+bool hc::Config::getSupportNoGame() const {
+    return _supportsNoGame;
+}
+
 const std::string& hc::Config::getRootPath() const {
     return _rootPath;
 }
