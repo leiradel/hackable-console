@@ -20,14 +20,15 @@ void hc::Led::draw() {
         return;
     }
 
-    if (ImGui::Begin(ICON_FA_LIGHTBULB_O " Leds")) {
-        ImDrawList* drawList = ImGui::GetWindowDrawList();
+    static ImColor const on = ImColor(IM_COL32(255, 0, 0, 255));
+    static ImColor const off = ImColor(IM_COL32(64, 64, 64, 255));
 
+    if (ImGui::Begin(ICON_FA_LIGHTBULB_O " Leds")) {
         for (size_t i = 0; i < count; i++) {
-            ImVec2 const pos = ImGui::GetCursorScreenPos();
-            ImVec2 const center(pos.x + 5.0f, pos.y + 5.0f);
-            drawList->AddCircleFilled(center, 8.0f, _states[i] ? 0xff0000ff : 0xff000080);
-            ImGui::Dummy(ImVec2(20.0f, 0.0f));
+            ImGui::PushStyleColor(ImGuiCol_Text, _states[i] ? on.Value : off.Value);
+            ImGui::Text(ICON_FA_CIRCLE);
+            ImGui::PopStyleColor(1);
+            ImGui::SameLine();
         }
     }
 
