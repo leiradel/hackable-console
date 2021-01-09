@@ -2,9 +2,11 @@
 
 #include <IconsFontAwesome4.h>
 
+#define TAG "[VID] "
+
 bool hc::Video::init(Logger* logger) {
     _logger = logger;
-    _logger->debug("%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
+    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
 
     _texture = 0;
     reset();
@@ -13,7 +15,7 @@ bool hc::Video::init(Logger* logger) {
 }
 
 void hc::Video::destroy() {
-    _logger->debug("%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
+    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
 
     if (_texture != 0) {
         glDeleteTextures(1, &_texture);
@@ -21,7 +23,7 @@ void hc::Video::destroy() {
 }
 
 void hc::Video::reset() {
-    _logger->debug("%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
+    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
 
     _rotation = 0;
     _pixelFormat = RETRO_PIXEL_FORMAT_UNKNOWN;
@@ -66,44 +68,44 @@ void hc::Video::draw() {
 }
 
 bool hc::Video::setRotation(unsigned rotation) {
-    _logger->debug("%s:%u: %s(%u)", __FILE__, __LINE__, __FUNCTION__, rotation);
+    _logger->debug(TAG "%s:%u: %s(%u)", __FILE__, __LINE__, __FUNCTION__, rotation);
     _rotation = rotation;
-    _logger->info("Set rotation to %u", rotation);
+    _logger->info(TAG "Set rotation to %u", rotation);
     return true;
 }
 
 bool hc::Video::getOverscan(bool* overscan) {
-    _logger->debug("%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, overscan);
+    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, overscan);
     *overscan = true;
-    _logger->warn("Returning fixed true for overscan");
+    _logger->warn(TAG "Returning fixed true for overscan");
     return true;
 }
 
 bool hc::Video::getCanDupe(bool* canDupe) {
-    _logger->debug("%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, canDupe);
+    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, canDupe);
     *canDupe = true;
-    _logger->warn("Returning fixed true for can dupe");
+    _logger->warn(TAG "Returning fixed true for can dupe");
     return true;
 }
 
 bool hc::Video::showMessage(retro_message const* message) {
-    _logger->debug("%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, message);
-    _logger->warn("TODO: RETRO_ENVIRONMENT_SET_MESSAGE");
-    _logger->info("Show message: %s", message->msg);
+    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, message);
+    _logger->warn(TAG "TODO: RETRO_ENVIRONMENT_SET_MESSAGE");
+    _logger->info(TAG "Show message: %s", message->msg);
     return true;
 }
 
 bool hc::Video::setPixelFormat(retro_pixel_format format) {
-    _logger->debug("%s:%u: %s(%d)", __FILE__, __LINE__, __FUNCTION__, format);
+    _logger->debug(TAG "%s:%u: %s(%d)", __FILE__, __LINE__, __FUNCTION__, format);
     _pixelFormat = format;
 
     switch (format) {
-        case RETRO_PIXEL_FORMAT_0RGB1555: _logger->info("Set pixel format to RETRO_PIXEL_FORMAT_0RGB1555"); break;
-        case RETRO_PIXEL_FORMAT_XRGB8888: _logger->info("Set pixel format to RETRO_PIXEL_FORMAT_XRGB8888"); break;
-        case RETRO_PIXEL_FORMAT_RGB565:   _logger->info("Set pixel format to RETRO_PIXEL_FORMAT_RGB565"); break;
+        case RETRO_PIXEL_FORMAT_0RGB1555: _logger->info(TAG "Set pixel format to RETRO_PIXEL_FORMAT_0RGB1555"); break;
+        case RETRO_PIXEL_FORMAT_XRGB8888: _logger->info(TAG "Set pixel format to RETRO_PIXEL_FORMAT_XRGB8888"); break;
+        case RETRO_PIXEL_FORMAT_RGB565:   _logger->info(TAG "Set pixel format to RETRO_PIXEL_FORMAT_RGB565"); break;
 
         default:
-            _logger->info("Invalid pixel format %d", format);
+            _logger->info(TAG "Invalid pixel format %d", format);
             return false;
     }
 
@@ -111,84 +113,84 @@ bool hc::Video::setPixelFormat(retro_pixel_format format) {
 }
 
 bool hc::Video::setHwRender(retro_hw_render_callback* callback) {
-    _logger->debug("%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, callback);
-    _logger->warn("TODO: RETRO_ENVIRONMENT_SET_HW_RENDER");
+    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, callback);
+    _logger->warn(TAG "TODO: RETRO_ENVIRONMENT_SET_HW_RENDER");
     return false;
 }
 
 bool hc::Video::setFrameTimeCallback(retro_frame_time_callback const* callback) {
-    _logger->debug("%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, callback);
-    _logger->warn("TODO: RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK");
+    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, callback);
+    _logger->warn(TAG "TODO: RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK");
     return false;
 }
 
 bool hc::Video::setSystemAvInfo(retro_system_av_info const* info) {
-    _logger->debug("%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, info);
+    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, info);
     _systemAvInfo.timing = info->timing;
 
-    _logger->info("Setting timing");
+    _logger->info(TAG "Setting timing");
 
-    _logger->info("    fps         = %f", _systemAvInfo.timing.fps);
-    _logger->info("    sample_rate = %f", _systemAvInfo.timing.sample_rate);
+    _logger->info(TAG "    fps         = %f", _systemAvInfo.timing.fps);
+    _logger->info(TAG "    sample_rate = %f", _systemAvInfo.timing.sample_rate);
 
     return setGeometry(&info->geometry);
 }
 
 bool hc::Video::setGeometry(retro_game_geometry const* geometry) {
-    _logger->debug("%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, geometry);
+    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, geometry);
     _systemAvInfo.geometry = *geometry;
 
     if (_systemAvInfo.geometry.aspect_ratio <= 0) {
         _systemAvInfo.geometry.aspect_ratio = (float)_systemAvInfo.geometry.base_width / (float)_systemAvInfo.geometry.base_height;
     }
 
-    _logger->info("Setting geometry");
+    _logger->info(TAG "Setting geometry");
 
-    _logger->info("    base_width   = %u", _systemAvInfo.geometry.base_width);
-    _logger->info("    base_height  = %u", _systemAvInfo.geometry.base_height);
-    _logger->info("    max_width    = %u", _systemAvInfo.geometry.max_width);
-    _logger->info("    max_height   = %u", _systemAvInfo.geometry.max_height);
-    _logger->info("    aspect_ratio = %f", _systemAvInfo.geometry.aspect_ratio);
+    _logger->info(TAG "    base_width   = %u", _systemAvInfo.geometry.base_width);
+    _logger->info(TAG "    base_height  = %u", _systemAvInfo.geometry.base_height);
+    _logger->info(TAG "    max_width    = %u", _systemAvInfo.geometry.max_width);
+    _logger->info(TAG "    max_height   = %u", _systemAvInfo.geometry.max_height);
+    _logger->info(TAG "    aspect_ratio = %f", _systemAvInfo.geometry.aspect_ratio);
 
     setupTexture(_systemAvInfo.geometry.max_width, _systemAvInfo.geometry.max_height);
     return true;
 }
 
 bool hc::Video::getCurrentSoftwareFramebuffer(retro_framebuffer* framebuffer) {
-    _logger->debug("%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, framebuffer);
-    _logger->warn("TODO: RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER");
+    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, framebuffer);
+    _logger->warn(TAG "TODO: RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER");
     return false;
 }
 
 bool hc::Video::getHwRenderInterface(retro_hw_render_interface const** interface) {
-    _logger->debug("%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, interface);
-    _logger->warn("TODO: RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE");
+    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, interface);
+    _logger->warn(TAG "TODO: RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE");
     return false;
 }
 
 bool hc::Video::setHwRenderContextNegotiationInterface(retro_hw_render_context_negotiation_interface const* interface) {
-    _logger->debug("%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, interface);
-    _logger->warn("TODO: RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE");
+    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, interface);
+    _logger->warn(TAG "TODO: RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE");
     return false;
 }
 
 bool hc::Video::setHwSharedContext() {
-    _logger->debug("%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
-    _logger->warn("TODO: RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT");
+    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
+    _logger->warn(TAG "TODO: RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT");
     return false;
 }
 
 bool hc::Video::getTargetRefreshRate(float* rate) {
-    _logger->debug("%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, rate);
+    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, rate);
     *rate = 60;
-    _logger->warn("Returning fixed 60 for target refresh rate");
+    _logger->warn(TAG "Returning fixed 60 for target refresh rate");
     return true;
 }
 
 bool hc::Video::getPreferredHwRender(unsigned* preferred) {
-    _logger->debug("%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, preferred);
+    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, preferred);
     *preferred = RETRO_HW_CONTEXT_NONE;
-    _logger->warn("Returning fixed RETRO_HW_CONTEXT_NONE for preferred hardware renderer");
+    _logger->warn(TAG "Returning fixed RETRO_HW_CONTEXT_NONE for preferred hardware renderer");
     return true;
 }
 
@@ -274,5 +276,5 @@ void hc::Video::setupTexture(unsigned width, unsigned height) {
 
     glBindTexture(GL_TEXTURE_2D, previous_texture);
 
-    _logger->info("Texture set to %u x %u", width, height);
+    _logger->info(TAG "Texture set to %u x %u", width, height);
 }
