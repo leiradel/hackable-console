@@ -85,6 +85,14 @@ void hc::Logger::draw() {
 
 void hc::Logger::vprintf(enum retro_log_level level, const char* format, va_list args) {
     if (level > RETRO_LOG_DEBUG) {
+        switch (level) {
+            case RETRO_LOG_DEBUG: fprintf(stderr, "[DBG] "); break;
+            case RETRO_LOG_INFO:  fprintf(stderr, "[NFO] "); break;
+            case RETRO_LOG_WARN:  fprintf(stderr, "[WRN] "); break;
+            case RETRO_LOG_ERROR: fprintf(stderr, "[ERR] "); break;
+            default: fprintf(stderr, "[???] "); break;
+        }
+
         va_list copy;
         va_copy(copy, args);
         vfprintf(stderr, format, copy);
