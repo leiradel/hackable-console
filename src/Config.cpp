@@ -381,8 +381,8 @@ bool hc::Config::setCoreOptions(retro_core_option_definition const* options) {
         for (unsigned i = 0; options->values[i].value != nullptr; i++) {
             retro_core_option_value const* const value = options->values + i;
 
-            _logger->info("        value = %s", value->value);
-            _logger->info("        label = %s", value->label);
+            _logger->debug("        value = %s", value->value);
+            _logger->debug("        label = %s", value->label);
 
             CoreOption::Value tempval;
             tempval.value = value->value;
