@@ -4,13 +4,15 @@ extern "C" {
     #include "lauxlib.h"
 }
 
+#define TAG "[LUA] "
+
 int hc::GetField(lua_State* const L, int const tableIndex, char const* const fieldName, Logger* const logger) {
     int const top = lua_gettop(L);
     lua_pushvalue(L, tableIndex);
 
     if (!lua_istable(L, -1)) {
         if (logger != nullptr) {
-            logger->error("Value at index %d is not a table", tableIndex);
+            logger->error(TAG "Value at index %d is not a table", tableIndex);
         }
 
         lua_settop(L, top);
@@ -21,7 +23,7 @@ int hc::GetField(lua_State* const L, int const tableIndex, char const* const fie
     int const type = lua_getfield(L, -1, fieldName);
 
     if (type == LUA_TNIL && logger != nullptr) {
-        logger->warn("Field \"%s\" is nil", fieldName);
+        logger->warn(TAG "Field \"%s\" is nil", fieldName);
     }
 
     lua_remove(L, top + 1);
@@ -40,7 +42,7 @@ bool hc::ProtectedCall(lua_State* const L, const int nargs, const int nresults, 
 
     if (lua_pcall(L, nargs, nresults, msgh) != LUA_OK) {
         if (logger != nullptr) {
-            logger->error("%s", lua_tostring(L, -1));
+            logger->error(TAG "%s", lua_tostring(L, -1));
         }
 
         lua_settop(L, msgh - 1);
@@ -61,7 +63,7 @@ bool hc::ProtectedCallField(
 ) {
     if (GetField(L, tableIndex, fieldName) != LUA_TFUNCTION) {
         if (logger != nullptr) {
-            logger->error("Field \"%s\" is not a function", fieldName);
+            logger->error(TAG "Field \"%s\" is not a function", fieldName);
         }
 
         lua_pop(L, nargs + 1);
