@@ -13,9 +13,6 @@
 #include <FontAwesome4.inl>
 #include <IconsFontAwesome4.h>
 
-#include <MaterialDesign.inl>
-#include <IconsMaterialDesign.h>
-
 #include <stdlib.h>
 #include <sys/stat.h>
 
@@ -241,20 +238,6 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
         if (fontAwesome == nullptr) {
             _logger.error("Error adding Font Awesome 4 font");
-            return false;
-        }
-
-        // Add Icons from Material Design
-        static ImWchar const ranges2[] = {ICON_MIN_MD, ICON_MAX_MD, 0};
-
-        ImFont* const materialDesign = io.Fonts->AddFontFromMemoryCompressedTTF(
-            MaterialDesign_compressed_data,
-            MaterialDesign_compressed_size,
-            24.0f, &config, ranges2
-        );
-
-        if (materialDesign == nullptr) {
-            _logger.error("Error adding Material Design font");
             return false;
         }
     }
