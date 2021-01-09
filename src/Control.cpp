@@ -40,7 +40,8 @@ void hc::Control::draw() {
         int const count = static_cast<int>(_consoles.size());
         ImVec2 const size = ImVec2(120.0f, 0.0f);
 
-        ImGui::Combo("Consoles", &_selected, getter, &_consoles, count);
+        ImGui::Combo("##Consoles", &_selected, getter, &_consoles, count);
+        ImGui::SameLine();
 
         if (ImGuiAl::Button(ICON_FA_FOLDER_OPEN " Load Console", _fsm->currentState() == LifeCycle::State::Start && _selected < count, size)) {
             char const* name = nullptr;
@@ -50,7 +51,6 @@ void hc::Control::draw() {
             }
         }
 
-        ImGui::SameLine();
         bool loadGamePressed = false;
 
         if (ImGuiAl::Button(ICON_FA_ROCKET " Load Game", _fsm->currentState() == LifeCycle::State::ConsoleLoaded, size)) {
@@ -73,7 +73,7 @@ void hc::Control::draw() {
             loadGamePressed,
             _lastGameFolder.c_str(),
             _extensions.c_str(),
-            ICON_FA_FOLDER_OPEN" Open Game",
+            ICON_FA_ROCKET" Load Game",
             gameDialogSize,
             gameDialogPos
         );
@@ -85,6 +85,8 @@ void hc::Control::draw() {
                 _lastGameFolder = temp;
             }
         }
+
+        ImGui::SameLine();
 
         if (_fsm->currentState() == LifeCycle::State::GameRunning) {
             if (ImGuiAl::Button(ICON_FA_PAUSE " Pause", true, size)) {
@@ -103,14 +105,14 @@ void hc::Control::draw() {
             _fsm->step();
         }
 
-        ImGui::SameLine();
-
         bool const gameLoaded = _fsm->currentState() == LifeCycle::State::GameRunning ||
                                 _fsm->currentState() == LifeCycle::State::GamePaused;
 
         if (ImGuiAl::Button(ICON_FA_REFRESH " Reset Game", gameLoaded, size)) {
             _fsm->resetGame();
         }
+
+        ImGui::SameLine();
 
         if (ImGuiAl::Button(ICON_FA_EJECT " Unload Game", gameLoaded, size)) {
             _fsm->unloadGame();
