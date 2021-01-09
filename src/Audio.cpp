@@ -179,18 +179,7 @@ void hc::Audio::flush() {
 
     outLen &= ~1; // don't send incomplete audio frames
     size_t const size = outLen * 2;
-
-    if (size > avail) {
-        for (;;) {
-            SDL_Delay(1);
-
-            if (size <= _fifo->free()) {
-                break;
-            }
-        }
-    }
-
-    _fifo->write(output, size);
+    _fifo->write(output, size <= avail ? size : avail);
 }
 
 void hc::Audio::setupResampler(double const rate) {
