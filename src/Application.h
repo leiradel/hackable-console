@@ -1,6 +1,8 @@
 #pragma once
 
 #include "LifeCycle.h"
+#include "Plugin.h"
+
 #include "Logger.h"
 #include "Control.h"
 #include "Config.h"
@@ -24,6 +26,7 @@ extern "C" {
 #include <stdarg.h>
 
 #include <string>
+#include <unordered_set>
 #include <unordered_map>
 
 namespace hc {
@@ -73,10 +76,14 @@ namespace hc {
         SDL_AudioDeviceID _audioDev;
 
         LifeCycle _fsm;
+
+        std::unordered_set<Plugin*> _plugins;
+
+        Audio* _audio;
+
         Logger _logger;
         Control _control;
         Config _config;
-        Audio _audio;
         Video _video;
         Led _led;
         Memory _memory;

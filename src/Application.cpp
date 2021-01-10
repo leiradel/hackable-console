@@ -264,11 +264,9 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
         undo.add([this]() { _video.destroy(); });
 
-        if (!_audio.init(&_logger, _audioSpec.freq, &_fifo)) {
-            return false;
-        }
-
-        undo.add([this]() { _audio.destroy(); });
+        _audio = new Audio();
+        _audio->init(&_logger, _audioSpec.freq, &_fifo);
+        _plugins.emplace(_audio);
 
         if (!_led.init(&_logger)) {
             return false;
@@ -336,7 +334,6 @@ void hc::Application::destroy() {
 
     _memory.destroy();
     _led.destroy();
-    _audio.destroy();
     _video.destroy();
     _config.destroy();
     _control.destroy();
@@ -357,10 +354,13 @@ void hc::Application::destroy() {
 void hc::Application::draw() {
     ImGui::DockSpaceOverViewport();
 
+    for (auto const plugin : _plugins) {
+        plugin->onDraw();
+    }
+
     _logger.draw();
     _control.draw();
     _config.draw();
-    _audio.draw();
     _video.draw();
     _led.draw();
     _memory.draw();
@@ -402,7 +402,7 @@ void hc::Application::run() {
         ImGui::NewFrame();
 
         draw();
-        _audio.flush();
+        _audio->flush();
 
         ImGui::Render();
 
@@ -627,7 +627,6 @@ bool hc::Application::unloadConsole() {
 
 bool hc::Application::unloadGame() {
     if (_frontend.unloadGame()) {
-        _audio.reset();
         _video.reset();
         _memory.reset();
         onGameUnloaded();
@@ -638,43 +637,63 @@ bool hc::Application::unloadGame() {
 }
 
 void hc::Application::onStarted() {
-    _logger.error("%s", __FUNCTION__);
+    for (auto const plugin : _plugins) {
+        plugin->onStarted();
+    }
 }
 
 void hc::Application::onConsoleLoaded() {
-    _logger.error("%s", __FUNCTION__);
+    for (auto const plugin : _plugins) {
+        plugin->onConsoleLoaded();
+    }
 }
 
 void hc::Application::onGameLoaded() {
-    _logger.error("%s", __FUNCTION__);
+    for (auto const plugin : _plugins) {
+        plugin->onGameLoaded();
+    }
 }
 
 void hc::Application::onGamePaused() {
-    _logger.error("%s", __FUNCTION__);
+    for (auto const plugin : _plugins) {
+        plugin->onGamePaused();
+    }
 }
 
 void hc::Application::onGameResumed() {
-    _logger.error("%s", __FUNCTION__);
+    for (auto const plugin : _plugins) {
+        plugin->onGameResumed();
+    }
 }
 
 void hc::Application::onGameReset() {
-    _logger.error("%s", __FUNCTION__);
+    for (auto const plugin : _plugins) {
+        plugin->onGameReset();
+    }
 }
 
 void hc::Application::onFrame() {
-    _logger.error("%s", __FUNCTION__);
+    for (auto const plugin : _plugins) {
+        plugin->onFrame();
+    }
 }
 
 void hc::Application::onGameUnloaded() {
-    _logger.error("%s", __FUNCTION__);
+    for (auto const plugin : _plugins) {
+        plugin->onGameUnloaded();
+    }
 }
 
 void hc::Application::onConsoleUnloaded() {
-    _logger.error("%s", __FUNCTION__);
+    for (auto const plugin : _plugins) {
+        plugin->onConsoleUnloaded();
+    }
 }
 
 void hc::Application::onQuit() {
-    _logger.error("%s", __FUNCTION__);
+    for (auto const plugin : _plugins) {
+        plugin->onQuit();
+    }
 }
 
 void hc::Application::vprintf(void* ud, char const* fmt, va_list args) {

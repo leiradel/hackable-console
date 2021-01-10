@@ -4,134 +4,27 @@
 
 #define TAG "[AUD] "
 
-bool hc::Audio::init(Logger* logger, double sampleRate, Fifo* fifo) {
+hc::Audio::Audio()
+    : _logger(nullptr)
+    , _sampleRate(0.0)
+    , _fifo(nullptr)
+    , _mutex(nullptr)
+    , _min(0.0)
+    , _max(0.0)
+    , _mute(false)
+    , _wasMuted(false)
+    , _rateControlDelta(0.0)
+    , _currentRatio(0.0)
+    , _originalRatio(0.0)
+    , _resampler(nullptr)
+{
+    memset(&_timing, 0, sizeof(_timing));
+}
+
+void hc::Audio::init(Logger* logger, double sampleRate, Fifo* fifo) {
     _logger = logger;
-    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
-
-    _resampler = nullptr;
-    reset();
-
-    _mutex = SDL_CreateMutex();
-
-    if (_mutex == nullptr) {
-        return false;
-    }
-
     _sampleRate = sampleRate;
     _fifo = fifo;
-    return true;
-}
-
-void hc::Audio::destroy() {
-    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
-
-    if (_resampler != NULL) {
-        speex_resampler_destroy(_resampler);
-    }
-
-    SDL_DestroyMutex(_mutex);
-}
-
-void hc::Audio::reset() {
-    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
-
-    memset(&_timing, 0, sizeof(_timing));
-
-    _samples.clear();
-
-    _min = 0.0f;
-    _max = 0.0f;
-
-    _mute = false;
-    _coreRate = 0.0;
-
-    _rateControlDelta = 0.005;
-    _currentRatio = 0.0;
-    _originalRatio = 0.0;
-
-    if (_resampler != NULL) {
-        speex_resampler_destroy(_resampler);
-    }
-
-    _resampler = nullptr;
-}
-
-void hc::Audio::draw() {
-    if (!ImGui::Begin(ICON_FA_VOLUME_UP " Audio")) {
-        return;
-    }
-
-    ImGui::Checkbox("Mute", &_mute);
-    ImGui::SameLine();
-
-    static auto const left = [](void* const data, int const idx) -> float {
-        auto const self = static_cast<Audio*>(data);
-
-        float sample = self->_samples[idx * 2];
-        self->_min = std::min(self->_min, sample);
-        self->_max = std::max(self->_max, sample);
-
-        return sample;
-    };
-
-    static auto const right = [](void* data, int idx) -> float {
-        auto const self = static_cast<Audio*>(data);
-
-        float sample = self->_samples[idx * 2 + 1];
-        self->_min = std::min(self->_min, sample);
-        self->_max = std::max(self->_max, sample);
-
-        return sample;
-    };
-
-    ImVec2 max = ImGui::GetContentRegionAvail();
-
-    if (max.y > 0.0f) {
-        max.x /= 2;
-
-        size_t const size = _samples.size() / 2;
-
-        ImGui::PlotLines("", left, this, size, 0, nullptr, _min, _max, max);
-        ImGui::SameLine(0.0f, 0.0f);
-        ImGui::PlotLines("", right, this, size, 0, nullptr, _min, _max, max);
-    }
-
-    ImGui::End();
-}
-
-bool hc::Audio::setSystemAvInfo(retro_system_av_info const* info) {
-    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
-    _timing = info->timing;
-
-    _logger->info(TAG "Setting timing");
-
-    _logger->info(TAG "    fps         = %f", _timing.fps);
-    _logger->info(TAG "    sample_rate = %f", _timing.sample_rate);
-
-    setupResampler(_timing.sample_rate);
-    return true;
-}
-
-bool hc::Audio::setAudioCallback(retro_audio_callback const* callback) {
-    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, callback);
-    _logger->warn(TAG "TODO: RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK");
-    return false;
-}
-
-size_t hc::Audio::sampleBatch(int16_t const* data, size_t frames) {
-    SDL_LockMutex(_mutex);
-
-    size_t const size = _samples.size();
-    _samples.resize(size + frames * 2);
-    memcpy(_samples.data() + size, data, frames * 4);
-
-    SDL_UnlockMutex(_mutex);
-    return frames;
-}
-
-void hc::Audio::sample(int16_t left, int16_t right) {
-    int16_t frame[2] = {left, right};
-    sampleBatch(frame, 1);
 }
 
 void hc::Audio::flush() {
@@ -184,27 +77,149 @@ void hc::Audio::flush() {
     _fifo->write(output, size <= avail ? size : avail);
 }
 
-void hc::Audio::setupResampler(double const rate) {
-    if (_coreRate == rate) {
-        return;
-    }
+void hc::Audio::onStarted() {
+    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
 
-    if (_resampler != nullptr) {
-        speex_resampler_destroy(_resampler);
-        _resampler = nullptr;
-    }
+    _mutex = SDL_CreateMutex();
 
-    _coreRate = rate;
-    _currentRatio = _originalRatio = _sampleRate / _coreRate;
+    if (_mutex == nullptr) {
+        _logger->error(TAG "SDL_CreateMutex: %s", SDL_GetError());
+    }
+}
+
+void hc::Audio::onConsoleLoaded() {
+    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
+}
+
+void hc::Audio::onGameLoaded() {
+    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
+
+    // setSystemAvInfo has been called by now
+    _currentRatio = _originalRatio = _sampleRate / _timing.sample_rate;
     _rateControlDelta = 0.005;
 
     int error;
-    _resampler = speex_resampler_init(2, _coreRate, _sampleRate, SPEEX_RESAMPLER_QUALITY_DEFAULT, &error);
+    _resampler = speex_resampler_init(2, _timing.sample_rate, _sampleRate, SPEEX_RESAMPLER_QUALITY_DEFAULT, &error);
 
     if (_resampler == nullptr) {
         _logger->error(TAG "speex_resampler_init: %s", speex_resampler_strerror(error));
         return;
     }
 
-    _logger->info(TAG "Resampler initialized to convert from %f to %f", _coreRate, _sampleRate);
+    _logger->info(TAG "Resampler initialized to convert from %f to %f", _timing.sample_rate, _sampleRate);
+}
+
+void hc::Audio::onGamePaused() {
+    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
+    _wasMuted = _mute;
+    _mute = true;
+}
+
+void hc::Audio::onGameResumed() {
+    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
+    _mute = _wasMuted;
+}
+
+void hc::Audio::onGameReset() {
+    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
+
+    SDL_LockMutex(_mutex);
+    _samples.clear();
+    SDL_UnlockMutex(_mutex);
+}
+
+void hc::Audio::onFrame() {}
+
+void hc::Audio::onDraw() {
+    if (!ImGui::Begin(ICON_FA_VOLUME_UP " Audio")) {
+        return;
+    }
+
+    ImGui::Checkbox("Mute", &_mute);
+    ImGui::SameLine();
+
+    static auto const left = [](void* const data, int const idx) -> float {
+        auto const self = static_cast<Audio*>(data);
+
+        float sample = self->_samples[idx * 2];
+        self->_min = std::min(self->_min, sample);
+        self->_max = std::max(self->_max, sample);
+
+        return sample;
+    };
+
+    static auto const right = [](void* data, int idx) -> float {
+        auto const self = static_cast<Audio*>(data);
+
+        float sample = self->_samples[idx * 2 + 1];
+        self->_min = std::min(self->_min, sample);
+        self->_max = std::max(self->_max, sample);
+
+        return sample;
+    };
+
+    ImVec2 max = ImGui::GetContentRegionAvail();
+
+    if (max.y > 0.0f) {
+        max.x /= 2;
+
+        size_t const size = _samples.size() / 2;
+
+        ImGui::PlotLines("", left, this, size, 0, nullptr, _min, _max, max);
+        ImGui::SameLine(0.0f, 0.0f);
+        ImGui::PlotLines("", right, this, size, 0, nullptr, _min, _max, max);
+    }
+
+    ImGui::End();
+}
+
+void hc::Audio::onGameUnloaded() {
+    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
+
+    speex_resampler_destroy(_resampler);
+    _resampler = nullptr;
+}
+
+void hc::Audio::onConsoleUnloaded() {
+    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
+}
+
+void hc::Audio::onQuit() {
+    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
+    SDL_DestroyMutex(_mutex);
+    _mutex = nullptr;
+}
+
+bool hc::Audio::setSystemAvInfo(retro_system_av_info const* info) {
+    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
+    _timing = info->timing;
+
+    _logger->info(TAG "Setting timing");
+
+    _logger->info(TAG "    fps         = %f", _timing.fps);
+    _logger->info(TAG "    sample_rate = %f", _timing.sample_rate);
+
+    return true;
+}
+
+bool hc::Audio::setAudioCallback(retro_audio_callback const* callback) {
+    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, callback);
+    _logger->warn(TAG "TODO: RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK");
+    return false;
+}
+
+size_t hc::Audio::sampleBatch(int16_t const* data, size_t frames) {
+    SDL_LockMutex(_mutex);
+
+    size_t const size = _samples.size();
+    _samples.resize(size + frames * 2);
+    memcpy(_samples.data() + size, data, frames * 4);
+
+    SDL_UnlockMutex(_mutex);
+    return frames;
+}
+
+void hc::Audio::sample(int16_t left, int16_t right) {
+    int16_t frame[2] = {left, right};
+    sampleBatch(frame, 1);
 }
