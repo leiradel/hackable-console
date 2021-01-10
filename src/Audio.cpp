@@ -178,6 +178,10 @@ void hc::Audio::onGameUnloaded() {
 
     speex_resampler_destroy(_resampler);
     _resampler = nullptr;
+
+    SDL_LockMutex(_mutex);
+    _samples.clear();
+    SDL_UnlockMutex(_mutex);
 }
 
 void hc::Audio::onConsoleUnloaded() {
