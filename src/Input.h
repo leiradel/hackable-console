@@ -86,8 +86,9 @@ namespace hc {
         };
 
         void addController(int which);
+        void drawPads();
         void drawPad(unsigned button);
-        void drawKeyboard(unsigned button);
+        void drawKeyboard();
         void addController(SDL_Event const* event);
         void removeController(SDL_Event const* event);
         void controllerButton(SDL_Event const* event);

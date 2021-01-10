@@ -133,138 +133,8 @@ void hc::Input::onGameReset() {}
 void hc::Input::onFrame() {}
 
 void hc::Input::onDraw() {
-    if (!ImGui::Begin(ICON_FA_GAMEPAD " Input")) {
-        return;
-    }
-
-    unsigned count = 1;
-
-    for (auto& pair : _pads) {
-        Pad& pad = pair.second;
-
-        char label[512];
-        snprintf(label, sizeof(label), "%s (%u)", pad.controllerName.c_str(), count);
-
-        if (ImGui::CollapsingHeader(label, ImGuiTreeNodeFlags_DefaultOpen)) {
-            char id[32];
-            snprintf(id, sizeof(id), "%p", static_cast<void*>(&pad));
-            ImGui::Columns(2, id);
-
-            {
-                ImVec2 const pos = ImGui::GetCursorPos();
-                drawPad(17);
-
-                for (unsigned button = 0; button < 16; button++) {
-                    if (pad.state[button]) {
-                        ImGui::SetCursorPos(pos);
-                        drawPad(button);
-                    }
-                }
-            }
-
-            ImGui::NextColumn();
-
-            {
-                char labels[1024];
-                char* aux = labels;
-
-                aux += snprintf(aux, sizeof(labels) - (aux - labels), "Disconnected") + 1;
-
-                uint64_t bit = 1;
-
-                for (unsigned i = 0; i < 64; i++, bit <<= 1) {
-                    if ((_ports & bit) != 0) {
-                        aux += snprintf(aux, sizeof(labels) - (aux - labels), "Connect to port %u", i + 1) + 1;
-                    }
-                }
-
-                *aux = 0;
-
-                ImGui::PushItemWidth(-1.0f);
-
-                char label[64];
-                snprintf(label, sizeof(label), "##port%p", static_cast<void*>(&pad));
-
-                ImGui::Combo(label, &pad.port, labels);
-                ImGui::PopItemWidth();
-            }
-
-            {
-                char labels[512];
-                unsigned ids[32];
-                char* aux = labels;
-                int count = 0;
-                int selected = 0;
-
-                aux += snprintf(aux, sizeof(labels) - (aux - labels), "None") + 1;
-                ids[count++] = RETRO_DEVICE_NONE;
-
-                if (_controllers.size() != 0) {
-                    if (pad.port > 0 && (size_t)pad.port <= _controllers.size()) {
-                        Controller const& ctrl = _controllers[pad.port - 1];
-
-                        for (auto const& type : ctrl.types) {
-                            if ((type.id & RETRO_DEVICE_MASK) == RETRO_DEVICE_JOYPAD) {
-                                if (type.id == pad.devId) {
-                                    selected = count;
-                                }
-
-                                aux += snprintf(aux, sizeof(labels) - (aux - labels), "%s", type.desc.c_str()) + 1;
-                                ids[count++] = type.id;
-                            }
-                        }
-                    }
-                }
-                else {
-                    // No ports were specified, add the default RetroPad controller if the port is valid
-
-                    if (pad.port != 0) {
-                        aux += snprintf(aux, sizeof(labels) - (aux - labels), "RetroPad") + 1;
-
-                        if (pad.devId == RETRO_DEVICE_JOYPAD) {
-                            selected = 1;
-                        }
-                    }
-                }
-
-                *aux = 0;
-
-                ImGui::PushItemWidth(-1.0f);
-
-                char label[64];
-                snprintf(label, sizeof(label), "##device%p", static_cast<void*>(&pad));
-
-                int old = selected;
-                ImGui::Combo(label, &selected, labels);
-
-                if (_controllers.size() != 0) {
-                    pad.devId = ids[selected];
-                }
-                else {
-                    pad.devId = selected == 0 ? RETRO_DEVICE_NONE : RETRO_DEVICE_JOYPAD;
-                }
-
-                if (old != selected) {
-                    _frontend->setControllerPortDevice(pad.port, pad.devId);
-                }
-
-                ImGui::PopItemWidth();
-            }
-
-            {
-                char label[64];
-                snprintf(label, sizeof(label), "##sensitivity%p", static_cast<void*>(&pad));
-
-                ImGui::PushItemWidth(-1.0f);
-                ImGui::SliderFloat(label, &pad.sensitivity, 0.0f, 1.0f, "Sensitivity %.3f");
-                ImGui::PopItemWidth();
-            }
-
-            ImGui::Columns(1);
-        }
-    }
-
-    ImGui::End();
+    drawPads();
+    drawKeyboard();
 }
 
 void hc::Input::onGameUnloaded() {}
@@ -481,6 +351,141 @@ void hc::Input::addController(int which) {
     }
 }
 
+void hc::Input::drawPads() {
+    if (!ImGui::Begin(ICON_FA_GAMEPAD " Controllers")) {
+        return;
+    }
+
+    unsigned count = 1;
+
+    for (auto& pair : _pads) {
+        Pad& pad = pair.second;
+
+        char label[512];
+        snprintf(label, sizeof(label), "%s (%u)", pad.controllerName.c_str(), count);
+
+        if (ImGui::CollapsingHeader(label, ImGuiTreeNodeFlags_DefaultOpen)) {
+            char id[32];
+            snprintf(id, sizeof(id), "%p", static_cast<void*>(&pad));
+            ImGui::Columns(2, id);
+
+            {
+                ImVec2 const pos = ImGui::GetCursorPos();
+                drawPad(17);
+
+                for (unsigned button = 0; button < 16; button++) {
+                    if (pad.state[button]) {
+                        ImGui::SetCursorPos(pos);
+                        drawPad(button);
+                    }
+                }
+            }
+
+            ImGui::NextColumn();
+
+            {
+                char labels[1024];
+                char* aux = labels;
+
+                aux += snprintf(aux, sizeof(labels) - (aux - labels), "Disconnected") + 1;
+
+                uint64_t bit = 1;
+
+                for (unsigned i = 0; i < 64; i++, bit <<= 1) {
+                    if ((_ports & bit) != 0) {
+                        aux += snprintf(aux, sizeof(labels) - (aux - labels), "Connect to port %u", i + 1) + 1;
+                    }
+                }
+
+                *aux = 0;
+
+                ImGui::PushItemWidth(-1.0f);
+
+                char label[64];
+                snprintf(label, sizeof(label), "##port%p", static_cast<void*>(&pad));
+
+                ImGui::Combo(label, &pad.port, labels);
+                ImGui::PopItemWidth();
+            }
+
+            {
+                char labels[512];
+                unsigned ids[32];
+                char* aux = labels;
+                int count = 0;
+                int selected = 0;
+
+                aux += snprintf(aux, sizeof(labels) - (aux - labels), "None") + 1;
+                ids[count++] = RETRO_DEVICE_NONE;
+
+                if (_controllers.size() != 0) {
+                    if (pad.port > 0 && (size_t)pad.port <= _controllers.size()) {
+                        Controller const& ctrl = _controllers[pad.port - 1];
+
+                        for (auto const& type : ctrl.types) {
+                            if ((type.id & RETRO_DEVICE_MASK) == RETRO_DEVICE_JOYPAD) {
+                                if (type.id == pad.devId) {
+                                    selected = count;
+                                }
+
+                                aux += snprintf(aux, sizeof(labels) - (aux - labels), "%s", type.desc.c_str()) + 1;
+                                ids[count++] = type.id;
+                            }
+                        }
+                    }
+                }
+                else {
+                    // No ports were specified, add the default RetroPad controller if the port is valid
+
+                    if (pad.port != 0) {
+                        aux += snprintf(aux, sizeof(labels) - (aux - labels), "RetroPad") + 1;
+
+                        if (pad.devId == RETRO_DEVICE_JOYPAD) {
+                            selected = 1;
+                        }
+                    }
+                }
+
+                *aux = 0;
+
+                ImGui::PushItemWidth(-1.0f);
+
+                char label[64];
+                snprintf(label, sizeof(label), "##device%p", static_cast<void*>(&pad));
+
+                int old = selected;
+                ImGui::Combo(label, &selected, labels);
+
+                if (_controllers.size() != 0) {
+                    pad.devId = ids[selected];
+                }
+                else {
+                    pad.devId = selected == 0 ? RETRO_DEVICE_NONE : RETRO_DEVICE_JOYPAD;
+                }
+
+                if (old != selected) {
+                    _frontend->setControllerPortDevice(pad.port, pad.devId);
+                }
+
+                ImGui::PopItemWidth();
+            }
+
+            {
+                char label[64];
+                snprintf(label, sizeof(label), "##sensitivity%p", static_cast<void*>(&pad));
+
+                ImGui::PushItemWidth(-1.0f);
+                ImGui::SliderFloat(label, &pad.sensitivity, 0.0f, 1.0f, "Sensitivity %.3f");
+                ImGui::PopItemWidth();
+            }
+
+            ImGui::Columns(1);
+        }
+    }
+
+    ImGui::End();
+}
+
 void hc::Input::drawPad(unsigned button) {
     unsigned const y = button / 6;
     unsigned const x = button - y * 6;
@@ -495,8 +500,12 @@ void hc::Input::drawPad(unsigned button) {
     ImGui::Image((ImTextureID)(uintptr_t)_texture, size, uv0, uv1);
 }
 
-void hc::Input::drawKeyboard(unsigned button) {
+void hc::Input::drawKeyboard() {
     typedef char const* Key;
+
+    if (!ImGui::Begin(ICON_FA_KEYBOARD_O " Keyboard")) {
+        return;
+    }
 
     static Key const     row0[] = {"esc", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10", "f11", "f12", nullptr};
     static uint8_t const siz0[] = {25,    23,   23,   23,   23,   23,   23,   23,   23,   23,   23,    23,    23};
@@ -566,6 +575,7 @@ void hc::Input::drawKeyboard(unsigned button) {
     }
 
     ImGui::PopStyleVar();
+    ImGui::End();
 }
 
 void hc::Input::addController(const SDL_Event* event) {
