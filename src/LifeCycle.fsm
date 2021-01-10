@@ -15,10 +15,6 @@ fsm LifeCycle {
     class Application as ctx;
 
     Start {
-        after {
-            ctx.onStart();
-        }
-
         loadConsole(const_cstr name) => ConsoleLoaded {
             if (!ctx.loadConsole(name)) {
                 forbid;
@@ -28,17 +24,9 @@ fsm LifeCycle {
         quit() => Quit;
     }
 
-    Quit {
-        after {
-            ctx.onQuit();
-        }
-    }
+    Quit {}
 
     ConsoleLoaded {
-        after {
-            ctx.onConsoleLoaded();
-        }
-
         unloadConsole() => Start {
             ctx.unloadConsole();
         }
@@ -53,10 +41,6 @@ fsm LifeCycle {
     }
 
     GamePaused {
-        after {
-            ctx.onGamePaused();
-        }
-
         resumeGame() => GameRunning;
 
         resetGame() => resumeGame() => resetGame() => pauseGame();
@@ -75,10 +59,6 @@ fsm LifeCycle {
     }
 
     GameRunning {
-        after {
-            ctx.onGameResumed();
-        }
-
         pauseGame() => GamePaused;
 
         resetGame() => GameRunning {
