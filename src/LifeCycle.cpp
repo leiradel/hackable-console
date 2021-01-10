@@ -49,35 +49,35 @@ void LifeCycle::after(State state) const {
         case State::ConsoleLoaded: {
 #line 38 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
-            _ctx.onConsoleLoaded();
+            ctx.onConsoleLoaded();
         
         }
         break;
         case State::GamePaused: {
 #line 56 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
-            _ctx.onGamePaused();
+            ctx.onGamePaused();
         
         }
         break;
         case State::GameRunning: {
 #line 78 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
-            _ctx.onGameResumed();
+            ctx.onGameResumed();
         
         }
         break;
         case State::Quit: {
 #line 32 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
-            _ctx.onQuit();
+            ctx.onQuit();
         
         }
         break;
         case State::Start: {
 #line 18 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
-            _ctx.onStart();
+            ctx.onStart();
         
         }
         break;

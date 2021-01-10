@@ -16,7 +16,7 @@ fsm LifeCycle {
 
     Start {
         after {
-            _ctx.onStart();
+            ctx.onStart();
         }
 
         loadConsole(const_cstr name) => ConsoleLoaded {
@@ -30,13 +30,13 @@ fsm LifeCycle {
 
     Quit {
         after {
-            _ctx.onQuit();
+            ctx.onQuit();
         }
     }
 
     ConsoleLoaded {
         after {
-            _ctx.onConsoleLoaded();
+            ctx.onConsoleLoaded();
         }
 
         unloadConsole() => Start {
@@ -54,7 +54,7 @@ fsm LifeCycle {
 
     GamePaused {
         after {
-            _ctx.onGamePaused();
+            ctx.onGamePaused();
         }
 
         resumeGame() => GameRunning;
@@ -76,7 +76,7 @@ fsm LifeCycle {
 
     GameRunning {
         after {
-            _ctx.onGameResumed();
+            ctx.onGameResumed();
         }
 
         pauseGame() => GamePaused;
