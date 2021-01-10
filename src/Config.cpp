@@ -22,8 +22,57 @@ hc::Config::Config()
     memset(&_getCoreProc, 0, sizeof(_getCoreProc));
 }
 
-void hc::Config::init(Logger* logger) {
+bool hc::Config::init(Logger* logger) {
     _logger = logger;
+
+    if (fnkdat(NULL, 0, 0, FNKDAT_INIT) != 0) {
+        _logger->error(TAG "Error initializing fnkdat");
+        return false;
+    }
+
+    char path[1024];
+
+    if (fnkdat("autorun.lua", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
+        _logger->error(TAG "Error getting the autorun.lua file path");
+        return false;
+    }
+
+    _autorunPath = path;
+    _logger->info(TAG "The autorun.lua file path is \"%s\"", path);
+
+    if (fnkdat("system/", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
+        _logger->error(TAG "Error getting the system path");
+        return false;
+    }
+
+    _systemPath = path;
+    _logger->info(TAG "The system path is \"%s\"", path);
+
+    if (fnkdat("assets/", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
+        _logger->error(TAG "Error getting the core assets path");
+        return false;
+    }
+
+    _coreAssetsPath = path;
+    _logger->info(TAG "The core assets path is \"%s\"", path);
+
+    if (fnkdat("saves/", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
+        _logger->error(TAG "Error getting the saves path");
+        return false;
+    }
+
+    _savePath = path;
+    _logger->info(TAG "The save path is \"%s\"", path);
+
+    if (fnkdat("cores/", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
+        _logger->error(TAG "Error getting the cores path");
+        return false;
+    }
+
+    _coresPath = path;
+    _logger->info(TAG "The cores path is \"%s\"", path);
+
+    return true;
 }
 
 bool hc::Config::getSupportNoGame() const {
@@ -85,54 +134,7 @@ char const* hc::Config::getUrl() {
     return "https://github.com/leiradel/hackable-console";
 }
 
-void hc::Config::onStarted() {
-    if (fnkdat(NULL, 0, 0, FNKDAT_INIT) != 0) {
-        _logger->error(TAG "Error initializing fnkdat");
-        return;
-    }
-
-    char path[1024];
-
-    if (fnkdat("autorun.lua", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
-        _logger->error(TAG "Error getting the autorun.lua file path");
-        return;
-    }
-
-    _autorunPath = path;
-    _logger->info(TAG "The autorun.lua file path is \"%s\"", path);
-
-    if (fnkdat("system/", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
-        _logger->error(TAG "Error getting the system path");
-        return;
-    }
-
-    _systemPath = path;
-    _logger->info(TAG "The system path is \"%s\"", path);
-
-    if (fnkdat("assets/", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
-        _logger->error(TAG "Error getting the core assets path");
-        return;
-    }
-
-    _coreAssetsPath = path;
-    _logger->info(TAG "The core assets path is \"%s\"", path);
-
-    if (fnkdat("saves/", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
-        _logger->error(TAG "Error getting the saves path");
-        return;
-    }
-
-    _savePath = path;
-    _logger->info(TAG "The save path is \"%s\"", path);
-
-    if (fnkdat("cores/", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
-        _logger->error(TAG "Error getting the cores path");
-        return;
-    }
-
-    _coresPath = path;
-    _logger->info(TAG "The cores path is \"%s\"", path);
-}
+void hc::Config::onStarted() {}
 
 void hc::Config::onConsoleLoaded() {}
 

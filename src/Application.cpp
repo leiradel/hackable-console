@@ -253,13 +253,13 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         undo.add([this]() { _control.destroy(); });
 
         _config = new Config();
-        _config->init(&_logger);
-        _plugins.emplace(_config);
+        undo.add([this]() { delete _config; });
+        
+        if (!_config->init(_logger)) {
+            return false;
+        }
 
-        // This needs to be started first as it contains important paths
-        _logger.info(TAG "Starting plugin %s (%s): %s", _config->getName(), _config->getVersion(), _config->getCopyright());
-        _config->onStarted();
-        undo.add([this]() { _config->onQuit(); delete _config; });
+        _plugins.emplace(_config);
 
         if (!_video.init(&_logger)) {
             return false;
@@ -641,11 +641,8 @@ bool hc::Application::unloadGame() {
 
 void hc::Application::onStarted() {
     for (auto const plugin : _plugins) {
-        if (plugin != _config) {
-            // Config has already been started
-            _logger.info(TAG "Starting plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
-            plugin->onStarted();
-        }
+        _logger->info(TAG "Starting plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
+        plugin->onStarted();
     }
 }
 

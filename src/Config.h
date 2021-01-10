@@ -19,7 +19,7 @@ namespace hc {
         Config();
         virtual ~Config() {}
 
-        void init(Logger* logger);
+        bool init(Logger* logger);
         bool getSupportNoGame() const;
         const std::string& getRootPath() const;
         const std::string& getAutorunPath() const;
