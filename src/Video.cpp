@@ -91,35 +91,29 @@ void hc::Video::onConsoleUnloaded() {
 void hc::Video::onQuit() {}
 
 bool hc::Video::setRotation(unsigned rotation) {
-    _logger->debug(TAG "%s:%u: %s(%u)", __FILE__, __LINE__, __FUNCTION__, rotation);
     _rotation = rotation;
     _logger->info(TAG "Set rotation to %u", rotation);
     return true;
 }
 
 bool hc::Video::getOverscan(bool* overscan) {
-    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, overscan);
     *overscan = true;
     _logger->warn(TAG "Returning fixed true for overscan");
     return true;
 }
 
 bool hc::Video::getCanDupe(bool* canDupe) {
-    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, canDupe);
     *canDupe = true;
     _logger->warn(TAG "Returning fixed true for can dupe");
     return true;
 }
 
 bool hc::Video::showMessage(retro_message const* message) {
-    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, message);
-    _logger->warn(TAG "TODO: RETRO_ENVIRONMENT_SET_MESSAGE");
-    _logger->info(TAG "Show message: %s", message->msg);
+    _logger->warn(TAG "showMessage not implemented: %s", message->msg);
     return true;
 }
 
 bool hc::Video::setPixelFormat(retro_pixel_format format) {
-    _logger->debug(TAG "%s:%u: %s(%d)", __FILE__, __LINE__, __FUNCTION__, format);
     _pixelFormat = format;
 
     switch (format) {
@@ -136,19 +130,16 @@ bool hc::Video::setPixelFormat(retro_pixel_format format) {
 }
 
 bool hc::Video::setHwRender(retro_hw_render_callback* callback) {
-    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, callback);
     _logger->warn(TAG "TODO: RETRO_ENVIRONMENT_SET_HW_RENDER");
     return false;
 }
 
 bool hc::Video::setFrameTimeCallback(retro_frame_time_callback const* callback) {
-    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, callback);
     _logger->warn(TAG "TODO: RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK");
     return false;
 }
 
 bool hc::Video::setSystemAvInfo(retro_system_av_info const* info) {
-    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, info);
     _systemAvInfo.timing = info->timing;
 
     _logger->info(TAG "Setting timing");
@@ -160,7 +151,6 @@ bool hc::Video::setSystemAvInfo(retro_system_av_info const* info) {
 }
 
 bool hc::Video::setGeometry(retro_game_geometry const* geometry) {
-    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, geometry);
     _systemAvInfo.geometry = *geometry;
 
     if (_systemAvInfo.geometry.aspect_ratio <= 0) {
@@ -180,38 +170,32 @@ bool hc::Video::setGeometry(retro_game_geometry const* geometry) {
 }
 
 bool hc::Video::getCurrentSoftwareFramebuffer(retro_framebuffer* framebuffer) {
-    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, framebuffer);
     _logger->warn(TAG "TODO: RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER");
     return false;
 }
 
 bool hc::Video::getHwRenderInterface(retro_hw_render_interface const** interface) {
-    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, interface);
     _logger->warn(TAG "TODO: RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE");
     return false;
 }
 
 bool hc::Video::setHwRenderContextNegotiationInterface(retro_hw_render_context_negotiation_interface const* interface) {
-    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, interface);
     _logger->warn(TAG "TODO: RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE");
     return false;
 }
 
 bool hc::Video::setHwSharedContext() {
-    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
     _logger->warn(TAG "TODO: RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT");
     return false;
 }
 
 bool hc::Video::getTargetRefreshRate(float* rate) {
-    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, rate);
     *rate = 60;
     _logger->warn(TAG "Returning fixed 60 for target refresh rate");
     return true;
 }
 
 bool hc::Video::getPreferredHwRender(unsigned* preferred) {
-    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, preferred);
     *preferred = RETRO_HW_CONTEXT_NONE;
     _logger->warn(TAG "Returning fixed RETRO_HW_CONTEXT_NONE for preferred hardware renderer");
     return true;
