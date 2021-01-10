@@ -81,11 +81,11 @@ namespace hc {
 
         Audio* _audio;
         Config* _config;
+        Led* _led;
 
         Logger _logger;
         Control _control;
         Video _video;
-        Led _led;
         Memory _memory;
 
         lrcpp::Frontend _frontend;

@@ -272,13 +272,17 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         _plugins.emplace(_audio);
         undo.add([this]() { delete _audio; });
 
-        if (!_led.init(&_logger)) {
+        _led = new Led();
+        _led->init(&_logger);
+        _plugins.emplace(_led);
+        undo.add([this]() { delete _led; });
+
+        if (!_memory.init(&_logger)) {
             return false;
         }
 
-        undo.add([this]() { _led.destroy(); });
+        undo.add([this]() { _memory.destroy(); });
 
-        if (!_memory.init(&_logger)) {
             return false;
         }
 
@@ -337,7 +341,6 @@ void hc::Application::destroy() {
     lua_close(_L);
 
     _memory.destroy();
-    _led.destroy();
     _video.destroy();
     _control.destroy();
     _logger.destroy();
@@ -364,7 +367,6 @@ void hc::Application::draw() {
     _logger.draw();
     _control.draw();
     _video.draw();
-    _led.draw();
     _memory.draw();
 }
 
