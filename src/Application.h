@@ -46,6 +46,17 @@ namespace hc {
         bool unloadConsole();
         bool unloadGame();
 
+        void onStarted();
+        void onConsoleLoaded();
+        void onGameLoaded();
+        void onGamePaused();
+        void onGameResumed();
+        void onGameReset();
+        void onFrame();
+        void onGameUnloaded();
+        void onConsoleUnloaded();
+        void onQuit();
+
         int luaopen_hc(lua_State* const L);
 
     public:

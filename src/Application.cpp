@@ -327,6 +327,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
     }
 
     undo.clear();
+    onStarted();
     return true;
 }
 
@@ -393,6 +394,7 @@ void hc::Application::run() {
 
         if (_fsm.currentState() == LifeCycle::State::GameRunning) {
             _frontend.run();
+            onFrame();
         }
 
         ImGui_ImplOpenGL2_NewFrame();
@@ -484,6 +486,7 @@ bool hc::Application::loadConsole(char const* name) {
     _logger.info("    need_fullpath    = %s", info.need_fullpath ? "true" : "false");
     _logger.info("    block_extract    = %s", info.block_extract ? "true" : "false");
 
+    onConsoleLoaded();
     return true;
 }
 
@@ -583,32 +586,39 @@ bool hc::Application::loadGame(char const* path) {
         _logger.info("    No core memory exposed via the get_memory interface");
     }
 
+    onGameLoaded();
     return true;
 }
 
 bool hc::Application::pauseGame() {
+    onGamePaused();
     return true;
 }
 
 bool hc::Application::quit() {
+    onQuit();
     return true;
 }
 
 bool hc::Application::resetGame() {
+    onGameReset();
     return _frontend.reset();
 }
 
 bool hc::Application::resumeGame() {
+    onGameResumed();
     return true;
 }
 
 bool hc::Application::step() {
+    onFrame();
     return _frontend.run();
 }
 
 bool hc::Application::unloadConsole() {
     if (_frontend.unload()) {
         _config.reset();
+        onConsoleUnloaded();
         return true;
     }
 
@@ -620,10 +630,51 @@ bool hc::Application::unloadGame() {
         _audio.reset();
         _video.reset();
         _memory.reset();
+        onGameUnloaded();
         return true;
     }
 
     return false;
+}
+
+void hc::Application::onStarted() {
+    _logger.error("%s", __FUNCTION__);
+}
+
+void hc::Application::onConsoleLoaded() {
+    _logger.error("%s", __FUNCTION__);
+}
+
+void hc::Application::onGameLoaded() {
+    _logger.error("%s", __FUNCTION__);
+}
+
+void hc::Application::onGamePaused() {
+    _logger.error("%s", __FUNCTION__);
+}
+
+void hc::Application::onGameResumed() {
+    _logger.error("%s", __FUNCTION__);
+}
+
+void hc::Application::onGameReset() {
+    _logger.error("%s", __FUNCTION__);
+}
+
+void hc::Application::onFrame() {
+    _logger.error("%s", __FUNCTION__);
+}
+
+void hc::Application::onGameUnloaded() {
+    _logger.error("%s", __FUNCTION__);
+}
+
+void hc::Application::onConsoleUnloaded() {
+    _logger.error("%s", __FUNCTION__);
+}
+
+void hc::Application::onQuit() {
+    _logger.error("%s", __FUNCTION__);
 }
 
 void hc::Application::vprintf(void* ud, char const* fmt, va_list args) {
