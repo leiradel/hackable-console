@@ -105,5 +105,7 @@ namespace hc {
         std::vector<Controller> _controllers;
         uint64_t _ports;
         std::vector<ControllerDescription> _ids[64];
+
+        uint8_t _keyState[RETROK_LAST];
     };
 }

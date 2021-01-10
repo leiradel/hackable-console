@@ -60,6 +60,8 @@ void hc::Input::init(Logger* logger, lrcpp::Frontend* frontend) {
     for (int i = 0; i < max; i++) {
         addController(i);
     }
+
+    memset(&_keyState, 0, sizeof(_keyState));
 }
 
 void hc::Input::processEvent(SDL_Event const* event) {
@@ -130,7 +132,14 @@ void hc::Input::onGameLoaded() {}
 void hc::Input::onGamePaused() {}
 void hc::Input::onGameResumed() {}
 void hc::Input::onGameReset() {}
-void hc::Input::onFrame() {}
+
+void hc::Input::onFrame() {
+    for (unsigned i = 0; i < RETROK_LAST; i++) {
+        if (_keyState[i] > 0) {
+            _keyState[i]--;
+        }
+    }
+}
 
 void hc::Input::onDraw() {
     drawPads();
@@ -160,6 +169,8 @@ void hc::Input::onConsoleUnloaded() {
         pad.port = 0;
         pad.devId = RETRO_DEVICE_NONE;
     }
+
+    memset(&_keyState, 0, sizeof(_keyState));
 }
 
 void hc::Input::onQuit() {
@@ -295,13 +306,21 @@ bool hc::Input::getInputBitmasks(bool* supports) {
 int16_t hc::Input::state(unsigned port, unsigned device, unsigned index, unsigned id) {
     (void)index;
 
-    port++;
+    unsigned const base = device & RETRO_DEVICE_MASK;
 
-    for (auto const& pair : _pads) {
-        Pad const& pad = pair.second;
+    if (base == RETRO_DEVICE_KEYBOARD) {
+        return id < RETROK_LAST ? (_keyState[id] ? 32767 : 0) : 0;
+    }
 
-        if (pad.port == (int)port && pad.devId == device) {
-            return pad.state[id] ? 32767 : 0;
+    if (base == RETRO_DEVICE_JOYPAD) {
+        port++;
+
+        for (auto const& pair : _pads) {
+            Pad const& pad = pair.second;
+
+            if (pad.port == (int)port && pad.devId == device) {
+                return pad.state[id] ? 32767 : 0;
+            }
         }
     }
 
@@ -536,7 +555,7 @@ void hc::Input::drawKeyboard() {
 
     static unsigned const cod3[] = {
         RETROK_CAPSLOCK, RETROK_a, RETROK_s, RETROK_d, RETROK_f, RETROK_g, RETROK_h,
-        RETROK_j, RETROK_k, RETROK_l, RETROK_g, RETROK_SEMICOLON, RETROK_QUOTE, RETROK_RETURN
+        RETROK_j, RETROK_k, RETROK_l, RETROK_SEMICOLON, RETROK_QUOTE, RETROK_RETURN
     };
 
     static Key const     row4[] = {"shift", "z", "x", "c", "v", "b", "n", "m", ",", ".", "/", "shift", nullptr};
@@ -565,7 +584,7 @@ void hc::Input::drawKeyboard() {
             ImVec2 const size(static_cast<float>(sizes[i][j]), 20.0f);
 
             if (ImGui::Button(keys[j], size)) {
-                (void)codes[i][j];
+                _keyState[codes[i][j]] = 5;
             }
 
             ImGui::SameLine();
