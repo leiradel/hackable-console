@@ -292,7 +292,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         _frontend.setConfig(_config);
         _frontend.setAudio(_audio);
         _frontend.setVideo(&_video);
-        _frontend.setLed(&_led);
+        _frontend.setLed(_led);
     }
 
     {
