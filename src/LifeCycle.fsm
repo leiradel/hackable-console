@@ -41,9 +41,17 @@ fsm LifeCycle {
     }
 
     GamePaused {
-        resumeGame() => GameRunning;
+        resumeGame() => GameRunning {
+            if (!ctx.resumeGame()) {
+                forbid;
+            }
+        }
 
-        resetGame() => resumeGame() => resetGame() => pauseGame();
+        resetGame() => GamePaused {
+            if (!ctx.resetGame()) {
+                forbid;
+            }
+        }
 
         step() => GamePaused  {
             ctx.step();
@@ -59,7 +67,11 @@ fsm LifeCycle {
     }
 
     GameRunning {
-        pauseGame() => GamePaused;
+        pauseGame() => GamePaused {
+            if (!ctx.pauseGame()) {
+                forbid;
+            }
+        }
 
         resetGame() => GameRunning {
             ctx.resetGame();

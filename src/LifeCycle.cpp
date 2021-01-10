@@ -179,6 +179,12 @@ bool LifeCycle::pauseGame() {
                 return false;
             }
 
+//#line 70 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+
+            if (!ctx.pauseGame()) {
+                return false;
+            }
+        
             __state = State::GamePaused;
             after(__state);
             after();
@@ -401,25 +407,23 @@ bool LifeCycle::resetGame() {
                 return false;
             }
 
-            bool __ok = resumeGame() &&
-                        resetGame() &&
-                        pauseGame();
+//#line 50 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
-            if (__ok) {
-                after(__state);
-                after();
-
+            if (!ctx.resetGame()) {
+                return false;
             }
-            else {
+        
+            __state = State::GamePaused;
+            after(__state);
+            after();
+
 #ifdef DEBUG_FSM
-                printf(
-                    "FSM %s:%u Failed to switch to %s",
-                    __FUNCTION__, __LINE__, stateName(State::GamePaused)
-                );
+            printf(
+                "FSM %s:%u Switched to %s",
+                __FUNCTION__, __LINE__, stateName(State::GamePaused)
+            );
 #endif
-            }
-
-            return __ok;
+            return true;
         }
         break;
 
@@ -446,7 +450,7 @@ bool LifeCycle::resetGame() {
                 return false;
             }
 
-//#line 64 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+//#line 76 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
             ctx.resetGame();
         
@@ -495,6 +499,12 @@ bool LifeCycle::resumeGame() {
                 return false;
             }
 
+//#line 44 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+
+            if (!ctx.resumeGame()) {
+                return false;
+            }
+        
             __state = State::GameRunning;
             after(__state);
             after();
@@ -540,7 +550,7 @@ bool LifeCycle::step() {
                 return false;
             }
 
-//#line 48 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+//#line 56 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
             ctx.step();
         
@@ -638,7 +648,7 @@ bool LifeCycle::unloadGame() {
                 return false;
             }
 
-//#line 52 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+//#line 60 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
             if (!ctx.unloadGame()) {
                 return false;
@@ -681,7 +691,7 @@ bool LifeCycle::unloadGame() {
                 return false;
             }
 
-//#line 68 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+//#line 80 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
             if (!ctx.unloadGame()) {
                 return false;
