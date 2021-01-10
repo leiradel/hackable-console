@@ -65,6 +65,26 @@ hc::Config* hc::Config::check(lua_State* L, int index) {
     return *(Config**)luaL_checkudata(L, index, "hc::Config");
 }
 
+char const* hc::Config::getName() {
+    return "hc::Config built-in configuration plugin";
+}
+
+char const* hc::Config::getVersion() {
+    return "0.0.0";
+}
+
+char const* hc::Config::getLicense() {
+    return "MIT";
+}
+
+char const* hc::Config::getCopyright() {
+    return "Copyright (c) Andre Leiradella";
+}
+
+char const* hc::Config::getUrl() {
+    return "https://github.com/leiradel/hackable-console";
+}
+
 void hc::Config::onStarted() {
     if (fnkdat(NULL, 0, 0, FNKDAT_INIT) != 0) {
         _logger->error(TAG "Error initializing fnkdat");

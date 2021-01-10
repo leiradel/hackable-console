@@ -28,6 +28,12 @@ namespace hc {
         static Config* check(lua_State* L, int index);
 
         // hc::Plugin
+        virtual char const* getName() override;
+        virtual char const* getVersion() override;
+        virtual char const* getLicense() override;
+        virtual char const* getCopyright() override;
+        virtual char const* getUrl() override;
+
         virtual void onStarted() override;
         virtual void onConsoleLoaded() override;
         virtual void onGameLoaded() override;
