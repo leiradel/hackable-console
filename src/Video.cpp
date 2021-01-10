@@ -15,7 +15,7 @@ void hc::Video::init(Logger* logger) {
     memset(&_systemAvInfo, 0, sizeof(_systemAvInfo));
 
     _texture = 0;
-    _maxWidth = _maxHeight = _width = _height = 0;
+    _width = _height = 0;
 }
 
 char const* hc::Video::getName() {
@@ -69,9 +69,12 @@ void hc::Video::onDraw() {
             height = width / _systemAvInfo.geometry.aspect_ratio;
         }
 
+        unsigned const maxWidth = _systemAvInfo.geometry.max_width;
+        unsigned const maxHeight = _systemAvInfo.geometry.max_height;
+
         ImVec2 const size = ImVec2(width, height);
         ImVec2 const uv0 = ImVec2(0.0f, 0.0f);
-        ImVec2 const uv1 = ImVec2((float)_width / _maxWidth, (float)_height / _maxHeight);
+        ImVec2 const uv1 = ImVec2((float)_width / maxWidth, (float)_height / maxHeight);
 
         ImGui::Image((ImTextureID)(uintptr_t)_texture, size, uv0, uv1);
     }
@@ -82,6 +85,7 @@ void hc::Video::onDraw() {
 void hc::Video::onGameUnloaded() {
     glDeleteTextures(1, &_texture);
     _texture = 0;
+    _width = _height = 0;
 }
 
 void hc::Video::onConsoleUnloaded() {
@@ -165,7 +169,7 @@ bool hc::Video::setGeometry(retro_game_geometry const* geometry) {
     _logger->info(TAG "    max_height   = %u", _systemAvInfo.geometry.max_height);
     _logger->info(TAG "    aspect_ratio = %f", _systemAvInfo.geometry.aspect_ratio);
 
-    setupTexture(_systemAvInfo.geometry.max_width, _systemAvInfo.geometry.max_height);
+    setupTexture();
     return true;
 }
 
@@ -245,13 +249,9 @@ retro_proc_address_t hc::Video::getProcAddress(char const* symbol) {
     return nullptr;
 }
 
-void hc::Video::setupTexture(unsigned width, unsigned height) {
-    if (width <= _maxWidth && height <= _maxHeight) {
-        return;
-    }
-
-    _maxWidth = width;
-    _maxHeight = height;
+void hc::Video::setupTexture() {
+    unsigned const width = _systemAvInfo.geometry.max_width;
+    unsigned const height = _systemAvInfo.geometry.max_height;
 
     if (_texture != 0) {
         glDeleteTextures(1, &_texture);
@@ -282,6 +282,5 @@ void hc::Video::setupTexture(unsigned width, unsigned height) {
     }
 
     glBindTexture(GL_TEXTURE_2D, previous_texture);
-
     _logger->info(TAG "Texture set to %u x %u", width, height);
 }

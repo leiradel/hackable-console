@@ -57,7 +57,7 @@ namespace hc {
         virtual retro_proc_address_t getProcAddress(char const* symbol) override;
 
     protected:
-        void setupTexture(unsigned width, unsigned height);
+        void setupTexture();
 
         Logger* _logger;
 
@@ -66,8 +66,6 @@ namespace hc {
         retro_system_av_info _systemAvInfo;
 
         GLuint _texture;
-        unsigned _maxWidth;
-        unsigned _maxHeight;
         unsigned _width;
         unsigned _height;
     };
