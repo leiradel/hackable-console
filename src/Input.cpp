@@ -358,6 +358,9 @@ bool hc::Input::getInputDeviceCapabilities(uint64_t* capabilities) {
 }
 
 bool hc::Input::setControllerInfo(retro_controller_info const* info) {
+    _logger->info(TAG "Setting controller info");
+    _logger->info(TAG "       id description");
+
     size_t count = 0;
 
     for (; info[count].types != nullptr; count++) /* nothing */;
@@ -372,6 +375,8 @@ bool hc::Input::setControllerInfo(retro_controller_info const* info) {
 
         for (unsigned j = 0; j < info[i].num_types; j++) {
             retro_controller_description const* type = info[i].types + j;
+
+            _logger->info(TAG "    %5u %s", type->id, type->desc);
 
             ControllerDescription tempdesc;
             tempdesc.desc = type->desc;
