@@ -86,7 +86,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
     }
     undo;
 
-    _logger = new Logger();
+    _logger = new Logger;
 
     if (!_logger->init()) {
         delete _logger;
@@ -255,7 +255,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         _control->init(_logger, &_fsm);
         _plugins.emplace(_control);
 
-        _config = new Config();
+        _config = new Config;
         undo.add([this]() { delete _config; });
         
         if (!_config->init(_logger)) {
@@ -264,20 +264,25 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
         _plugins.emplace(_config);
 
-        _video = new Video();
+        _video = new Video;
         undo.add([this]() { delete _video; });
         _video->init(_logger);
         _plugins.emplace(_video);
 
-        _audio = new Audio();
+        _audio = new Audio;
         undo.add([this]() { delete _audio; });
         _audio->init(_logger, _audioSpec.freq, &_fifo);
         _plugins.emplace(_audio);
 
-        _led = new Led();
+        _led = new Led;
         undo.add([this]() { delete _led; });
         _led->init(_logger);
         _plugins.emplace(_led);
+
+        _input = new Input;
+        undo.add([this]() { delete _input; });
+        _input->init(_logger, &_frontend);
+        _plugins.emplace(_input);
 
         if (!_memory.init(_logger)) {
             return false;
@@ -285,15 +290,12 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
         undo.add([this]() { _memory.destroy(); });
 
-            return false;
-        }
-
-
         _frontend.setLogger(_logger);
         _frontend.setConfig(_config);
         _frontend.setAudio(_audio);
-        _frontend.setVideo(&_video);
+        _frontend.setVideo(_video);
         _frontend.setLed(_led);
+        _frontend.setInput(_input);
     }
 
     {
@@ -386,7 +388,7 @@ void hc::Application::run() {
                 case SDL_CONTROLLERAXISMOTION:
                 case SDL_KEYUP:
                 case SDL_KEYDOWN:
-                    // _input.processEvent(&event);
+                    _input->processEvent(&event);
                     break;
             }
         }
@@ -635,42 +637,42 @@ bool hc::Application::unloadGame() {
 
 void hc::Application::onStarted() {
     for (auto const plugin : _plugins) {
-        _logger->info(TAG "onStarted plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
+        _logger->debug(TAG "onStarted plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onStarted();
     }
 }
 
 void hc::Application::onConsoleLoaded() {
     for (auto const plugin : _plugins) {
-        _logger->info(TAG "onConsoleLoaded plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
+        _logger->debug(TAG "onConsoleLoaded plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onConsoleLoaded();
     }
 }
 
 void hc::Application::onGameLoaded() {
     for (auto const plugin : _plugins) {
-        _logger->info(TAG "onGameLoaded plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
+        _logger->debug(TAG "onGameLoaded plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onGameLoaded();
     }
 }
 
 void hc::Application::onGamePaused() {
     for (auto const plugin : _plugins) {
-        _logger->info(TAG "onGamePaused plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
+        _logger->debug(TAG "onGamePaused plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onGamePaused();
     }
 }
 
 void hc::Application::onGameResumed() {
     for (auto const plugin : _plugins) {
-        _logger->info(TAG "onGameResumed plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
+        _logger->debug(TAG "onGameResumed plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onGameResumed();
     }
 }
 
 void hc::Application::onGameReset() {
     for (auto const plugin : _plugins) {
-        _logger->info(TAG "onGameReset plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
+        _logger->debug(TAG "onGameReset plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onGameReset();
     }
 }
@@ -684,21 +686,21 @@ void hc::Application::onFrame() {
 
 void hc::Application::onGameUnloaded() {
     for (auto const plugin : _plugins) {
-        _logger->info(TAG "onGameUnloaded plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
+        _logger->debug(TAG "onGameUnloaded plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onGameUnloaded();
     }
 }
 
 void hc::Application::onConsoleUnloaded() {
     for (auto const plugin : _plugins) {
-        _logger->info(TAG "onConsoleUnloaded plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
+        _logger->debug(TAG "onConsoleUnloaded plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onConsoleUnloaded();
     }
 }
 
 void hc::Application::onQuit() {
     for (auto const plugin : _plugins) {
-        _logger->info(TAG "onQuit plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
+        _logger->debug(TAG "onQuit plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onQuit();
         delete plugin;
     }
@@ -785,7 +787,7 @@ int hc::Application::l_addConsole(lua_State* const L) {
     lua_pushvalue(L, 1);
     int const ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    self->_control.addConsole(name);
+    self->_control->addConsole(name);
     self->_consoleRefs.emplace(name, ref);
     return 0;
 }

@@ -8,6 +8,8 @@
 #include "Audio.h"
 #include "Video.h"
 #include "Led.h"
+#include "Input.h"
+
 #include "Control.h"
 #include "Memory.h"
 #include "Fifo.h"
@@ -84,9 +86,9 @@ namespace hc {
         Led* _led;
         Logger* _logger;
         Video* _video;
+        Input* _input;
 
         Control* _control;
-
         Memory _memory;
 
         lrcpp::Frontend _frontend;
