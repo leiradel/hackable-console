@@ -34,7 +34,7 @@ namespace hc {
         virtual void onConsoleUnloaded() override;
         virtual void onQuit() override;
 
-        // lrcpp::Audio
+        // lrcpp::Led
         virtual void setState(int led, int state) override;
 
     protected:
