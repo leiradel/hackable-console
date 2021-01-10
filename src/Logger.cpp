@@ -77,7 +77,7 @@ hc::Logger* hc::Logger::check(lua_State* L, int index) {
 }
 
 char const* hc::Logger::getName() {
-    return "hc::Led built-in logger plugin";
+    return "hc::Logger built-in logger plugin";
 }
 
 char const* hc::Logger::getVersion() {

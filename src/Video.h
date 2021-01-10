@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Plugin.h"
 #include "Logger.h"
 
 #include <Components.h>
@@ -7,16 +8,33 @@
 #include <SDL_opengl.h>
 
 namespace hc {
-    class Video: public lrcpp::Video {
+    class Video: public Plugin, public lrcpp::Video {
     public:
-        Video() : _logger(nullptr) {}
+        Video();
         virtual ~Video() {}
 
-        bool init(Logger* logger);
-        void destroy();
-        void reset();
-        void draw();
+        void init(Logger* logger);
 
+        // hc::Plugin
+        virtual char const* getName() override;
+        virtual char const* getVersion() override;
+        virtual char const* getLicense() override;
+        virtual char const* getCopyright() override;
+        virtual char const* getUrl() override;
+
+        virtual void onStarted() override;
+        virtual void onConsoleLoaded() override;
+        virtual void onGameLoaded() override;
+        virtual void onGamePaused() override;
+        virtual void onGameResumed() override;
+        virtual void onGameReset() override;
+        virtual void onFrame() override;
+        virtual void onDraw() override;
+        virtual void onGameUnloaded() override;
+        virtual void onConsoleUnloaded() override;
+        virtual void onQuit() override;
+
+        // lrcpp::Video
         virtual bool setRotation(unsigned rotation) override;
         virtual bool getOverscan(bool* overscan) override;
         virtual bool getCanDupe(bool* canDupe) override;

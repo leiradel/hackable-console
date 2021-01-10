@@ -83,9 +83,9 @@ namespace hc {
         Config* _config;
         Led* _led;
         Logger* _logger;
+        Video* _video;
 
         Control _control;
-        Video _video;
         Memory _memory;
 
         lrcpp::Frontend _frontend;

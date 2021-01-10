@@ -265,11 +265,10 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
         _plugins.emplace(_config);
 
-        if (!_video.init(_logger)) {
-            return false;
-        }
-
-        undo.add([this]() { _video.destroy(); });
+        _video = new Video();
+        _video->init(_logger);
+        _plugins.emplace(_video);
+        undo.add([this]() { delete _video; });
 
         _audio = new Audio();
         _audio->init(_logger, _audioSpec.freq, &_fifo);
@@ -344,7 +343,6 @@ void hc::Application::destroy() {
     lua_close(_L);
 
     _memory.destroy();
-    _video.destroy();
     _control.destroy();
 
     ImGui_ImplOpenGL2_Shutdown();
@@ -367,7 +365,6 @@ void hc::Application::draw() {
     }
 
     _control.draw();
-    _video.draw();
     _memory.draw();
 }
 
@@ -631,7 +628,6 @@ bool hc::Application::unloadConsole() {
 
 bool hc::Application::unloadGame() {
     if (_frontend.unloadGame()) {
-        _video.reset();
         _memory.reset();
         onGameUnloaded();
         return true;

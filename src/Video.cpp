@@ -4,43 +4,55 @@
 
 #define TAG "[VID] "
 
-bool hc::Video::init(Logger* logger) {
+hc::Video::Video() : _logger(nullptr) {}
+
+void hc::Video::init(Logger* logger) {
     _logger = logger;
-    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
-
-    _texture = 0;
-    reset();
-
-    return true;
-}
-
-void hc::Video::destroy() {
-    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
-
-    if (_texture != 0) {
-        glDeleteTextures(1, &_texture);
-    }
-}
-
-void hc::Video::reset() {
-    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
 
     _rotation = 0;
     _pixelFormat = RETRO_PIXEL_FORMAT_UNKNOWN;
+
     memset(&_systemAvInfo, 0, sizeof(_systemAvInfo));
 
-    if (_texture != 0) {
-        glDeleteTextures(1, &_texture);
-        _texture = 0;
-    }
-
-    _maxWidth = 0;
-    _maxHeight = 0;
-    _width = 0;
-    _height = 0;
+    _texture = 0;
+    _maxWidth = _maxHeight = _width = _height = 0;
 }
 
-void hc::Video::draw() {
+char const* hc::Video::getName() {
+    return "hc::Video built-in video plugin";
+}
+
+char const* hc::Video::getVersion() {
+    return "0.0.0";
+}
+
+char const* hc::Video::getLicense() {
+    return "MIT";
+}
+
+char const* hc::Video::getCopyright() {
+    return "Copyright (c) Andre Leiradella";
+}
+
+char const* hc::Video::getUrl() {
+    return "https://github.com/leiradel/hackable-console";
+}
+
+void hc::Video::onStarted() {}
+
+void hc::Video::onConsoleLoaded() {}
+
+void hc::Video::onGameLoaded() {}
+
+void hc::Video::onGamePaused() {}
+
+void hc::Video::onGameResumed() {}
+
+void hc::Video::onGameReset() {}
+
+void hc::Video::onFrame() {}
+
+void hc::Video::onDraw() {
     if (!ImGui::Begin(ICON_FA_DESKTOP " Video")) {
         return;
     }
@@ -66,6 +78,17 @@ void hc::Video::draw() {
 
     ImGui::End();
 }
+
+void hc::Video::onGameUnloaded() {
+    glDeleteTextures(1, &_texture);
+    _texture = 0;
+}
+
+void hc::Video::onConsoleUnloaded() {
+    _pixelFormat = RETRO_PIXEL_FORMAT_UNKNOWN;
+}
+
+void hc::Video::onQuit() {}
 
 bool hc::Video::setRotation(unsigned rotation) {
     _logger->debug(TAG "%s:%u: %s(%u)", __FILE__, __LINE__, __FUNCTION__, rotation);
