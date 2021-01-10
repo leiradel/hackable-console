@@ -360,7 +360,7 @@ bool hc::Input::getInputDeviceCapabilities(uint64_t* capabilities) {
 bool hc::Input::setControllerInfo(retro_controller_info const* info) {
     size_t count = 0;
 
-    for (; info->types != nullptr; count++) /* nothing */;
+    for (; info[count].types != nullptr; count++) /* nothing */;
 
     _controllers.clear();
     _controllers.reserve(count);
