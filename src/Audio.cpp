@@ -98,8 +98,6 @@ char const* hc::Audio::getUrl() {
 }
 
 void hc::Audio::onStarted() {
-    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
-
     _mutex = SDL_CreateMutex();
 
     if (_mutex == nullptr) {
@@ -107,13 +105,9 @@ void hc::Audio::onStarted() {
     }
 }
 
-void hc::Audio::onConsoleLoaded() {
-    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
-}
+void hc::Audio::onConsoleLoaded() {}
 
 void hc::Audio::onGameLoaded() {
-    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
-
     // setSystemAvInfo has been called by now
     _currentRatio = _originalRatio = _sampleRate / _timing.sample_rate;
     _rateControlDelta = 0.005;
@@ -130,19 +124,15 @@ void hc::Audio::onGameLoaded() {
 }
 
 void hc::Audio::onGamePaused() {
-    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
     _wasMuted = _mute;
     _mute = true;
 }
 
 void hc::Audio::onGameResumed() {
-    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
     _mute = _wasMuted;
 }
 
 void hc::Audio::onGameReset() {
-    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
-
     SDL_LockMutex(_mutex);
     _samples.clear();
     SDL_UnlockMutex(_mutex);
@@ -194,8 +184,6 @@ void hc::Audio::onDraw() {
 }
 
 void hc::Audio::onGameUnloaded() {
-    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
-
     speex_resampler_destroy(_resampler);
     _resampler = nullptr;
 
@@ -204,18 +192,14 @@ void hc::Audio::onGameUnloaded() {
     SDL_UnlockMutex(_mutex);
 }
 
-void hc::Audio::onConsoleUnloaded() {
-    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
-}
+void hc::Audio::onConsoleUnloaded() {}
 
 void hc::Audio::onQuit() {
-    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
     SDL_DestroyMutex(_mutex);
     _mutex = nullptr;
 }
 
 bool hc::Audio::setSystemAvInfo(retro_system_av_info const* info) {
-    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
     _timing = info->timing;
 
     _logger->info(TAG "Setting timing");
@@ -227,7 +211,6 @@ bool hc::Audio::setSystemAvInfo(retro_system_av_info const* info) {
 }
 
 bool hc::Audio::setAudioCallback(retro_audio_callback const* callback) {
-    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, callback);
     _logger->warn(TAG "TODO: RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK");
     return false;
 }

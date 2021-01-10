@@ -210,21 +210,18 @@ void hc::Config::onQuit() {
 }
 
 bool hc::Config::setPerformanceLevel(unsigned level) {
-    _logger->debug(TAG "%s:%u: %s(%u)", __FILE__, __LINE__, __FUNCTION__, level);
     _performanceLevel = level;
     _logger->info(TAG "Set performance level to %u", level);
     return true;
 }
 
 bool hc::Config::getSystemDirectory(char const** directory) {
-    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, directory);
     *directory = _systemPath.c_str();
+    _logger->info(TAG "Returning \"%s\" for system directory", *directory);
     return true;
 }
 
 bool hc::Config::getVariable(retro_variable* variable) {
-    _logger->debug(TAG "%s:%u: %s(%p) // variable->key = \"%s\"", __FILE__, __LINE__, __FUNCTION__, variable, variable->key);
-
     auto const found = _coreMap.find(variable->key);
 
     if (found != _coreMap.end()) {
@@ -246,44 +243,36 @@ bool hc::Config::getVariableUpdate(bool* const updated) {
 }
 
 bool hc::Config::setSupportNoGame(bool const supports) {
-    _logger->debug(TAG "%s:%u: %s(%s)", __FILE__, __LINE__, __FUNCTION__, supports ? "true" : "false");
     _supportsNoGame = supports;
     _logger->info(TAG "Set supports no game to %s", supports ? "true" : "false");
     return true;
 }
 
 bool hc::Config::getLibretroPath(char const** path) {
-    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, path);
     *path = _coresPath.c_str();
+    _logger->info(TAG "Returning \"%s\" for libretro path", *path);
     return true;
 }
 
 bool hc::Config::getCoreAssetsDirectory(char const** directory) {
-    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, directory);
     *directory = _coreAssetsPath.c_str();
+    _logger->info(TAG "Returning \"%s\" for core assets directory", *directory);
     return true;
 }
 
 bool hc::Config::getSaveDirectory(char const** directory) {
-    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, directory);
     *directory = _savePath.c_str();
+    _logger->info(TAG "Returning \"%s\" for save directory", *directory);
     return true;
 }
 
 bool hc::Config::setProcAddressCallback(retro_get_proc_address_interface const* callback) {
-    _logger->debug(
-        TAG "%s:%u: %s(%p) // callback->get_proc_address = %p",
-        __FILE__, __LINE__, __FUNCTION__, callback,
-        callback->get_proc_address
-    );
-
     _getCoreProc = callback->get_proc_address;
     _logger->info(TAG "Set get procedure address to %p", callback->get_proc_address);
     return true;
 }
 
 bool hc::Config::setSubsystemInfo(retro_subsystem_info const* info) {
-    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, info);
     _logger->info(TAG "Setting subsystem information");
 
     for (; info->desc != nullptr; info++) {
@@ -335,7 +324,6 @@ bool hc::Config::setSubsystemInfo(retro_subsystem_info const* info) {
 }
 
 bool hc::Config::setMemoryMaps(retro_memory_map const* map) {
-    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, map);
     _logger->info(TAG "Setting memory maps");
 
     auto const descriptors = static_cast<retro_memory_descriptor*>(malloc(map->num_descriptors * sizeof(retro_memory_descriptor)));
@@ -406,30 +394,24 @@ bool hc::Config::setMemoryMaps(retro_memory_map const* map) {
 bool hc::Config::getUsername(char const** username) {
     static char const* const value = "hackcon";
 
-    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, username);
     _logger->warn(TAG "Returning fixed username: %s", value);
-
     *username = value;
     return true;
 }
 
 bool hc::Config::getLanguage(unsigned* language) {
-    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, language);
     _logger->warn(TAG "Returning fixed language English");
-
     *language = RETRO_LANGUAGE_ENGLISH;
     return true;
 }
 
 bool hc::Config::setSupportAchievements(bool supports) {
-    _logger->debug(TAG "%s:%u: %s(%s)", __FILE__, __LINE__, __FUNCTION__, supports ? "true" : "false");
     _supportAchievements = supports;
     _logger->info(TAG "Set support achievement to %s", supports ? "true" : "false");
     return true;
 }
 
 bool hc::Config::setSerializationQuirks(uint64_t quirks) {
-    _logger->debug(TAG "%s:%u: %s(%" PRIu64 ")", __FILE__, __LINE__, __FUNCTION__, quirks);
     _serializationQuirks = quirks;
     _logger->info(TAG "Set serialization quirks to %" PRIu64, quirks);
     return true;
@@ -441,14 +423,11 @@ bool hc::Config::getAudioVideoEnable(int* enabled) {
 }
 
 bool hc::Config::getFastForwarding(bool* is) {
-    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, is);
     _logger->warn(TAG "Returning false for is fast forwarding");
-
     *is = false;
     return true;
 }
 bool hc::Config::setCoreOptions(retro_core_option_definition const* options) {
-    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, options);
     _logger->info(TAG "Setting core options");
 
     for (; options->key != nullptr; options++) {
@@ -485,13 +464,11 @@ bool hc::Config::setCoreOptions(retro_core_option_definition const* options) {
 }
 
 bool hc::Config::setCoreOptionsIntl(retro_core_options_intl const* intl) {
-    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, intl);
     _logger->warn(TAG "Using English for the core options");
     return setCoreOptions(intl->us);
 }
 
 bool hc::Config::setCoreOptionsDisplay(retro_core_option_display const* display) {
-    _logger->debug(TAG "%s:%u: %s(%p)", __FILE__, __LINE__, __FUNCTION__, display);
     _logger->info(TAG "Setting core options display");
 
     for (; display->key != nullptr; display++) {
