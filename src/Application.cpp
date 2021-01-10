@@ -86,16 +86,20 @@ bool hc::Application::init(std::string const& title, int const width, int const 
     }
     undo;
 
-    if (!_logger.init()) {
+    _logger = new Logger();
+
+    if (!_logger->init()) {
+        delete _logger;
         return false;
     }
 
-    undo.add([this]() { _logger.destroy(); });
+    _plugins.emplace(_logger);
+    undo.add([this]() { delete _logger; });
 
     {
         // Setup SDL
         if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
-            _logger.error("Error in SDL_Init: %s", SDL_GetError());
+            _logger->error("Error in SDL_Init: %s", SDL_GetError());
             return false;
         }
 
@@ -118,7 +122,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         );
 
         if (_window == nullptr) {
-            _logger.error("Error in SDL_CreateWindow: %s", SDL_GetError());
+            _logger->error("Error in SDL_CreateWindow: %s", SDL_GetError());
             return false;
         }
 
@@ -127,7 +131,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         _glContext = SDL_GL_CreateContext(_window);
 
         if (_glContext == nullptr) {
-            _logger.error("Error in SDL_GL_CreateContext: %s", SDL_GetError());
+            _logger->error("Error in SDL_GL_CreateContext: %s", SDL_GetError());
             return false;
         }
 
@@ -154,14 +158,14 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         );
 
         if (_audioDev == 0) {
-            _logger.error("Error in SDL_OpenAudioDevice: %s", SDL_GetError());
+            _logger->error("Error in SDL_OpenAudioDevice: %s", SDL_GetError());
             return false;
         }
 
         undo.add([this]() { SDL_CloseAudioDevice(_audioDev); });
 
         if (!_fifo.init(_audioSpec.size * 2)) {
-            _logger.error("Error in audio FIFO init");
+            _logger->error("Error in audio FIFO init");
             return false;
         }
 
@@ -176,7 +180,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         );
 
         if (SDL_GameControllerAddMappingsFromRW(ctrldb, 1) < 0) {
-            _logger.error("Error in SDL_GameControllerAddMappingsFromRW: %s", SDL_GetError());
+            _logger->error("Error in SDL_GameControllerAddMappingsFromRW: %s", SDL_GetError());
             return false;
         }
     }
@@ -186,7 +190,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         IMGUI_CHECKVERSION();
 
         if (ImGui::CreateContext() == nullptr) {
-            _logger.error("Error creating ImGui context");
+            _logger->error("Error creating ImGui context");
             return false;
         }
 
@@ -198,14 +202,14 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         ImGui::StyleColorsDark();
 
         if (!ImGui_ImplSDL2_InitForOpenGL(_window, _glContext)) {
-            _logger.error("Error initializing ImGui for OpenGL");
+            _logger->error("Error initializing ImGui for OpenGL");
             return false;
         }
 
         undo.add([]() { ImGui_ImplSDL2_Shutdown(); });
 
         if (!ImGui_ImplOpenGL2_Init()) {
-            _logger.error("Error initializing ImGui OpenGL implementation");
+            _logger->error("Error initializing ImGui OpenGL implementation");
             return false;
         }
 
@@ -221,7 +225,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         );
 
         if (proggyTiny == nullptr) {
-            _logger.error("Error adding Proggy Tiny font");
+            _logger->error("Error adding Proggy Tiny font");
             return false;
         }
 
@@ -239,14 +243,14 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         );
 
         if (fontAwesome == nullptr) {
-            _logger.error("Error adding Font Awesome 4 font");
+            _logger->error("Error adding Font Awesome 4 font");
             return false;
         }
     }
 
     {
         // Initialize components (logger has already been initialized)
-        if (!_control.init(&_fsm, &_logger)) {
+        if (!_control.init(&_fsm, _logger)) {
             return false;
         }
 
@@ -261,23 +265,23 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
         _plugins.emplace(_config);
 
-        if (!_video.init(&_logger)) {
+        if (!_video.init(_logger)) {
             return false;
         }
 
         undo.add([this]() { _video.destroy(); });
 
         _audio = new Audio();
-        _audio->init(&_logger, _audioSpec.freq, &_fifo);
+        _audio->init(_logger, _audioSpec.freq, &_fifo);
         _plugins.emplace(_audio);
         undo.add([this]() { delete _audio; });
 
         _led = new Led();
-        _led->init(&_logger);
+        _led->init(_logger);
         _plugins.emplace(_led);
         undo.add([this]() { delete _led; });
 
-        if (!_memory.init(&_logger)) {
+        if (!_memory.init(_logger)) {
             return false;
         }
 
@@ -286,9 +290,8 @@ bool hc::Application::init(std::string const& title, int const width, int const 
             return false;
         }
 
-        undo.add([this]() { _memory.destroy(); });
 
-        _frontend.setLogger(&_logger);
+        _frontend.setLogger(_logger);
         _frontend.setConfig(_config);
         _frontend.setAudio(_audio);
         _frontend.setVideo(&_video);
@@ -325,9 +328,9 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         lua_pushcfunction(_L, main);
         lua_pushlstring(_L, autorun.c_str(), autorun.length());
         
-        _logger.info("Running \"%s\"", autorun.c_str());
+        _logger->info("Running \"%s\"", autorun.c_str());
 
-        if (!ProtectedCall(_L, 1, 0, &_logger)) {
+        if (!ProtectedCall(_L, 1, 0, _logger)) {
             return false;
         }
     }
@@ -343,7 +346,6 @@ void hc::Application::destroy() {
     _memory.destroy();
     _video.destroy();
     _control.destroy();
-    _logger.destroy();
 
     ImGui_ImplOpenGL2_Shutdown();
     ImGui_ImplSDL2_Shutdown();
@@ -364,7 +366,6 @@ void hc::Application::draw() {
         plugin->onDraw();
     }
 
-    _logger.draw();
     _control.draw();
     _video.draw();
     _memory.draw();
@@ -425,34 +426,34 @@ void hc::Application::run() {
 bool hc::Application::loadConsole(char const* name) {
     LuaRewinder rewinder(_L);
 
-    _logger.info("Loading console \"%s\"", name);
+    _logger->info("Loading console \"%s\"", name);
 
     auto const found = _consoleRefs.find(name);
 
     if (found == _consoleRefs.end()) {
-        _logger.error("Unknown console \"%s\"", name);
+        _logger->error("Unknown console \"%s\"", name);
         return false;
     }
 
     lua_rawgeti(_L, LUA_REGISTRYINDEX, found->second);
     int const tableIndex = lua_gettop(_L);
 
-    if (!ProtectedCallField(_L, tableIndex, "onLoadCore", 0, 1, &_logger)) {
-        _logger.warn("onLoadCore crashed, will continue loading!");
+    if (!ProtectedCallField(_L, tableIndex, "onLoadCore", 0, 1, _logger)) {
+        _logger->warn("onLoadCore crashed, will continue loading!");
         lua_pushboolean(_L, 1);
     }
 
     if (!lua_toboolean(_L, -1)) {
-        _logger.warn("onLoadCore prevented loading the console");
+        _logger->warn("onLoadCore prevented loading the console");
         return false;
     }
 
-    if (GetField(_L, tableIndex, "path", &_logger) != LUA_TSTRING) {
+    if (GetField(_L, tableIndex, "path", _logger) != LUA_TSTRING) {
         return false;
     }
 
     char const* const path = lua_tostring(_L, -1);
-    _logger.info("Loading core from \"%s\"", path);
+    _logger->info("Loading core from \"%s\"", path);
 
     if (!_frontend.load(path)) {
         return false;
@@ -460,19 +461,19 @@ bool hc::Application::loadConsole(char const* name) {
 
     hc::PushFrontend(_L, &_frontend);
 
-    if (!ProtectedCallField(_L, tableIndex, "onCoreLoaded", 1, 1, &_logger)) {
-        _logger.warn("onCoreLoaded crashed, will continue loading!");
+    if (!ProtectedCallField(_L, tableIndex, "onCoreLoaded", 1, 1, _logger)) {
+        _logger->warn("onCoreLoaded crashed, will continue loading!");
         lua_pushboolean(_L, 1);
     }
 
     if (!lua_toboolean(_L, -1)) {
-        _logger.warn("onCoreLoaded prevented loading the console");
+        _logger->warn("onCoreLoaded prevented loading the console");
 
         if (_frontend.unload()) {
             return false;
         }
 
-        _logger.error("Couldn't unload the core, will continue loading!");
+        _logger->error("Couldn't unload the core, will continue loading!");
     }
     
     _currentConsole = name;
@@ -483,12 +484,12 @@ bool hc::Application::loadConsole(char const* name) {
         _control.setSystemInfo(&info);
     }
 
-    _logger.info("System Info");
-    _logger.info("    library_name     = %s", info.library_name);
-    _logger.info("    library_version  = %s", info.library_version);
-    _logger.info("    valid_extensions = %s", info.valid_extensions);
-    _logger.info("    need_fullpath    = %s", info.need_fullpath ? "true" : "false");
-    _logger.info("    block_extract    = %s", info.block_extract ? "true" : "false");
+    _logger->info("System Info");
+    _logger->info("    library_name     = %s", info.library_name);
+    _logger->info("    library_version  = %s", info.library_version);
+    _logger->info("    valid_extensions = %s", info.valid_extensions);
+    _logger->info("    need_fullpath    = %s", info.need_fullpath ? "true" : "false");
+    _logger->info("    block_extract    = %s", info.block_extract ? "true" : "false");
 
     onConsoleLoaded();
     return true;
@@ -497,12 +498,12 @@ bool hc::Application::loadConsole(char const* name) {
 bool hc::Application::loadGame(char const* path) {
     LuaRewinder rewinder(_L);
 
-    _logger.info("Loading game from \"%s\"", path);
+    _logger->info("Loading game from \"%s\"", path);
 
     auto const found = _consoleRefs.find(_currentConsole);
 
     if (found == _consoleRefs.end()) {
-        _logger.error("Unknown console \"%s\"", _currentConsole.c_str());
+        _logger->error("Unknown console \"%s\"", _currentConsole.c_str());
         return false;
     }
 
@@ -518,13 +519,13 @@ bool hc::Application::loadGame(char const* path) {
     hc::PushFrontend(_L, &_frontend);
     lua_pushstring(_L, path);
 
-    if (!ProtectedCallField(_L, tableIndex, "onLoadGame", 2, 1, &_logger)) {
-        _logger.warn("onLoadGame crashed, will continue loading!");
+    if (!ProtectedCallField(_L, tableIndex, "onLoadGame", 2, 1, _logger)) {
+        _logger->warn("onLoadGame crashed, will continue loading!");
         lua_pushboolean(_L, 1);
     }
 
     if (!lua_toboolean(_L, -1)) {
-        _logger.warn("onLoadGame prevented loading the game");
+        _logger->warn("onLoadGame prevented loading the game");
         return false;
     }
 
@@ -535,7 +536,7 @@ bool hc::Application::loadGame(char const* path) {
     }
     else {
         size_t size = 0;
-        void const* data = readAll(&_logger, path, &size);
+        void const* data = readAll(_logger, path, &size);
 
         if (data == nullptr) {
             return false;
@@ -551,19 +552,19 @@ bool hc::Application::loadGame(char const* path) {
 
     hc::PushFrontend(_L, &_frontend);
 
-    if (!ProtectedCallField(_L, tableIndex, "onGameLoaded", 1, 1, &_logger)) {
-        _logger.warn("onGameLoaded crashed, will continue loading!");
+    if (!ProtectedCallField(_L, tableIndex, "onGameLoaded", 1, 1, _logger)) {
+        _logger->warn("onGameLoaded crashed, will continue loading!");
         lua_pushboolean(_L, 1);
     }
 
     if (!lua_toboolean(_L, -1)) {
-        _logger.warn("onGameLoaded prevented loading the game");
+        _logger->warn("onGameLoaded prevented loading the game");
 
         if (_frontend.unloadGame()) {
             return false;
         }
 
-        _logger.error("Couldn't unload the game, will continue loading!");
+        _logger->error("Couldn't unload the game, will continue loading!");
     }
 
     static struct {char const* const name; unsigned const id;} memory[] = {
@@ -573,7 +574,7 @@ bool hc::Application::loadGame(char const* path) {
         {"vram", RETRO_MEMORY_VIDEO_RAM}
     };
 
-    _logger.info("Core memory");
+    _logger->info("Core memory");
     bool any = false;
 
     for (size_t i = 0; i < sizeof(memory) / sizeof(memory[0]); i++) {
@@ -581,13 +582,13 @@ bool hc::Application::loadGame(char const* path) {
         size_t size = 0;
 
         if (_frontend.getMemoryData(memory[i].id, &data) && _frontend.getMemorySize(memory[i].id, &size) && size != 0) {
-            _logger.info("    %-4s %p %zu bytes", memory[i].name, data, size);
+            _logger->info("    %-4s %p %zu bytes", memory[i].name, data, size);
             any = true;
         }
     }
 
     if (!any) {
-        _logger.info("    No core memory exposed via the get_memory interface");
+        _logger->info("    No core memory exposed via the get_memory interface");
     }
 
     onGameLoaded();
@@ -702,7 +703,7 @@ void hc::Application::onQuit() {
 
 void hc::Application::vprintf(void* ud, char const* fmt, va_list args) {
     auto const self = static_cast<Application*>(ud);
-    self->_logger.vprintf(RETRO_LOG_DEBUG, fmt, args);
+    self->_logger->vprintf(RETRO_LOG_DEBUG, fmt, args);
 }
 
 void hc::Application::audioCallback(void* const udata, Uint8* const stream, int const len) {
@@ -755,7 +756,7 @@ int hc::Application::luaopen_hc(lua_State* const L) {
         lua_setfield(L, -2, stringConsts[i].name);
     }
 
-    _logger.push(L);
+    _logger->push(L);
     lua_setfield(L, -2, "logger");
 
     _config->push(L);

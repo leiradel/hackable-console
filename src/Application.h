@@ -82,8 +82,8 @@ namespace hc {
         Audio* _audio;
         Config* _config;
         Led* _led;
+        Logger* _logger;
 
-        Logger _logger;
         Control _control;
         Video _video;
         Memory _memory;
