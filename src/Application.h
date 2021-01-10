@@ -21,6 +21,8 @@ extern "C" {
     #include <lua.h>
 }
 
+#include <stdarg.h>
+
 #include <string>
 #include <unordered_map>
 
@@ -43,11 +45,12 @@ namespace hc {
         bool step();
         bool unloadConsole();
         bool unloadGame();
-        void printf(char const* fmt, ...);
 
         int luaopen_hc(lua_State* const L);
 
     public:
+        static void vprintf(void* ud, char const* fmt, va_list args);
+
         static void audioCallback(void* const udata, Uint8* const stream, int const len);
 
         static int l_addConsole(lua_State* const L);

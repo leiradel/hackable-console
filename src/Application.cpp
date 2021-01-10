@@ -62,7 +62,7 @@ static void const* readAll(hc::Logger* logger, char const* const path, size_t* c
     return data;
 }
 
-hc::Application::Application() : _fsm(*this) {}
+hc::Application::Application() : _fsm(*this, vprintf, this) {}
 
 bool hc::Application::init(std::string const& title, int const width, int const height) {
     class Undo {
@@ -626,11 +626,9 @@ bool hc::Application::unloadGame() {
     return false;
 }
 
-void hc::Application::printf(char const* fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
-    _logger.vprintf(RETRO_LOG_DEBUG, fmt, args);
-    va_end(args);
+void hc::Application::vprintf(void* ud, char const* fmt, va_list args) {
+    auto const self = static_cast<Application*>(ud);
+    self->_logger.vprintf(RETRO_LOG_DEBUG, fmt, args);
 }
 
 void hc::Application::audioCallback(void* const udata, Uint8* const stream, int const len) {

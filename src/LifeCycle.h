@@ -2,7 +2,7 @@
 
 // Generated with FSM compiler, https://github.com/leiradel/luamods/ddlt
 
-#line 1 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+//#line 1 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
     namespace hc {
         class Application;
@@ -11,6 +11,8 @@
     typedef hc::Application Application;
     typedef char const* const_cstr;
 
+
+#include <stdarg.h>
 
 class LifeCycle {
 public:
@@ -22,7 +24,10 @@ public:
         Start,
     };
 
-    LifeCycle(Application& ctx): ctx(ctx), __state(State::Start) {}
+    typedef void (*VPrintf)(void* ud, const char* fmt, va_list args);
+
+    LifeCycle(Application& ctx) : ctx(ctx), __state(State::Start), __vprintf(nullptr), __vprintfud(nullptr) {}
+    LifeCycle(Application& ctx, VPrintf printer, void* printerud) : ctx(ctx), __state(State::Start), __vprintf(printer), __vprintfud(printerud) {}
 
     State currentState() const { return __state; }
 
@@ -49,4 +54,6 @@ protected:
 
     Application& ctx;
     State __state;
+    VPrintf __vprintf;
+    void* __vprintfud;
 };
