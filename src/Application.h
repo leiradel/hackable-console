@@ -4,11 +4,11 @@
 #include "Plugin.h"
 
 #include "Logger.h"
-#include "Control.h"
 #include "Config.h"
 #include "Audio.h"
 #include "Video.h"
 #include "Led.h"
+#include "Control.h"
 #include "Memory.h"
 #include "Fifo.h"
 
@@ -85,7 +85,8 @@ namespace hc {
         Logger* _logger;
         Video* _video;
 
-        Control _control;
+        Control* _control;
+
         Memory _memory;
 
         lrcpp::Frontend _frontend;

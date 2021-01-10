@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Plugin.h"
 #include "Logger.h"
 #include "LifeCycle.h"
 
@@ -7,17 +8,33 @@
 #include <set>
 
 namespace hc {
-    class Control {
+    class Control : public Plugin {
     public:
-        Control() : _logger(nullptr), _selected(0) {}
+        Control();
 
-        bool init(LifeCycle* fsm, Logger* logger);
-        void destroy();
-        void reset();
-        void draw();
+        void init(Logger* logger, LifeCycle* fsm);
 
         void setSystemInfo(retro_system_info const* info);
         void addConsole(char const* const name);
+
+        // hc::Plugin
+        virtual char const* getName() override;
+        virtual char const* getVersion() override;
+        virtual char const* getLicense() override;
+        virtual char const* getCopyright() override;
+        virtual char const* getUrl() override;
+
+        virtual void onStarted() override;
+        virtual void onConsoleLoaded() override;
+        virtual void onGameLoaded() override;
+        virtual void onGamePaused() override;
+        virtual void onGameResumed() override;
+        virtual void onGameReset() override;
+        virtual void onFrame() override;
+        virtual void onDraw() override;
+        virtual void onGameUnloaded() override;
+        virtual void onConsoleUnloaded() override;
+        virtual void onQuit() override;
 
     protected:
         LifeCycle* _fsm;

@@ -250,11 +250,10 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
     {
         // Initialize components (logger has already been initialized)
-        if (!_control.init(&_fsm, _logger)) {
-            return false;
-        }
-
-        undo.add([this]() { _control.destroy(); });
+        _control = new Control;
+        undo.add([this]() { delete _control; });
+        _control->init(_logger, &_fsm);
+        _plugins.emplace(_control);
 
         _config = new Config();
         undo.add([this]() { delete _config; });
@@ -266,19 +265,19 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         _plugins.emplace(_config);
 
         _video = new Video();
+        undo.add([this]() { delete _video; });
         _video->init(_logger);
         _plugins.emplace(_video);
-        undo.add([this]() { delete _video; });
 
         _audio = new Audio();
+        undo.add([this]() { delete _audio; });
         _audio->init(_logger, _audioSpec.freq, &_fifo);
         _plugins.emplace(_audio);
-        undo.add([this]() { delete _audio; });
 
         _led = new Led();
+        undo.add([this]() { delete _led; });
         _led->init(_logger);
         _plugins.emplace(_led);
-        undo.add([this]() { delete _led; });
 
         if (!_memory.init(_logger)) {
             return false;
@@ -343,7 +342,6 @@ void hc::Application::destroy() {
     lua_close(_L);
 
     _memory.destroy();
-    _control.destroy();
 
     ImGui_ImplOpenGL2_Shutdown();
     ImGui_ImplSDL2_Shutdown();
@@ -364,7 +362,6 @@ void hc::Application::draw() {
         plugin->onDraw();
     }
 
-    _control.draw();
     _memory.draw();
 }
 
@@ -478,7 +475,7 @@ bool hc::Application::loadConsole(char const* name) {
     retro_system_info info;
 
     if (_frontend.getSystemInfo(&info)) {
-        _control.setSystemInfo(&info);
+        _control->setSystemInfo(&info);
     }
 
     _logger->info("System Info");
@@ -638,63 +635,75 @@ bool hc::Application::unloadGame() {
 
 void hc::Application::onStarted() {
     for (auto const plugin : _plugins) {
-        _logger->info(TAG "Starting plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
+        _logger->info(TAG "onStarted plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onStarted();
     }
 }
 
 void hc::Application::onConsoleLoaded() {
     for (auto const plugin : _plugins) {
+        _logger->info(TAG "onConsoleLoaded plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onConsoleLoaded();
     }
 }
 
 void hc::Application::onGameLoaded() {
     for (auto const plugin : _plugins) {
+        _logger->info(TAG "onGameLoaded plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onGameLoaded();
     }
 }
 
 void hc::Application::onGamePaused() {
     for (auto const plugin : _plugins) {
+        _logger->info(TAG "onGamePaused plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onGamePaused();
     }
 }
 
 void hc::Application::onGameResumed() {
     for (auto const plugin : _plugins) {
+        _logger->info(TAG "onGameResumed plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onGameResumed();
     }
 }
 
 void hc::Application::onGameReset() {
     for (auto const plugin : _plugins) {
+        _logger->info(TAG "onGameReset plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onGameReset();
     }
 }
 
 void hc::Application::onFrame() {
     for (auto const plugin : _plugins) {
+        // Don't log stuff per frame
         plugin->onFrame();
     }
 }
 
 void hc::Application::onGameUnloaded() {
     for (auto const plugin : _plugins) {
+        _logger->info(TAG "onGameUnloaded plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onGameUnloaded();
     }
 }
 
 void hc::Application::onConsoleUnloaded() {
     for (auto const plugin : _plugins) {
+        _logger->info(TAG "onConsoleUnloaded plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onConsoleUnloaded();
     }
 }
 
 void hc::Application::onQuit() {
     for (auto const plugin : _plugins) {
+        _logger->info(TAG "onQuit plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onQuit();
+        delete plugin;
     }
+
+    _plugins.clear();
 }
 
 void hc::Application::vprintf(void* ud, char const* fmt, va_list args) {

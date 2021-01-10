@@ -6,21 +6,48 @@
 
 #define TAG "[CTR] "
 
-bool hc::Control::init(LifeCycle* fsm, Logger* logger) {
-    _fsm = fsm;
+hc::Control::Control() : _logger(nullptr), _selected(0) {}
+
+void hc::Control::init(Logger* logger, LifeCycle* fsm) {
     _logger = logger;
-
-    return true;
+    _fsm = fsm;
 }
 
-void hc::Control::destroy() {}
-
-void hc::Control::reset() {
-    _selected = 0;
-    _extensions.clear();
+char const* hc::Control::getName() {
+    return "hc::Control built-in control plugin";
 }
 
-void hc::Control::draw() {
+char const* hc::Control::getVersion() {
+    return "0.0.0";
+}
+
+char const* hc::Control::getLicense() {
+    return "MIT";
+}
+
+char const* hc::Control::getCopyright() {
+    return "Copyright (c) Andre Leiradella";
+}
+
+char const* hc::Control::getUrl() {
+    return "https://github.com/leiradel/hackable-console";
+}
+
+void hc::Control::onStarted() {}
+
+void hc::Control::onConsoleLoaded() {}
+
+void hc::Control::onGameLoaded() {}
+
+void hc::Control::onGamePaused() {}
+
+void hc::Control::onGameResumed() {}
+
+void hc::Control::onGameReset() {}
+
+void hc::Control::onFrame() {}
+
+void hc::Control::onDraw() {
     static auto const getter = [](void* const data, int idx, char const** const text) -> bool {
         auto const consoles = (std::set<std::string>*)data;
 
@@ -129,6 +156,15 @@ void hc::Control::draw() {
 
     ImGui::End();
 }
+
+void hc::Control::onGameUnloaded() {}
+
+void hc::Control::onConsoleUnloaded() {
+    _selected = 0;
+    _extensions.clear();
+}
+
+void hc::Control::onQuit() {}
 
 void hc::Control::setSystemInfo(retro_system_info const* info) {
     char const* ext = info->valid_extensions;
