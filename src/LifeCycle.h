@@ -31,7 +31,7 @@ public:
     void printf(const char* fmt, ...);
 #endif
 
-    bool loadConsole(const_cstr core);
+    bool loadConsole(const_cstr name);
     bool loadGame(const_cstr path);
     bool pauseGame();
     bool quit();

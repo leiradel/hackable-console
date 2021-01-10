@@ -46,11 +46,46 @@ void LifeCycle::after() const {
 
 void LifeCycle::after(State state) const {
     switch (state) {
+        case State::ConsoleLoaded: {
+#line 38 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+
+            _ctx.onConsoleLoaded();
+        
+        }
+        break;
+        case State::GamePaused: {
+#line 56 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+
+            _ctx.onGamePaused();
+        
+        }
+        break;
+        case State::GameRunning: {
+#line 78 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+
+            _ctx.onGameResumed();
+        
+        }
+        break;
+        case State::Quit: {
+#line 32 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+
+            _ctx.onQuit();
+        
+        }
+        break;
+        case State::Start: {
+#line 18 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+
+            _ctx.onStart();
+        
+        }
+        break;
         default: break;
     }
 }
 
-bool LifeCycle::loadConsole(const_cstr core) {
+bool LifeCycle::loadConsole(const_cstr name) {
     switch (__state) {
         case State::Start: {
             if (!before()) {
@@ -75,9 +110,9 @@ bool LifeCycle::loadConsole(const_cstr core) {
                 return false;
             }
 
-#line 18 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+#line 22 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
-            if (!ctx.loadConsole(core)) {
+            if (!ctx.loadConsole(name)) {
                 return false;
             }
         
@@ -126,7 +161,7 @@ bool LifeCycle::loadGame(const_cstr path) {
                 return false;
             }
 
-#line 34 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+#line 46 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
             if (!ctx.loadGame(path)) {
                 return false;
@@ -444,7 +479,7 @@ bool LifeCycle::resetGame() {
                 return false;
             }
 
-#line 64 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+#line 84 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
             ctx.resetGame();
         
@@ -538,7 +573,7 @@ bool LifeCycle::step() {
                 return false;
             }
 
-#line 48 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+#line 64 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
             ctx.step();
         
@@ -587,7 +622,7 @@ bool LifeCycle::unloadConsole() {
                 return false;
             }
 
-#line 30 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+#line 42 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
             ctx.unloadConsole();
         
@@ -636,7 +671,7 @@ bool LifeCycle::unloadGame() {
                 return false;
             }
 
-#line 52 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+#line 68 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
             if (!ctx.unloadGame()) {
                 return false;
@@ -679,7 +714,7 @@ bool LifeCycle::unloadGame() {
                 return false;
             }
 
-#line 68 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+#line 88 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
             if (!ctx.unloadGame()) {
                 return false;
