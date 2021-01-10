@@ -80,10 +80,10 @@ namespace hc {
         std::unordered_set<Plugin*> _plugins;
 
         Audio* _audio;
+        Config* _config;
 
         Logger _logger;
         Control _control;
-        Config _config;
         Video _video;
         Led _led;
         Memory _memory;

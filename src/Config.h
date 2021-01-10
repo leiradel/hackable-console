@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Plugin.h"
 #include "Logger.h"
 
 #include <Components.h>
@@ -13,16 +14,33 @@ extern "C" {
 #include <unordered_map>
 
 namespace hc {
-    class Config: public lrcpp::Config {
+    class Config: public Plugin, public lrcpp::Config {
     public:
-        Config() : _logger(nullptr) {}
+        Config();
         virtual ~Config() {}
 
-        bool init(Logger* logger);
-        void destroy();
-        void reset();
-        void draw();
+        void init(Logger* logger);
+        bool getSupportNoGame() const;
+        const std::string& getRootPath() const;
+        const std::string& getAutorunPath() const;
 
+        int push(lua_State* L);
+        static Config* check(lua_State* L, int index);
+
+        // hc::Plugin
+        virtual void onStarted() override;
+        virtual void onConsoleLoaded() override;
+        virtual void onGameLoaded() override;
+        virtual void onGamePaused() override;
+        virtual void onGameResumed() override;
+        virtual void onGameReset() override;
+        virtual void onFrame() override;
+        virtual void onDraw() override;
+        virtual void onGameUnloaded() override;
+        virtual void onConsoleUnloaded() override;
+        virtual void onQuit() override;
+
+        // lrcpp::Config
         virtual bool setPerformanceLevel(unsigned level) override;
         virtual bool getSystemDirectory(char const** directory) override;
         virtual bool getVariable(retro_variable* variable) override;
@@ -43,14 +61,6 @@ namespace hc {
         virtual bool setCoreOptions(retro_core_option_definition const* options) override;
         virtual bool setCoreOptionsIntl(retro_core_options_intl const* intl) override;
         virtual bool setCoreOptionsDisplay(retro_core_option_display const* display) override;
-
-        bool getSupportNoGame() const;
-
-        const std::string& getRootPath() const;
-        const std::string& getAutorunPath() const;
-
-        int push(lua_State* L);
-        static Config* check(lua_State* L, int index);
 
     protected:
         static int l_getRootPath(lua_State* L);

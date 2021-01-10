@@ -11,22 +11,71 @@ extern "C" {
 
 #define TAG "[CFG] "
 
-bool hc::Config::init(Logger* logger) {
+hc::Config::Config()
+    : _logger(nullptr)
+    , _performanceLevel(0)
+    , _supportsNoGame(false)
+    , _supportAchievements(false)
+    , _serializationQuirks(0)
+    , _optionsUpdated(false)
+{
+    memset(&_getCoreProc, 0, sizeof(_getCoreProc));
+}
+
+void hc::Config::init(Logger* logger) {
     _logger = logger;
-    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
+}
 
-    reset();
+bool hc::Config::getSupportNoGame() const {
+    return _supportsNoGame;
+}
 
+const std::string& hc::Config::getRootPath() const {
+    return _rootPath;
+}
+
+const std::string& hc::Config::getAutorunPath() const {
+    return _autorunPath;
+}
+
+int hc::Config::push(lua_State* L) {
+    auto const self = static_cast<Config**>(lua_newuserdata(L, sizeof(Config*)));
+    *self = this;
+
+    if (luaL_newmetatable(L, "hc::Config")) {
+        static luaL_Reg const methods[] = {
+            {"getRootPath", l_getRootPath},
+            {"getAutorunPath", l_getAutorunPath},
+            {"getSystemPath", l_getSystemPath},
+            {"getCoreAssetsPath", l_getCoreAssetsPath},
+            {"getSavePath", l_getSavePath},
+            {"getCoresPath", l_getCoresPath},
+            {nullptr, nullptr}
+        };
+
+        luaL_newlib(L, methods);
+        lua_setfield(L, -2, "__index");
+    }
+
+    lua_setmetatable(L, -2);
+    return 1;
+}
+
+hc::Config* hc::Config::check(lua_State* L, int index) {
+    return *(Config**)luaL_checkudata(L, index, "hc::Config");
+}
+
+void hc::Config::onStarted() {
     if (fnkdat(NULL, 0, 0, FNKDAT_INIT) != 0) {
         _logger->error(TAG "Error initializing fnkdat");
-        return false;
+        return;
     }
 
     char path[1024];
 
     if (fnkdat("autorun.lua", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
         _logger->error(TAG "Error getting the autorun.lua file path");
-        return false;
+        return;
     }
 
     _autorunPath = path;
@@ -34,7 +83,7 @@ bool hc::Config::init(Logger* logger) {
 
     if (fnkdat("system/", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
         _logger->error(TAG "Error getting the system path");
-        return false;
+        return;
     }
 
     _systemPath = path;
@@ -42,7 +91,7 @@ bool hc::Config::init(Logger* logger) {
 
     if (fnkdat("assets/", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
         _logger->error(TAG "Error getting the core assets path");
-        return false;
+        return;
     }
 
     _coreAssetsPath = path;
@@ -50,7 +99,7 @@ bool hc::Config::init(Logger* logger) {
 
     if (fnkdat("saves/", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
         _logger->error(TAG "Error getting the saves path");
-        return false;
+        return;
     }
 
     _savePath = path;
@@ -58,38 +107,30 @@ bool hc::Config::init(Logger* logger) {
 
     if (fnkdat("cores/", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
         _logger->error(TAG "Error getting the cores path");
-        return false;
+        return;
     }
 
     _coresPath = path;
     _logger->info(TAG "The cores path is \"%s\"", path);
-
-    return true;
 }
 
-void hc::Config::destroy() {
-    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
-    fnkdat(NULL, 0, 0, FNKDAT_UNINIT);
-}
+void hc::Config::onConsoleLoaded() {}
 
-void hc::Config::reset() {
-    _logger->debug(TAG "%s:%u: %s()", __FILE__, __LINE__, __FUNCTION__);
-
-    _performanceLevel = 0;
-    _supportsNoGame = false;
-    _getCoreProc = nullptr;
-    _supportAchievements = false;
-    _serializationQuirks = 0;
-
-    _subsystemInfo.clear();
-    _memoryMap.clear();
-
-    _coreOptions.clear();
-    _coreMap.clear();
+void hc::Config::onGameLoaded() {
     _optionsUpdated = false;
 }
 
-void hc::Config::draw() {
+void hc::Config::onGamePaused() {}
+
+void hc::Config::onGameResumed() {}
+
+void hc::Config::onGameReset() {
+    _optionsUpdated = false;
+}
+
+void hc::Config::onFrame() {}
+
+void hc::Config::onDraw() {
     if (!ImGui::Begin(ICON_FA_WRENCH " Configuration")) {
         return;
     }
@@ -123,6 +164,27 @@ void hc::Config::draw() {
     }
 
     ImGui::End();
+}
+
+void hc::Config::onGameUnloaded() {}
+
+void hc::Config::onConsoleUnloaded() {
+    _performanceLevel = 0;
+    _supportsNoGame = false;
+    _supportAchievements = false;
+    _serializationQuirks = 0;
+    _optionsUpdated = false;
+
+    memset(&_getCoreProc, 0, sizeof(_getCoreProc));
+
+    _subsystemInfo.clear();
+    _memoryMap.clear();
+    _coreOptions.clear();
+    _coreMap.clear();
+}
+
+void hc::Config::onQuit() {
+    fnkdat(NULL, 0, 0, FNKDAT_UNINIT);
 }
 
 bool hc::Config::setPerformanceLevel(unsigned level) {
@@ -425,45 +487,6 @@ bool hc::Config::setCoreOptionsDisplay(retro_core_option_display const* display)
     }
 
     return true;
-}
-
-bool hc::Config::getSupportNoGame() const {
-    return _supportsNoGame;
-}
-
-const std::string& hc::Config::getRootPath() const {
-    return _rootPath;
-}
-
-const std::string& hc::Config::getAutorunPath() const {
-    return _autorunPath;
-}
-
-int hc::Config::push(lua_State* L) {
-    auto const self = static_cast<Config**>(lua_newuserdata(L, sizeof(Config*)));
-    *self = this;
-
-    if (luaL_newmetatable(L, "hc::Config")) {
-        static luaL_Reg const methods[] = {
-            {"getRootPath", l_getRootPath},
-            {"getAutorunPath", l_getAutorunPath},
-            {"getSystemPath", l_getSystemPath},
-            {"getCoreAssetsPath", l_getCoreAssetsPath},
-            {"getSavePath", l_getSavePath},
-            {"getCoresPath", l_getCoresPath},
-            {nullptr, nullptr}
-        };
-
-        luaL_newlib(L, methods);
-        lua_setfield(L, -2, "__index");
-    }
-
-    lua_setmetatable(L, -2);
-    return 1;
-}
-
-hc::Config* hc::Config::check(lua_State* L, int index) {
-    return *(Config**)luaL_checkudata(L, index, "hc::Config");
 }
 
 int hc::Config::l_getRootPath(lua_State* L) {

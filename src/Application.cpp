@@ -252,11 +252,13 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
         undo.add([this]() { _control.destroy(); });
 
-        if (!_config.init(&_logger)) {
-            return false;
-        }
+        _config = new Config();
+        _config->init(&_logger);
+        _plugins.emplace(_config);
 
-        undo.add([this]() { _config.destroy(); });
+        // This needs to be started first as it contains important paths
+        _config->onStarted();
+        undo.add([this]() { _config->onQuit(); delete _config; });
 
         if (!_video.init(&_logger)) {
             return false;
@@ -267,6 +269,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         _audio = new Audio();
         _audio->init(&_logger, _audioSpec.freq, &_fifo);
         _plugins.emplace(_audio);
+        undo.add([this]() { delete _audio; });
 
         if (!_led.init(&_logger)) {
             return false;
@@ -281,8 +284,8 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         undo.add([this]() { _memory.destroy(); });
 
         _frontend.setLogger(&_logger);
-        _frontend.setConfig(&_config);
-        _frontend.setAudio(&_audio);
+        _frontend.setConfig(_config);
+        _frontend.setAudio(_audio);
         _frontend.setVideo(&_video);
         _frontend.setLed(&_led);
     }
@@ -312,7 +315,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
             return 0;
         };
 
-        std::string const& autorun = _config.getAutorunPath();
+        std::string const& autorun = _config->getAutorunPath();
 
         lua_pushcfunction(_L, main);
         lua_pushlstring(_L, autorun.c_str(), autorun.length());
@@ -335,7 +338,6 @@ void hc::Application::destroy() {
     _memory.destroy();
     _led.destroy();
     _video.destroy();
-    _config.destroy();
     _control.destroy();
     _logger.destroy();
 
@@ -360,7 +362,6 @@ void hc::Application::draw() {
 
     _logger.draw();
     _control.draw();
-    _config.draw();
     _video.draw();
     _led.draw();
     _memory.draw();
@@ -617,7 +618,6 @@ bool hc::Application::step() {
 
 bool hc::Application::unloadConsole() {
     if (_frontend.unload()) {
-        _config.reset();
         onConsoleUnloaded();
         return true;
     }
@@ -638,7 +638,10 @@ bool hc::Application::unloadGame() {
 
 void hc::Application::onStarted() {
     for (auto const plugin : _plugins) {
-        plugin->onStarted();
+        if (plugin != _config) {
+            // Config has already been started
+            plugin->onStarted();
+        }
     }
 }
 
@@ -754,7 +757,7 @@ int hc::Application::luaopen_hc(lua_State* const L) {
     _logger.push(L);
     lua_setfield(L, -2, "logger");
 
-    _config.push(L);
+    _config->push(L);
     lua_setfield(L, -2, "config");
 
     return 1;
