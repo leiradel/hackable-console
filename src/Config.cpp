@@ -237,9 +237,9 @@ bool hc::Config::getVariable(retro_variable* variable) {
 }
 
 bool hc::Config::getVariableUpdate(bool* const updated) {
-    bool const previous = _optionsUpdated;
+    *updated = _optionsUpdated;
     _optionsUpdated = false;
-    return previous;
+    return true;
 }
 
 bool hc::Config::setSupportNoGame(bool const supports) {
