@@ -12,7 +12,6 @@
 #include <stdint.h>
 #include <string>
 #include <vector>
-#include <unordered_map>
 
 namespace hc {
     class Input: public Plugin, public lrcpp::Input {
@@ -22,7 +21,6 @@ namespace hc {
 
         void init(Logger* logger, lrcpp::Frontend* frontend);
         void processEvent(SDL_Event const* event);
-        unsigned getController(unsigned port);
 
         // hc::Plugin
         virtual char const* getName() override;
@@ -54,6 +52,10 @@ namespace hc {
         virtual void poll() override;
 
     protected:
+        enum {
+            MaxPorts = 4
+        };
+
         struct Pad {
             SDL_JoystickID id;
             SDL_GameController* controller;
@@ -63,30 +65,23 @@ namespace hc {
             int lastDir[6];
             bool state[16];
             float sensitivity;
-
-            int port;
-            unsigned devId;
         };
 
-        struct ControllerDescription {
+        struct ControllerInfo {
+            ControllerInfo(char const* desc, unsigned id) : desc(desc), id(id) {}
             std::string desc;
             unsigned id;
         };
 
-        struct Controller {
-            std::vector<ControllerDescription> types;
-        };
-
-        struct InputDescriptor {
-            unsigned port;
-            unsigned device;
-            unsigned index;
-            unsigned id;
-            std::string description;
+        struct Port {
+            int selectedType; // for the UI
+            int selectedDevice; // for the UI
+            unsigned type; // RETRO_DEVICE_*
+            SDL_JoystickID padId;
         };
 
         void addController(int which);
-        void drawPads();
+        void drawPad(Pad const& pad);
         void drawPad(unsigned button);
         void drawKeyboard();
         void addController(SDL_Event const* event);
@@ -100,12 +95,27 @@ namespace hc {
 
         GLuint _texture;
 
-        std::unordered_map<SDL_JoystickID, Pad> _pads;
-        std::vector<InputDescriptor> _descriptors;
-        std::vector<Controller> _controllers;
-        uint64_t _ports;
-        std::vector<ControllerDescription> _ids[64];
+        // Physical controllers attached
+        std::vector<Pad> _pads;
 
+        /**
+         * Available controllers set via RETRO_ENVIRONMENT_SET_CONTROLLER_INFO.
+         * Not all cores provide this information, and the Libretro API doesn't
+         * specify when the core must set it when it does. The strategy here
+         * is: after retro_set_environment is called, which happens right after
+         * the core is loaded in lrcpp, we'll check if there were any
+         * controllers set in _controllers. If there weren't, we'll add one
+         * fake RetroPad controller per port up to MaxPorts.
+         */
+        std::vector<ControllerInfo> _controllerTypes[MaxPorts];
+
+        // The device attached to each port
+        Port _ports[MaxPorts];
+
+        /**
+         * State of the keyboard keys, the value is the number of frames the
+         * key is set, and is decreased on every onFrame call.
+         */
         uint8_t _keyState[RETROK_LAST];
     };
 }

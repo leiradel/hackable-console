@@ -6,10 +6,11 @@ static const uint32_t s_controller[] = {
     #include "controller.inl"
 };
 
-#define KEYBOARD_ID -1
+#define NONE_ID -1
+#define KEYBOARD_ID -2
 #define TAG "[INP] "
 
-hc::Input::Input() : _logger(nullptr), _frontend(nullptr), _texture(0), _ports(0) {}
+hc::Input::Input() : _logger(nullptr), _frontend(nullptr), _texture(0) {}
 
 void hc::Input::init(Logger* logger, lrcpp::Frontend* frontend) {
     _logger = logger;
@@ -28,40 +29,35 @@ void hc::Input::init(Logger* logger, lrcpp::Frontend* frontend) {
 
     glBindTexture(GL_TEXTURE_2D, previous_texture);
 
+    // Add the none controller
+    Pad none;
+    none.id = NONE_ID;
+    none.controller = NULL;
+    none.controllerName = "None";
+    none.joystick = NULL;
+    none.joystickName = "None";
+    none.lastDir[0] = none.lastDir[1] = none.lastDir[2] =
+    none.lastDir[3] = none.lastDir[4] = none.lastDir[5] = -1;
+    memset(none.state, 0, sizeof(none.state));
+    none.sensitivity = 0.5f;
+
+    _pads.emplace_back(none);
+    _logger->info(TAG "Controller %s (%s) created", none.controllerName.c_str(), none.joystickName.c_str());
+
     // Add the keyboard controller
-    Pad keyb;
+    Pad virtualPad;
+    virtualPad.id = KEYBOARD_ID;
+    virtualPad.controller = NULL;
+    virtualPad.controllerName = "Virtual";
+    virtualPad.joystick = NULL;
+    virtualPad.joystickName = "Virtual";
+    virtualPad.lastDir[0] = virtualPad.lastDir[1] = virtualPad.lastDir[2] =
+    virtualPad.lastDir[3] = virtualPad.lastDir[4] = virtualPad.lastDir[5] = -1;
+    memset(virtualPad.state, 0, sizeof(virtualPad.state));
+    virtualPad.sensitivity = 0.5f;
 
-    keyb.id = KEYBOARD_ID;
-    keyb.controller = NULL;
-    keyb.controllerName = "Keyboard";
-    keyb.joystick = NULL;
-    keyb.joystickName = "Keyboard";
-    keyb.lastDir[0] = keyb.lastDir[1] = keyb.lastDir[2] =
-    keyb.lastDir[3] = keyb.lastDir[4] = keyb.lastDir[5] = -1;
-    memset(keyb.state, 0, sizeof(keyb.state));
-    keyb.sensitivity = 0.5f;
-    keyb.port = 0;
-    keyb.devId = RETRO_DEVICE_NONE;
-
-    _pads.emplace(keyb.id, keyb);
-    _logger->info(TAG "Controller %s (%s) added", keyb.controllerName.c_str(), keyb.joystickName.c_str());
-
-    ControllerDescription ctrl;
-    ctrl.desc = "None";
-    ctrl.id = RETRO_DEVICE_NONE;
-
-    for (size_t i = 0; i < sizeof(_ids) / sizeof(_ids[0]); i++) {
-        _ids[i].emplace_back(ctrl);
-    }
-
-    // Add controllers already connected
-    int const max = SDL_NumJoysticks();
-
-    for (int i = 0; i < max; i++) {
-        addController(i);
-    }
-
-    memset(&_keyState, 0, sizeof(_keyState));
+    _pads.emplace_back(virtualPad);
+    _logger->info(TAG "Controller %s (%s) created", virtualPad.controllerName.c_str(), virtualPad.joystickName.c_str());
 }
 
 void hc::Input::processEvent(SDL_Event const* event) {
@@ -90,22 +86,6 @@ void hc::Input::processEvent(SDL_Event const* event) {
     }
 }
 
-unsigned hc::Input::getController(unsigned port)
-{
-    port++;
-
-    for (auto const& pair : _pads) {
-        auto const& pad = pair.second;
-
-        if (pad.port == (int)port) {
-            return pad.devId;
-        }
-    }
-
-    // The controller was removed
-    return RETRO_DEVICE_NONE;
-}
-
 char const* hc::Input::getName() {
     return "hc::Input built-in input plugin";
 }
@@ -127,7 +107,26 @@ char const* hc::Input::getUrl() {
 }
 
 void hc::Input::onStarted() {}
-void hc::Input::onConsoleLoaded() {}
+
+void hc::Input::onConsoleLoaded() {
+    for (size_t port = 0; port < MaxPorts; port++) {
+        // All ports start disconnected
+        _ports[port].selectedType = 0;
+        _ports[port].selectedDevice = 0;
+        _ports[port].type = RETRO_DEVICE_NONE;
+        _ports[port].padId = NONE_ID;
+
+        /**
+         * Add None and RetroPad controllers to the ports, RetroArch always has
+         * these controllers.
+         */
+        _controllerTypes[port].insert(_controllerTypes[port].begin(), ControllerInfo("RetroPad", RETRO_DEVICE_JOYPAD));
+        _controllerTypes[port].insert(_controllerTypes[port].begin(), ControllerInfo("None", RETRO_DEVICE_NONE));
+    }
+
+    // TODO auto-assign controllers to ports here? Do it in the Lua console script?
+}
+
 void hc::Input::onGameLoaded() {}
 void hc::Input::onGamePaused() {}
 void hc::Input::onGameResumed() {}
@@ -142,35 +141,87 @@ void hc::Input::onFrame() {
 }
 
 void hc::Input::onDraw() {
-    drawPads();
-    drawKeyboard();
+    static char const* const portNames[MaxPorts] = {"Port 1", "Port 2", "Port 3", "Port 4"};
+
+    if (!ImGui::Begin(ICON_FA_GAMEPAD " Input")) {
+        return;
+    }
+
+    if (ImGui::BeginTabBar("##ports")) {
+        for (size_t port = 0; port < MaxPorts; port++) {
+            if (ImGui::BeginTabItem(portNames[port])) {
+                static auto const getter = [](void* data, int idx, char const** text) -> bool {
+                    auto const types = static_cast<std::vector<ControllerInfo> const*>(data);
+                    *text = (*types)[idx].desc.c_str();
+                    return true;
+                };
+
+                auto& types = _controllerTypes[port];
+                int selected = _ports[port].selectedType;
+
+                ImGui::Combo("Type", &selected, getter, &types, static_cast<int>(types.size()));
+
+                if (selected != _ports[port].selectedType) {
+                    _ports[port].selectedType = selected;
+                    _ports[port].selectedDevice = 0;
+                    _ports[port].type = _controllerTypes[port][selected].id & RETRO_DEVICE_MASK;
+                    _ports[port].padId = NONE_ID;
+
+                    _frontend->setControllerPortDevice(port, _controllerTypes[port][selected].id);
+                }
+
+                if (_ports[port].type == RETRO_DEVICE_JOYPAD) {
+                    static auto const getter = [](void* data, int idx, char const** text) -> bool {
+                        auto const pads = static_cast<std::vector<Pad> const*>(data);
+                        *text = (*pads)[idx].controllerName.c_str();
+                        return true;
+                    };
+
+                    int selected = _ports[port].selectedDevice;
+                    ImGui::Combo("Device", &selected, getter, &_pads, static_cast<int>(_pads.size()));
+
+                    if (selected != _ports[port].selectedDevice) {
+                        _ports[port].selectedDevice = selected;
+                        _ports[port].padId = _pads[selected].id;
+                    }
+
+                    if (_ports[port].padId != NONE_ID) {
+                        size_t const count = _pads.size();
+
+                        for (size_t i = 0; i < count; i++) {
+                            if (_pads[i].id == _ports[port].padId) {
+                                drawPad(_pads[i]);
+                            }
+                        }
+                    }
+                }
+                else if (_ports[port].type == RETRO_DEVICE_KEYBOARD) {
+                    drawKeyboard();
+                }
+
+                ImGui::EndTabItem();
+            }
+        }
+
+        ImGui::EndTabBar();
+    }
+
+    ImGui::End();
 }
 
 void hc::Input::onGameUnloaded() {}
 
 void hc::Input::onConsoleUnloaded() {
-    _descriptors.clear();
-    _controllers.clear();
+    for (size_t port = 0; port < MaxPorts; port++) {
+        // Disconnect all ports
+        _ports[port].selectedType = 0;
+        _ports[port].selectedDevice = 0;
+        _ports[port].type = RETRO_DEVICE_NONE;
+        _ports[port].padId = NONE_ID;
 
-    _ports = 0;
-
-    ControllerDescription ctrl;
-    ctrl.desc = "None";
-    ctrl.id = RETRO_DEVICE_NONE;
-
-    for (size_t i = 0; i < sizeof(_ids) / sizeof(_ids[0]); i++) {
-        _ids[i].clear();
-        _ids[i].emplace_back(ctrl);
+        // Erase the controller types
+        _controllerTypes[port].clear();
     }
-
-    for (auto pair : _pads) {
-        Pad& pad = pair.second;
-
-        pad.port = 0;
-        pad.devId = RETRO_DEVICE_NONE;
-    }
-
-    memset(&_keyState, 0, sizeof(_keyState));
 }
 
 void hc::Input::onQuit() {
@@ -178,51 +229,26 @@ void hc::Input::onQuit() {
 }
 
 bool hc::Input::setInputDescriptors(retro_input_descriptor const* descriptors) {
+    // We just log the descriptors, the information is currently discarded
     _logger->info(TAG "Setting input descriptors");
     _logger->info(TAG "    port device index id description");
 
-    size_t count = 0;
-
-    for (; descriptors[count].description != nullptr; count++) {
-        // At least the Frodo core doesn't properly terminate the input
-        // descriptor list with a zeroed entry, we do our best to avoid a crash
-        if ((descriptors[count].device & RETRO_DEVICE_MASK) > RETRO_DEVICE_POINTER) {
+    for (size_t i = 0; descriptors[i].description != nullptr; i++) {
+        /**
+         * At least the Frodo core doesn't properly terminate the input
+         * descriptor list with a zeroed entry, we do our best to avoid a crash
+         * here.
+         */
+        if ((descriptors[i].device & RETRO_DEVICE_MASK) > RETRO_DEVICE_POINTER) {
             break;
         }
 
-        if (descriptors[count].id > RETRO_DEVICE_ID_LIGHTGUN_RELOAD) {
+        if (descriptors[i].id > RETRO_DEVICE_ID_LIGHTGUN_RELOAD) {
             break;
         }
-    }
 
-    _descriptors.clear();
-    _descriptors.reserve(count);
-
-    for (size_t i = 0; i < count; i++) {
         retro_input_descriptor const* desc = descriptors + i;
-
         _logger->info(TAG "    %4u %6u %5u %2u %s", desc->port, desc->device, desc->index, desc->id, desc->description);
-
-        InputDescriptor tempdesc;
-
-        tempdesc.port = desc->port;
-        tempdesc.device = desc->device;
-        tempdesc.index = desc->index;
-        tempdesc.id = desc->id;
-        tempdesc.description = desc->description != nullptr ? desc->description : "";
-
-        _descriptors.emplace_back(tempdesc);
-
-        unsigned const port = tempdesc.port;
-
-        if (port < sizeof(_ids) / sizeof(_ids[0])) {
-            ControllerDescription ctrl;
-            ctrl.desc = "RetroPad";
-            ctrl.id = RETRO_DEVICE_JOYPAD;
-
-            _ids[port].emplace_back(ctrl);
-            _ports |= UINT64_C(1) << port;
-        }
     }
 
     return true;
@@ -244,59 +270,26 @@ bool hc::Input::setControllerInfo(retro_controller_info const* info) {
     _logger->info(TAG "Setting controller info");
     _logger->info(TAG "    port id type     description");
 
-    size_t count = 0;
+    size_t portCount = 0;
 
-    for (; info[count].types != nullptr; count++) /* nothing */;
+    for (; info[portCount].types != nullptr; portCount++) /* nothing */;
 
-    _controllers.clear();
-    _controllers.reserve(count);
+    if (portCount > MaxPorts) {
+        portCount = MaxPorts;
+    }
 
-    for (size_t i = 0; i < count; i++) {
-        Controller tempctrl;
+    for (size_t port = 0; port < portCount; port++) {
+        _controllerTypes[port].reserve(info[port].num_types + 2);
 
-        tempctrl.types.reserve(info[i].num_types);
+        for (unsigned device = 0; device < info[port].num_types; device++) {
+            retro_controller_description const* type = info[port].types + device;
 
-        for (unsigned j = 0; j < info[i].num_types; j++) {
-            retro_controller_description const* type = info[i].types + j;
+            unsigned const deviceType = type->id & RETRO_DEVICE_MASK;
+            char const* deviceName = deviceType < sizeof(deviceNames) / sizeof(deviceNames[0]) ? deviceNames[deviceType] : "?";
+            _logger->info(TAG "    %4zu %2u %-8s %s", port + 1, type->id >> RETRO_DEVICE_TYPE_SHIFT, deviceName, type->desc);
 
-            unsigned const device = type->id & RETRO_DEVICE_MASK;
-            char const* deviceName = device < sizeof(deviceNames) / sizeof(deviceNames[0]) ? deviceNames[device] : "?";
-            _logger->info(TAG "    %4zu %2u %-8s %s", i + 1, type->id >> RETRO_DEVICE_TYPE_SHIFT, deviceName, type->desc);
-
-            ControllerDescription tempdesc;
-            tempdesc.desc = type->desc;
-            tempdesc.id = type->id;
-
-            if ((type->id & RETRO_DEVICE_MASK) == RETRO_DEVICE_JOYPAD) {
-                unsigned const port = i;
-
-                if (port < sizeof(_ids) / sizeof(_ids[0])) {
-                    bool found = false;
-
-                    for (auto& element : _ids[port]) {
-                        if (element.id == type->id) {
-                            // Overwrite the generic RetroPad description with the one from the controller info
-                            element.desc = type->desc;
-                            found = true;
-                            break;
-                        }
-                    }
-
-                    if (!found) {
-                        ControllerDescription tempdesc2;
-                        tempdesc2.desc = type->desc;
-                        tempdesc2.id = type->id;
-                        _ids[port].emplace_back(tempdesc2);
-                    }
-
-                    _ports |= UINT64_C(1) << port;
-                }
-            }
-
-            tempctrl.types.emplace_back(tempdesc);
+            _controllerTypes[port].emplace_back(type->desc, type->id);
         }
-
-        _controllers.emplace_back(tempctrl);
     }
 
     return true;
@@ -307,24 +300,35 @@ bool hc::Input::getInputBitmasks(bool* supports) {
     return false;
 }
 
-int16_t hc::Input::state(unsigned port, unsigned device, unsigned index, unsigned id) {
+int16_t hc::Input::state(unsigned portIndex, unsigned deviceId, unsigned index, unsigned id) {
     (void)index;
 
-    unsigned const base = device & RETRO_DEVICE_MASK;
-
-    if (base == RETRO_DEVICE_KEYBOARD) {
-        return id < RETROK_LAST ? (_keyState[id] ? 32767 : 0) : 0;
+    if (portIndex >= MaxPorts) {
+        return 0;
     }
 
-    if (base == RETRO_DEVICE_JOYPAD) {
-        port++;
+    unsigned const base = deviceId & RETRO_DEVICE_MASK;
+    Port const& port = _ports[portIndex];
 
-        for (auto const& pair : _pads) {
-            Pad const& pad = pair.second;
+    if (port.type != base) {
+        return 0;
+    }
 
-            if (pad.port == (int)port && pad.devId == device) {
-                return pad.state[id] ? 32767 : 0;
+    switch (base) {
+        case RETRO_DEVICE_KEYBOARD: {
+            return id < RETROK_LAST ? (_keyState[id] != 0 ? 32767 : 0) : 0;
+        }
+
+        case RETRO_DEVICE_JOYPAD: {
+            size_t const count = _pads.size();
+
+            for (size_t i = 0; i < count; i++) {
+                if (port.padId == _pads[i].id) {
+                    return _pads[i].state[id];
+                }
             }
+
+            break;
         }
     }
 
@@ -356,157 +360,27 @@ void hc::Input::addController(int which) {
 
     pad.id = SDL_JoystickInstanceID(pad.joystick);
 
-    if (_pads.find(pad.id) == _pads.end()) {
-        pad.controllerName = SDL_GameControllerName(pad.controller);
-        pad.joystickName = SDL_JoystickName(pad.joystick);
-        pad.lastDir[0] = pad.lastDir[1] = pad.lastDir[2] =
-        pad.lastDir[3] = pad.lastDir[4] = pad.lastDir[5] = -1;
-        pad.sensitivity = 0.5f;
-        pad.port = 0;
-        pad.devId = RETRO_DEVICE_NONE;
-        memset(pad.state, 0, sizeof(pad.state));
+    pad.controllerName = SDL_GameControllerName(pad.controller);
+    pad.joystickName = SDL_JoystickName(pad.joystick);
+    pad.lastDir[0] = pad.lastDir[1] = pad.lastDir[2] =
+    pad.lastDir[3] = pad.lastDir[4] = pad.lastDir[5] = -1;
+    pad.sensitivity = 0.5f;
+    memset(pad.state, 0, sizeof(pad.state));
 
-        _pads.insert(std::make_pair(pad.id, pad));
-        _logger->info(TAG "Controller %s (%s) added", pad.controllerName.c_str(), pad.joystickName.c_str());
-    }
-    else {
-        SDL_GameControllerClose(pad.controller);
-    }
+    _pads.emplace_back(pad);
+    _logger->info(TAG "Controller %s (%s) added", pad.controllerName.c_str(), pad.joystickName.c_str());
 }
 
-void hc::Input::drawPads() {
-    if (!ImGui::Begin(ICON_FA_GAMEPAD " Controllers")) {
-        return;
-    }
+void hc::Input::drawPad(Pad const& pad) {
+    ImVec2 const pos = ImGui::GetCursorPos();
+    drawPad(17);
 
-    unsigned count = 1;
-
-    for (auto& pair : _pads) {
-        Pad& pad = pair.second;
-
-        char label[512];
-        snprintf(label, sizeof(label), "%s (%u)", pad.controllerName.c_str(), count);
-
-        if (ImGui::CollapsingHeader(label, ImGuiTreeNodeFlags_DefaultOpen)) {
-            char id[32];
-            snprintf(id, sizeof(id), "%p", static_cast<void*>(&pad));
-            ImGui::Columns(2, id);
-
-            {
-                ImVec2 const pos = ImGui::GetCursorPos();
-                drawPad(17);
-
-                for (unsigned button = 0; button < 16; button++) {
-                    if (pad.state[button]) {
-                        ImGui::SetCursorPos(pos);
-                        drawPad(button);
-                    }
-                }
-            }
-
-            ImGui::NextColumn();
-
-            {
-                char labels[1024];
-                char* aux = labels;
-
-                aux += snprintf(aux, sizeof(labels) - (aux - labels), "Disconnected") + 1;
-
-                uint64_t bit = 1;
-
-                for (unsigned i = 0; i < 64; i++, bit <<= 1) {
-                    if ((_ports & bit) != 0) {
-                        aux += snprintf(aux, sizeof(labels) - (aux - labels), "Connect to port %u", i + 1) + 1;
-                    }
-                }
-
-                *aux = 0;
-
-                ImGui::PushItemWidth(-1.0f);
-
-                char label[64];
-                snprintf(label, sizeof(label), "##port%p", static_cast<void*>(&pad));
-
-                ImGui::Combo(label, &pad.port, labels);
-                ImGui::PopItemWidth();
-            }
-
-            {
-                char labels[512];
-                unsigned ids[32];
-                char* aux = labels;
-                int count = 0;
-                int selected = 0;
-
-                aux += snprintf(aux, sizeof(labels) - (aux - labels), "None") + 1;
-                ids[count++] = RETRO_DEVICE_NONE;
-
-                if (_controllers.size() != 0) {
-                    if (pad.port > 0 && (size_t)pad.port <= _controllers.size()) {
-                        Controller const& ctrl = _controllers[pad.port - 1];
-
-                        for (auto const& type : ctrl.types) {
-                            if ((type.id & RETRO_DEVICE_MASK) == RETRO_DEVICE_JOYPAD) {
-                                if (type.id == pad.devId) {
-                                    selected = count;
-                                }
-
-                                aux += snprintf(aux, sizeof(labels) - (aux - labels), "%s", type.desc.c_str()) + 1;
-                                ids[count++] = type.id;
-                            }
-                        }
-                    }
-                }
-                else {
-                    // No ports were specified, add the default RetroPad controller if the port is valid
-
-                    if (pad.port != 0) {
-                        aux += snprintf(aux, sizeof(labels) - (aux - labels), "RetroPad") + 1;
-
-                        if (pad.devId == RETRO_DEVICE_JOYPAD) {
-                            selected = 1;
-                        }
-                    }
-                }
-
-                *aux = 0;
-
-                ImGui::PushItemWidth(-1.0f);
-
-                char label[64];
-                snprintf(label, sizeof(label), "##device%p", static_cast<void*>(&pad));
-
-                int old = selected;
-                ImGui::Combo(label, &selected, labels);
-
-                if (_controllers.size() != 0) {
-                    pad.devId = ids[selected];
-                }
-                else {
-                    pad.devId = selected == 0 ? RETRO_DEVICE_NONE : RETRO_DEVICE_JOYPAD;
-                }
-
-                if (old != selected) {
-                    _frontend->setControllerPortDevice(pad.port, pad.devId);
-                }
-
-                ImGui::PopItemWidth();
-            }
-
-            {
-                char label[64];
-                snprintf(label, sizeof(label), "##sensitivity%p", static_cast<void*>(&pad));
-
-                ImGui::PushItemWidth(-1.0f);
-                ImGui::SliderFloat(label, &pad.sensitivity, 0.0f, 1.0f, "Sensitivity %.3f");
-                ImGui::PopItemWidth();
-            }
-
-            ImGui::Columns(1);
+    for (unsigned button = 0; button < 16; button++) {
+        if (pad.state[button]) {
+            ImGui::SetCursorPos(pos);
+            drawPad(button);
         }
     }
-
-    ImGui::End();
 }
 
 void hc::Input::drawPad(unsigned button) {
@@ -516,7 +390,7 @@ void hc::Input::drawPad(unsigned button) {
     float const xx = x * 128.0f;
     float const yy = y * 64.0f;
 
-    ImVec2 const size = ImVec2(113.0f, 63.0f);
+    ImVec2 const size = ImVec2(180.0f, 100.0f);
     ImVec2 const uv0 = ImVec2(xx / 768.0f, yy / 192.0f);
     ImVec2 const uv1 = ImVec2((xx + 128.0f) / 768.0f, (yy + 64.0f) / 192.0f);
 
@@ -525,10 +399,6 @@ void hc::Input::drawPad(unsigned button) {
 
 void hc::Input::drawKeyboard() {
     typedef char const* Key;
-
-    if (!ImGui::Begin(ICON_FA_KEYBOARD_O " Keyboard")) {
-        return;
-    }
 
     static Key const     row0[] = {"esc", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10", "f11", "f12", nullptr};
     static uint8_t const siz0[] = {25,    23,   23,   23,   23,   23,   23,   23,   23,   23,   23,    23,    23};
@@ -598,7 +468,6 @@ void hc::Input::drawKeyboard() {
     }
 
     ImGui::PopStyleVar();
-    ImGui::End();
 }
 
 void hc::Input::addController(const SDL_Event* event) {
@@ -606,27 +475,48 @@ void hc::Input::addController(const SDL_Event* event) {
 }
 
 void hc::Input::removeController(const SDL_Event* event) {
-    auto it = _pads.find(event->cdevice.which);
+    size_t const count = _pads.size();
 
-    if (it != _pads.end()) {
-        Pad const& pad = it->second;
+    for (size_t i = 0; i < count; i++) {
+        if (_pads[i].id == event->cdevice.which) {
+            Pad const& pad = _pads[i];
 
-        _logger->info(TAG "Controller %s (%s) removed", pad.controllerName.c_str(), pad.joystickName.c_str());
+            _logger->info(TAG "Controller %s (%s) removed", pad.controllerName.c_str(), pad.joystickName.c_str());
 
-        _frontend->setControllerPortDevice(pad.port, RETRO_DEVICE_NONE);
-        SDL_GameControllerClose(pad.controller);
-        _pads.erase(it);
+            for (size_t port = 0; port < MaxPorts; port++) {
+                if (_ports[port].type == RETRO_DEVICE_JOYPAD && _ports[port].padId == pad.id) {
+                    _ports[port].selectedType = 0;
+                    _ports[port].selectedDevice = 0;
+                    _ports[port].type = RETRO_DEVICE_NONE;
+                    _ports[port].padId = NONE_ID;
+
+                    _frontend->setControllerPortDevice(port, RETRO_DEVICE_NONE);
+                }
+            }
+
+            SDL_GameControllerClose(pad.controller);
+            _pads.erase(_pads.begin() + i);
+            break;
+        }
     }
+
 }
 
 void hc::Input::controllerButton(const SDL_Event* event) {
-    auto it = _pads.find(event->cbutton.which);
+    Pad* pad = nullptr;
+    size_t const count = _pads.size();
 
-    if (it == _pads.end()) {
+    for (size_t i = 0; i < count; i++) {
+        if (_pads[i].id == event->cbutton.which) {
+            pad = &_pads[i];
+            break;
+        }
+    }
+
+    if (pad == nullptr) {
         return;
     }
 
-    Pad& pad = it->second;
     unsigned button;
 
     switch (event->cbutton.button) {
@@ -648,19 +538,25 @@ void hc::Input::controllerButton(const SDL_Event* event) {
         default: return;
     }
 
-    pad.state[button] = event->cbutton.state == SDL_PRESSED;
+    pad->state[button] = event->cbutton.state == SDL_PRESSED;
 }
 
 void hc::Input::controllerAxis(const SDL_Event* event) {
-    auto it = _pads.find(event->caxis.which);
+    Pad* pad = nullptr;
+    size_t const count = _pads.size();
 
-    if (it == _pads.end()) {
+    for (size_t i = 0; i < count; i++) {
+        if (_pads[i].id == event->cbutton.which) {
+            pad = &_pads[i];
+            break;
+        }
+    }
+
+    if (pad == nullptr) {
         return;
     }
 
-    Pad& pad = it->second;
-
-    int const threshold = 32767 * pad.sensitivity;
+    int const threshold = 32767 * pad->sensitivity;
     int positive, negative;
     int button;
     int* lastDir;
@@ -674,25 +570,25 @@ void hc::Input::controllerAxis(const SDL_Event* event) {
                 case SDL_CONTROLLER_AXIS_LEFTX:
                     positive = RETRO_DEVICE_ID_JOYPAD_RIGHT;
                     negative = RETRO_DEVICE_ID_JOYPAD_LEFT;
-                    lastDir = pad.lastDir + 0;
+                    lastDir = pad->lastDir + 0;
                     break;
 
                 case SDL_CONTROLLER_AXIS_LEFTY:
                     positive = RETRO_DEVICE_ID_JOYPAD_DOWN;
                     negative = RETRO_DEVICE_ID_JOYPAD_UP;
-                    lastDir = pad.lastDir + 1;
+                    lastDir = pad->lastDir + 1;
                     break;
 
                 case SDL_CONTROLLER_AXIS_RIGHTX:
                     positive = RETRO_DEVICE_ID_JOYPAD_RIGHT;
                     negative = RETRO_DEVICE_ID_JOYPAD_LEFT;
-                    lastDir = pad.lastDir + 2;
+                    lastDir = pad->lastDir + 2;
                     break;
 
                 case SDL_CONTROLLER_AXIS_RIGHTY:
                     positive = RETRO_DEVICE_ID_JOYPAD_DOWN;
                     negative = RETRO_DEVICE_ID_JOYPAD_UP;
-                    lastDir = pad.lastDir + 3;
+                    lastDir = pad->lastDir + 3;
                     break;
             }
 
@@ -712,11 +608,11 @@ void hc::Input::controllerAxis(const SDL_Event* event) {
         case SDL_CONTROLLER_AXIS_TRIGGERRIGHT:
             if (event->caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT) {
                 button = RETRO_DEVICE_ID_JOYPAD_L2;
-                lastDir = pad.lastDir + 4;
+                lastDir = pad->lastDir + 4;
             }
             else {
                 button = RETRO_DEVICE_ID_JOYPAD_R2;
-                lastDir = pad.lastDir + 5;
+                lastDir = pad->lastDir + 5;
             }
 
             break;
@@ -726,11 +622,11 @@ void hc::Input::controllerAxis(const SDL_Event* event) {
     }
 
     if (*lastDir != -1) {
-        pad.state[*lastDir] = false;
+        pad->state[*lastDir] = false;
     }
 
     if (event->caxis.value < -threshold || event->caxis.value > threshold) {
-        pad.state[button] = true;
+        pad->state[button] = true;
     }
 
     *lastDir = button;
@@ -741,28 +637,24 @@ void hc::Input::keyboard(SDL_Event const* event) {
         return;
     }
 
-    SDL_Event evt;
-    evt.cbutton.which = KEYBOARD_ID;
-    evt.cbutton.state = event->key.state;
+    Pad& pad = _pads[1];
 
     switch (event->key.keysym.sym) {
-        case SDLK_s: evt.cbutton.button = SDL_CONTROLLER_BUTTON_A; break;
-        case SDLK_d: evt.cbutton.button = SDL_CONTROLLER_BUTTON_B; break;
-        case SDLK_a: evt.cbutton.button = SDL_CONTROLLER_BUTTON_X; break;
-        case SDLK_w: evt.cbutton.button = SDL_CONTROLLER_BUTTON_Y; break;
-        case SDLK_BACKSPACE: evt.cbutton.button = SDL_CONTROLLER_BUTTON_BACK; break;
-        case SDLK_RETURN: evt.cbutton.button = SDL_CONTROLLER_BUTTON_START; break;
-        case SDLK_1: evt.cbutton.button = SDL_CONTROLLER_BUTTON_LEFTSTICK; break;
-        case SDLK_3: evt.cbutton.button = SDL_CONTROLLER_BUTTON_RIGHTSTICK; break;
-        case SDLK_q: evt.cbutton.button = SDL_CONTROLLER_BUTTON_LEFTSHOULDER; break;
-        case SDLK_e: evt.cbutton.button = SDL_CONTROLLER_BUTTON_RIGHTSHOULDER; break;
-        case SDLK_UP: evt.cbutton.button = SDL_CONTROLLER_BUTTON_DPAD_UP; break;
-        case SDLK_DOWN: evt.cbutton.button = SDL_CONTROLLER_BUTTON_DPAD_DOWN; break;
-        case SDLK_LEFT: evt.cbutton.button = SDL_CONTROLLER_BUTTON_DPAD_LEFT; break;
-        case SDLK_RIGHT: evt.cbutton.button = SDL_CONTROLLER_BUTTON_DPAD_RIGHT; break;
-        case SDLK_2: evt.cbutton.button = SDL_CONTROLLER_BUTTON_GUIDE; break;
-        default: return;
+        case SDLK_z: pad.state[RETRO_DEVICE_ID_JOYPAD_Y] = event->key.state == SDL_PRESSED; break;
+        case SDLK_x: pad.state[RETRO_DEVICE_ID_JOYPAD_B] = event->key.state == SDL_PRESSED; break;
+        case SDLK_c: pad.state[RETRO_DEVICE_ID_JOYPAD_A] = event->key.state == SDL_PRESSED; break;
+        case SDLK_s: pad.state[RETRO_DEVICE_ID_JOYPAD_X] = event->key.state == SDL_PRESSED; break;
+        case SDLK_a: pad.state[RETRO_DEVICE_ID_JOYPAD_L] = event->key.state == SDL_PRESSED; break;
+        case SDLK_d: pad.state[RETRO_DEVICE_ID_JOYPAD_R] = event->key.state == SDL_PRESSED; break;
+        case SDLK_q: pad.state[RETRO_DEVICE_ID_JOYPAD_L2] = event->key.state == SDL_PRESSED; break;
+        case SDLK_w: pad.state[RETRO_DEVICE_ID_JOYPAD_START] = event->key.state == SDL_PRESSED; break;
+        case SDLK_e: pad.state[RETRO_DEVICE_ID_JOYPAD_R2] = event->key.state == SDL_PRESSED; break;
+        case SDLK_1: pad.state[RETRO_DEVICE_ID_JOYPAD_L3] = event->key.state == SDL_PRESSED; break;
+        case SDLK_2: pad.state[RETRO_DEVICE_ID_JOYPAD_SELECT] = event->key.state == SDL_PRESSED; break;
+        case SDLK_3: pad.state[RETRO_DEVICE_ID_JOYPAD_R3] = event->key.state == SDL_PRESSED; break;
+        case SDLK_UP: pad.state[RETRO_DEVICE_ID_JOYPAD_UP] = event->key.state == SDL_PRESSED; break;
+        case SDLK_DOWN: pad.state[RETRO_DEVICE_ID_JOYPAD_DOWN] = event->key.state == SDL_PRESSED; break;
+        case SDLK_LEFT: pad.state[RETRO_DEVICE_ID_JOYPAD_LEFT] = event->key.state == SDL_PRESSED; break;
+        case SDLK_RIGHT: pad.state[RETRO_DEVICE_ID_JOYPAD_RIGHT] = event->key.state == SDL_PRESSED; break;
     }
-
-    controllerButton(&evt);
 }
