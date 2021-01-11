@@ -51,16 +51,12 @@ void hc::Led::onGameReset() {
 void hc::Led::onFrame() {}
 
 void hc::Led::onDraw() {
-    size_t const count = _states.size();
-
-    if (count == 0) {
-        return;
-    }
-
     static ImColor const on = ImColor(IM_COL32(255, 0, 0, 255));
     static ImColor const off = ImColor(IM_COL32(64, 64, 64, 255));
 
     if (ImGui::Begin(ICON_FA_LIGHTBULB_O " Leds")) {
+        size_t const count = _states.size();
+
         for (size_t i = 0; i < count; i++) {
             ImGui::PushStyleColor(ImGuiCol_Text, _states[i] ? on.Value : off.Value);
             ImGui::Text(ICON_FA_CIRCLE);
