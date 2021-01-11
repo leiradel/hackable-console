@@ -288,7 +288,12 @@ bool hc::Input::setControllerInfo(retro_controller_info const* info) {
             char const* deviceName = deviceType < sizeof(deviceNames) / sizeof(deviceNames[0]) ? deviceNames[deviceType] : "?";
             _logger->info(TAG "    %4zu %2u %-8s %s", port + 1, type->id >> RETRO_DEVICE_TYPE_SHIFT, deviceName, type->desc);
 
-            _controllerTypes[port].emplace_back(type->desc, type->id);
+            if (type->id != RETRO_DEVICE_NONE) {
+                _controllerTypes[port].emplace_back(type->desc, type->id);
+            }
+            else {
+                _logger->warn(TAG "Not adding RETRO_DEVICE_NONE as it'll be added later");
+            }
         }
     }
 
