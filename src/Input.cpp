@@ -239,8 +239,10 @@ bool hc::Input::getInputDeviceCapabilities(uint64_t* capabilities) {
 }
 
 bool hc::Input::setControllerInfo(retro_controller_info const* info) {
+    static char const* const deviceNames[] = {"none", "joypad", "mouse", "keyboard", "lightgun", "analog", "pointer"};
+
     _logger->info(TAG "Setting controller info");
-    _logger->info(TAG "       id description");
+    _logger->info(TAG "    port id type     description");
 
     size_t count = 0;
 
@@ -257,7 +259,9 @@ bool hc::Input::setControllerInfo(retro_controller_info const* info) {
         for (unsigned j = 0; j < info[i].num_types; j++) {
             retro_controller_description const* type = info[i].types + j;
 
-            _logger->info(TAG "    %5u %s", type->id, type->desc);
+            unsigned const device = type->id & RETRO_DEVICE_MASK;
+            char const* deviceName = device < sizeof(deviceNames) / sizeof(deviceNames[0]) ? deviceNames[device] : "?";
+            _logger->info(TAG "    %4zu %2u %-8s %s", i + 1, type->id >> RETRO_DEVICE_TYPE_SHIFT, deviceName, type->desc);
 
             ControllerDescription tempdesc;
             tempdesc.desc = type->desc;
