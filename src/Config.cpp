@@ -423,7 +423,6 @@ bool hc::Config::getAudioVideoEnable(int* enabled) {
 }
 
 bool hc::Config::getFastForwarding(bool* is) {
-    _logger->warn(TAG "Returning false for is fast forwarding");
     *is = false;
     return true;
 }
