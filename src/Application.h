@@ -9,14 +9,13 @@
 #include "Video.h"
 #include "Led.h"
 #include "Input.h"
+#include "Perf.h"
 
 #include "Control.h"
 #include "Memory.h"
 #include "Fifo.h"
 
 #include "LuaBind.h"
-
-#include <Frontend.h>
 
 #include <SDL.h>
 #include <SDL_opengl.h>
@@ -87,11 +86,10 @@ namespace hc {
         Logger* _logger;
         Video* _video;
         Input* _input;
+        Perf* _perf;
 
         Control* _control;
         Memory _memory;
-
-        lrcpp::Frontend _frontend;
 
         Fifo _fifo;
         std::unordered_map<std::string, int> _consoleRefs;

@@ -250,6 +250,8 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
     {
         // Initialize components (logger has already been initialized)
+        lrcpp::Frontend& frontend = lrcpp::Frontend::getInstance();
+
         _control = new Control;
         undo.add([this]() { delete _control; });
         _control->init(_logger, &_fsm);
@@ -281,8 +283,13 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
         _input = new Input;
         undo.add([this]() { delete _input; });
-        _input->init(_logger, &_frontend);
+        _input->init(_logger, &frontend);
         _plugins.emplace(_input);
+
+        _perf = new Perf;
+        undo.add([this]() { delete _perf; });
+        _perf->init(_logger);
+        _plugins.emplace(_perf);
 
         if (!_memory.init(_logger)) {
             return false;
@@ -290,12 +297,13 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
         undo.add([this]() { _memory.destroy(); });
 
-        _frontend.setLogger(_logger);
-        _frontend.setConfig(_config);
-        _frontend.setAudio(_audio);
-        _frontend.setVideo(_video);
-        _frontend.setLed(_led);
-        _frontend.setInput(_input);
+        frontend.setLogger(_logger);
+        frontend.setConfig(_config);
+        frontend.setAudio(_audio);
+        frontend.setVideo(_video);
+        frontend.setLed(_led);
+        frontend.setInput(_input);
+        frontend.setPerf(_perf);
     }
 
     {
@@ -369,6 +377,7 @@ void hc::Application::draw() {
 
 void hc::Application::run() {
     bool done = false;
+    lrcpp::Frontend& frontend = lrcpp::Frontend::getInstance();
 
     do {
         SDL_Event event;
@@ -394,7 +403,7 @@ void hc::Application::run() {
         }
 
         if (_fsm.currentState() == LifeCycle::State::GameRunning) {
-            _frontend.run();
+            frontend.run();
             onFrame();
         }
 
@@ -451,11 +460,13 @@ bool hc::Application::loadConsole(char const* name) {
     char const* const path = lua_tostring(_L, -1);
     _logger->info(TAG "Loading core from \"%s\"", path);
 
-    if (!_frontend.load(path)) {
+    lrcpp::Frontend& frontend = lrcpp::Frontend::getInstance();
+
+    if (!frontend.load(path)) {
         return false;
     }
 
-    hc::PushFrontend(_L, &_frontend);
+    hc::PushFrontend(_L, &frontend);
 
     if (!ProtectedCallField(_L, tableIndex, "onCoreLoaded", 1, 1, _logger)) {
         _logger->warn(TAG "onCoreLoaded crashed, will continue loading!");
@@ -465,7 +476,7 @@ bool hc::Application::loadConsole(char const* name) {
     if (!lua_toboolean(_L, -1)) {
         _logger->warn(TAG "onCoreLoaded prevented loading the console");
 
-        if (_frontend.unload()) {
+        if (frontend.unload()) {
             return false;
         }
 
@@ -476,7 +487,7 @@ bool hc::Application::loadConsole(char const* name) {
 
     retro_system_info info;
 
-    if (_frontend.getSystemInfo(&info)) {
+    if (frontend.getSystemInfo(&info)) {
         _control->setSystemInfo(&info);
     }
 
@@ -503,16 +514,17 @@ bool hc::Application::loadGame(char const* path) {
         return false;
     }
 
+    lrcpp::Frontend& frontend = lrcpp::Frontend::getInstance();
     retro_system_info info;
 
-    if (!_frontend.getSystemInfo(&info)) {
+    if (!frontend.getSystemInfo(&info)) {
         return false;
     }
 
     lua_rawgeti(_L, LUA_REGISTRYINDEX, found->second);
     int const tableIndex = lua_gettop(_L);
     
-    hc::PushFrontend(_L, &_frontend);
+    hc::PushFrontend(_L, &frontend);
     lua_pushstring(_L, path);
 
     if (!ProtectedCallField(_L, tableIndex, "onLoadGame", 2, 1, _logger)) {
@@ -528,7 +540,7 @@ bool hc::Application::loadGame(char const* path) {
     bool ok = false;
 
     if (info.need_fullpath) {
-        ok = _frontend.loadGame(path);
+        ok = frontend.loadGame(path);
     }
     else {
         size_t size = 0;
@@ -538,7 +550,7 @@ bool hc::Application::loadGame(char const* path) {
             return false;
         }
 
-        ok = _frontend.loadGame(path, data, size);
+        ok = frontend.loadGame(path, data, size);
         free(const_cast<void*>(data));
     }
 
@@ -546,7 +558,7 @@ bool hc::Application::loadGame(char const* path) {
         return false;
     }
 
-    hc::PushFrontend(_L, &_frontend);
+    hc::PushFrontend(_L, &frontend);
 
     if (!ProtectedCallField(_L, tableIndex, "onGameLoaded", 1, 1, _logger)) {
         _logger->warn(TAG "onGameLoaded crashed, will continue loading!");
@@ -556,7 +568,7 @@ bool hc::Application::loadGame(char const* path) {
     if (!lua_toboolean(_L, -1)) {
         _logger->warn(TAG "onGameLoaded prevented loading the game");
 
-        if (_frontend.unloadGame()) {
+        if (frontend.unloadGame()) {
             return false;
         }
 
@@ -577,7 +589,7 @@ bool hc::Application::loadGame(char const* path) {
         void* data = nullptr;
         size_t size = 0;
 
-        if (_frontend.getMemoryData(memory[i].id, &data) && _frontend.getMemorySize(memory[i].id, &size) && size != 0) {
+        if (frontend.getMemoryData(memory[i].id, &data) && frontend.getMemorySize(memory[i].id, &size) && size != 0) {
             _logger->info(TAG "    %-4s %p %zu bytes", memory[i].name, data, size);
             any = true;
         }
@@ -603,7 +615,7 @@ bool hc::Application::quit() {
 
 bool hc::Application::resetGame() {
     onGameReset();
-    return _frontend.reset();
+    return lrcpp::Frontend::getInstance().reset();
 }
 
 bool hc::Application::resumeGame() {
@@ -613,11 +625,11 @@ bool hc::Application::resumeGame() {
 
 bool hc::Application::step() {
     onFrame();
-    return _frontend.run();
+    return lrcpp::Frontend::getInstance().run();
 }
 
 bool hc::Application::unloadConsole() {
-    if (_frontend.unload()) {
+    if (lrcpp::Frontend::getInstance().unload()) {
         onConsoleUnloaded();
         return true;
     }
@@ -626,7 +638,7 @@ bool hc::Application::unloadConsole() {
 }
 
 bool hc::Application::unloadGame() {
-    if (_frontend.unloadGame()) {
+    if (lrcpp::Frontend::getInstance().unloadGame()) {
         _memory.reset();
         onGameUnloaded();
         return true;
