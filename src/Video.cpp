@@ -12,9 +12,8 @@ void hc::Video::init(Logger* logger) {
     _rotation = 0;
     _pixelFormat = RETRO_PIXEL_FORMAT_UNKNOWN;
 
-    memset(&_systemAvInfo, 0, sizeof(_systemAvInfo));
-
     _texture = 0;
+    _textureWidth = _textureHeight = 0;
     _width = _height = 0;
 }
 
@@ -62,19 +61,16 @@ void hc::Video::onDraw() {
         ImVec2 const max = ImGui::GetWindowContentRegionMax();
 
         float height = max.y - min.y;
-        float width = height * _systemAvInfo.geometry.aspect_ratio;
+        float width = height * _aspectRatio;
 
         if (width > max.x - min.x) {
             width = max.x - min.x;
-            height = width / _systemAvInfo.geometry.aspect_ratio;
+            height = width / _aspectRatio;
         }
-
-        unsigned const maxWidth = _systemAvInfo.geometry.max_width;
-        unsigned const maxHeight = _systemAvInfo.geometry.max_height;
 
         ImVec2 const size = ImVec2(width, height);
         ImVec2 const uv0 = ImVec2(0.0f, 0.0f);
-        ImVec2 const uv1 = ImVec2((float)_width / maxWidth, (float)_height / maxHeight);
+        ImVec2 const uv1 = ImVec2((float)_width / _textureWidth, (float)_height / _textureHeight);
 
         ImGui::Image((ImTextureID)(uintptr_t)_texture, size, uv0, uv1);
     }
@@ -85,6 +81,7 @@ void hc::Video::onDraw() {
 void hc::Video::onGameUnloaded() {
     glDeleteTextures(1, &_texture);
     _texture = 0;
+    _textureWidth = _textureHeight = 0;
     _width = _height = 0;
 }
 
@@ -144,32 +141,30 @@ bool hc::Video::setFrameTimeCallback(retro_frame_time_callback const* callback) 
 }
 
 bool hc::Video::setSystemAvInfo(retro_system_av_info const* info) {
-    _systemAvInfo.timing = info->timing;
-
     _logger->info(TAG "Setting timing");
 
-    _logger->info(TAG "    fps         = %f", _systemAvInfo.timing.fps);
-    _logger->info(TAG "    sample_rate = %f", _systemAvInfo.timing.sample_rate);
+    _logger->info(TAG "    fps         = %f", info->timing.fps);
+    _logger->info(TAG "    sample_rate = %f", info->timing.sample_rate);
 
     return setGeometry(&info->geometry);
 }
 
 bool hc::Video::setGeometry(retro_game_geometry const* geometry) {
-    _systemAvInfo.geometry = *geometry;
+    _aspectRatio = geometry->aspect_ratio;
 
-    if (_systemAvInfo.geometry.aspect_ratio <= 0) {
-        _systemAvInfo.geometry.aspect_ratio = (float)_systemAvInfo.geometry.base_width / (float)_systemAvInfo.geometry.base_height;
+    if (_aspectRatio <= 0) {
+        _aspectRatio = (float)geometry->base_width / (float)geometry->base_height;
     }
 
     _logger->info(TAG "Setting geometry");
 
-    _logger->info(TAG "    base_width   = %u", _systemAvInfo.geometry.base_width);
-    _logger->info(TAG "    base_height  = %u", _systemAvInfo.geometry.base_height);
-    _logger->info(TAG "    max_width    = %u", _systemAvInfo.geometry.max_width);
-    _logger->info(TAG "    max_height   = %u", _systemAvInfo.geometry.max_height);
-    _logger->info(TAG "    aspect_ratio = %f", _systemAvInfo.geometry.aspect_ratio);
+    _logger->info(TAG "    base_width   = %u", geometry->base_width);
+    _logger->info(TAG "    base_height  = %u", geometry->base_height);
+    _logger->info(TAG "    max_width    = %u", geometry->max_width);
+    _logger->info(TAG "    max_height   = %u", geometry->max_height);
+    _logger->info(TAG "    aspect_ratio = %f", geometry->aspect_ratio);
 
-    setupTexture();
+    setupTexture(geometry->max_width, geometry->max_height);
     return true;
 }
 
@@ -249,9 +244,13 @@ retro_proc_address_t hc::Video::getProcAddress(char const* symbol) {
     return nullptr;
 }
 
-void hc::Video::setupTexture() {
-    unsigned const width = _systemAvInfo.geometry.max_width;
-    unsigned const height = _systemAvInfo.geometry.max_height;
+void hc::Video::setupTexture(unsigned width, unsigned height) {
+    if (width <= _textureWidth && height <= _textureHeight) {
+        return;
+    }
+
+    _textureWidth = width;
+    _textureHeight = height;
 
     if (_texture != 0) {
         glDeleteTextures(1, &_texture);

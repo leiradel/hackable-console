@@ -57,15 +57,17 @@ namespace hc {
         virtual retro_proc_address_t getProcAddress(char const* symbol) override;
 
     protected:
-        void setupTexture();
+        void setupTexture(unsigned width, unsigned height);
 
         Logger* _logger;
 
         unsigned _rotation;
         retro_pixel_format _pixelFormat;
-        retro_system_av_info _systemAvInfo;
 
         GLuint _texture;
+        unsigned _textureWidth;
+        unsigned _textureHeight;
+        float _aspectRatio;
         unsigned _width;
         unsigned _height;
     };
