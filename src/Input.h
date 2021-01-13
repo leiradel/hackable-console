@@ -56,6 +56,10 @@ namespace hc {
             MaxPorts = 4
         };
 
+        struct Analog {
+            int16_t x, y;
+        };
+
         struct Pad {
             SDL_JoystickID id;
             SDL_GameController* controller;
@@ -64,7 +68,9 @@ namespace hc {
             std::string joystickName;
             int lastDir[6];
             bool state[16];
+            Analog analogs[3];
             float sensitivity;
+            bool digital;
         };
 
         struct ControllerInfo {
@@ -81,8 +87,7 @@ namespace hc {
         };
 
         void addController(int which);
-        void drawPad(Pad const& pad);
-        void drawPad(unsigned button);
+        void drawPad(Pad& pad);
         void drawKeyboard();
         void addController(SDL_Event const* event);
         void removeController(SDL_Event const* event);
@@ -92,8 +97,6 @@ namespace hc {
 
         Logger* _logger;
         lrcpp::Frontend* _frontend;
-
-        GLuint _texture;
 
         // Physical controllers attached
         std::vector<Pad> _pads;

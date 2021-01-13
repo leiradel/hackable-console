@@ -2,32 +2,15 @@
 
 #include <IconsFontAwesome4.h>
 
-static const uint32_t s_controller[] = {
-    #include "controller.inl"
-};
-
 #define NONE_ID -1
 #define KEYBOARD_ID -2
 #define TAG "[INP] "
 
-hc::Input::Input() : _logger(nullptr), _frontend(nullptr), _texture(0) {}
+hc::Input::Input() : _logger(nullptr), _frontend(nullptr) {}
 
 void hc::Input::init(Logger* logger, lrcpp::Frontend* frontend) {
     _logger = logger;
     _frontend = frontend;
-
-    GLint previous_texture;
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, &previous_texture);
-
-    glGenTextures(1, &_texture);
-    glBindTexture(GL_TEXTURE_2D, _texture);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 768, 192, 0, GL_RGBA, GL_UNSIGNED_BYTE, s_controller);
-
-    glBindTexture(GL_TEXTURE_2D, previous_texture);
 
     // Add the none controller
     Pad none;
@@ -39,7 +22,9 @@ void hc::Input::init(Logger* logger, lrcpp::Frontend* frontend) {
     none.lastDir[0] = none.lastDir[1] = none.lastDir[2] =
     none.lastDir[3] = none.lastDir[4] = none.lastDir[5] = -1;
     memset(none.state, 0, sizeof(none.state));
+    memset(none.analogs, 0, sizeof(none.analogs));
     none.sensitivity = 0.5f;
+    none.digital = false;
 
     _pads.emplace_back(none);
     _logger->info(TAG "Controller %s (%s) created", none.controllerName.c_str(), none.joystickName.c_str());
@@ -54,7 +39,9 @@ void hc::Input::init(Logger* logger, lrcpp::Frontend* frontend) {
     virtualPad.lastDir[0] = virtualPad.lastDir[1] = virtualPad.lastDir[2] =
     virtualPad.lastDir[3] = virtualPad.lastDir[4] = virtualPad.lastDir[5] = -1;
     memset(virtualPad.state, 0, sizeof(virtualPad.state));
+    memset(virtualPad.analogs, 0, sizeof(virtualPad.analogs));
     virtualPad.sensitivity = 0.5f;
+    virtualPad.digital = false;
 
     _pads.emplace_back(virtualPad);
     _logger->info(TAG "Controller %s (%s) created", virtualPad.controllerName.c_str(), virtualPad.joystickName.c_str());
@@ -224,9 +211,7 @@ void hc::Input::onConsoleUnloaded() {
     }
 }
 
-void hc::Input::onQuit() {
-    glDeleteTextures(1, &_texture);
-}
+void hc::Input::onQuit() {}
 
 bool hc::Input::setInputDescriptors(retro_input_descriptor const* descriptors) {
     // We just log the descriptors, the information is currently discarded
@@ -306,8 +291,6 @@ bool hc::Input::getInputBitmasks(bool* supports) {
 }
 
 int16_t hc::Input::state(unsigned portIndex, unsigned deviceId, unsigned index, unsigned id) {
-    (void)index;
-
     if (portIndex >= MaxPorts) {
         return 0;
     }
@@ -320,10 +303,6 @@ int16_t hc::Input::state(unsigned portIndex, unsigned deviceId, unsigned index, 
     }
 
     switch (base) {
-        case RETRO_DEVICE_KEYBOARD: {
-            return id < RETROK_LAST ? (_keyState[id] != 0 ? 32767 : 0) : 0;
-        }
-
         case RETRO_DEVICE_JOYPAD: {
             size_t const count = _pads.size();
 
@@ -334,6 +313,22 @@ int16_t hc::Input::state(unsigned portIndex, unsigned deviceId, unsigned index, 
             }
 
             break;
+        }
+
+        case RETRO_DEVICE_ANALOG: {
+            size_t const count = _pads.size();
+
+            for (size_t i = 0; i < count; i++) {
+                if (port.padId == _pads[i].id) {
+                    return id == RETRO_DEVICE_ID_ANALOG_X ? _pads[i].analogs[index].x : _pads[i].analogs[index].y;
+                }
+            }
+
+            break;
+        }
+
+        case RETRO_DEVICE_KEYBOARD: {
+            return id < RETROK_LAST ? (_keyState[id] != 0 ? 32767 : 0) : 0;
         }
     }
 
@@ -370,36 +365,92 @@ void hc::Input::addController(int which) {
     pad.lastDir[0] = pad.lastDir[1] = pad.lastDir[2] =
     pad.lastDir[3] = pad.lastDir[4] = pad.lastDir[5] = -1;
     pad.sensitivity = 0.5f;
+    pad.digital = false;
     memset(pad.state, 0, sizeof(pad.state));
+    memset(pad.analogs, 0, sizeof(pad.analogs));
 
     _pads.emplace_back(pad);
     _logger->info(TAG "Controller %s (%s) added", pad.controllerName.c_str(), pad.joystickName.c_str());
 }
 
-void hc::Input::drawPad(Pad const& pad) {
-    ImVec2 const pos = ImGui::GetCursorPos();
-    drawPad(17);
+void hc::Input::drawPad(Pad& pad) {
+    static auto const show = [](char const* name, float const width, bool const active) {
+        static ImU32 const pressed = IM_COL32(128, 128, 128, 255);
+        static ImU32 const unpressed = IM_COL32(64, 64, 64, 255);
 
-    for (unsigned button = 0; button < 16; button++) {
-        if (pad.state[button]) {
-            ImGui::SetCursorPos(pos);
-            drawPad(button);
-        }
+        ImVec2 const size(width, 20.0f);
+        ImU32 const color = active != 0 ? pressed : unpressed;
+
+        ImGui::PushStyleColor(ImGuiCol_Button, color);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, color);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, color);
+
+        ImGui::Button(name, size);
+        ImGui::PopStyleColor(3);
+
+        ImGui::SameLine();
+    };
+
+    static auto const skip = [](float const width) {
+        ImGui::Dummy(ImVec2(width, 20.0f));
+        ImGui::SameLine();
+    };
+
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(1.0f, 1.0f));
+    ImGui::Columns(2);
+
+    {
+        show("L3", 20.0f, pad.state[RETRO_DEVICE_ID_JOYPAD_L3] != 0);
+        show("L2", 20.0f, pad.state[RETRO_DEVICE_ID_JOYPAD_L2] != 0);
+        show("L", 20.0f, pad.state[RETRO_DEVICE_ID_JOYPAD_L] != 0);
+        show("R", 20.0f, pad.state[RETRO_DEVICE_ID_JOYPAD_R] != 0);
+        show("R2", 20.0f, pad.state[RETRO_DEVICE_ID_JOYPAD_R2] != 0);
+        show("R3", 20.0f, pad.state[RETRO_DEVICE_ID_JOYPAD_R3] != 0);
+
+        ImGui::NewLine();
+
+        show("Select", 62.0f, pad.state[RETRO_DEVICE_ID_JOYPAD_SELECT] != 0);
+        show("Start", 62.0f, pad.state[RETRO_DEVICE_ID_JOYPAD_START] != 0);
+
+        ImGui::NewLine();
+
+        skip(20.0f);
+        ImGui::SameLine();
+        show("U", 21.0f, pad.state[RETRO_DEVICE_ID_JOYPAD_UP] != 0);
+        skip(39.0f);
+        show("X", 21.0f, pad.state[RETRO_DEVICE_ID_JOYPAD_X] != 0);
+
+        ImGui::NewLine();
+
+        skip(10.0f);
+        show("L", 20.0f, pad.state[RETRO_DEVICE_ID_JOYPAD_LEFT] != 0);
+        show("R", 20.0f, pad.state[RETRO_DEVICE_ID_JOYPAD_RIGHT] != 0);
+        skip(19.0f);
+        show("Y", 20.0f, pad.state[RETRO_DEVICE_ID_JOYPAD_Y] != 0);
+        show("A", 20.0f, pad.state[RETRO_DEVICE_ID_JOYPAD_A] != 0);
+
+        ImGui::NewLine();
+
+        skip(20.0f);
+        show("D", 21.0f, pad.state[RETRO_DEVICE_ID_JOYPAD_DOWN] != 0);
+        skip(39.0f);
+        show("B", 21.0f, pad.state[RETRO_DEVICE_ID_JOYPAD_B] != 0);
     }
-}
 
-void hc::Input::drawPad(unsigned button) {
-    unsigned const y = button / 6;
-    unsigned const x = button - y * 6;
+    ImGui::PopStyleVar();
+    ImGui::NextColumn();
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(1.0f, 1.0f));
 
-    float const xx = x * 128.0f;
-    float const yy = y * 64.0f;
+    {
+        ImGui::Checkbox("Analog to digital", &pad.digital);
+        ImGui::SliderFloat("##Sensitivity", &pad.sensitivity, 0.0f, 1.0f, "Sensitivity %.3f");
+        ImGui::Text("Left:     %6d / %6d", pad.analogs[0].x, pad.analogs[0].y);
+        ImGui::Text("Right:    %6d / %6d", pad.analogs[1].x, pad.analogs[1].y);
+        ImGui::Text("Triggers: %6d / %6d", pad.analogs[2].x, pad.analogs[2].y);
+    }
 
-    ImVec2 const size = ImVec2(180.0f, 100.0f);
-    ImVec2 const uv0 = ImVec2(xx / 768.0f, yy / 192.0f);
-    ImVec2 const uv1 = ImVec2((xx + 128.0f) / 768.0f, (yy + 64.0f) / 192.0f);
-
-    ImGui::Image((ImTextureID)(uintptr_t)_texture, size, uv0, uv1);
+    ImGui::PopStyleVar();
+    ImGui::Columns(1);
 }
 
 void hc::Input::drawKeyboard() {
@@ -561,7 +612,7 @@ void hc::Input::controllerAxis(const SDL_Event* event) {
         return;
     }
 
-    int const threshold = 32767 * pad->sensitivity;
+    int const threshold = 32767 * (1.0f - pad->sensitivity);
     int positive, negative;
     int button;
     int* lastDir;
@@ -573,24 +624,28 @@ void hc::Input::controllerAxis(const SDL_Event* event) {
         case SDL_CONTROLLER_AXIS_RIGHTY:
             switch (event->caxis.axis) {
                 case SDL_CONTROLLER_AXIS_LEFTX:
+                    pad->analogs[RETRO_DEVICE_INDEX_ANALOG_LEFT].x = event->caxis.value;
                     positive = RETRO_DEVICE_ID_JOYPAD_RIGHT;
                     negative = RETRO_DEVICE_ID_JOYPAD_LEFT;
                     lastDir = pad->lastDir + 0;
                     break;
 
                 case SDL_CONTROLLER_AXIS_LEFTY:
+                    pad->analogs[RETRO_DEVICE_INDEX_ANALOG_LEFT].y = event->caxis.value;
                     positive = RETRO_DEVICE_ID_JOYPAD_DOWN;
                     negative = RETRO_DEVICE_ID_JOYPAD_UP;
                     lastDir = pad->lastDir + 1;
                     break;
 
                 case SDL_CONTROLLER_AXIS_RIGHTX:
+                    pad->analogs[RETRO_DEVICE_INDEX_ANALOG_RIGHT].x = event->caxis.value;
                     positive = RETRO_DEVICE_ID_JOYPAD_RIGHT;
                     negative = RETRO_DEVICE_ID_JOYPAD_LEFT;
                     lastDir = pad->lastDir + 2;
                     break;
 
                 case SDL_CONTROLLER_AXIS_RIGHTY:
+                    pad->analogs[RETRO_DEVICE_INDEX_ANALOG_RIGHT].y = event->caxis.value;
                     positive = RETRO_DEVICE_ID_JOYPAD_DOWN;
                     negative = RETRO_DEVICE_ID_JOYPAD_UP;
                     lastDir = pad->lastDir + 3;
@@ -612,10 +667,12 @@ void hc::Input::controllerAxis(const SDL_Event* event) {
         case SDL_CONTROLLER_AXIS_TRIGGERLEFT:
         case SDL_CONTROLLER_AXIS_TRIGGERRIGHT:
             if (event->caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT) {
+                pad->analogs[RETRO_DEVICE_INDEX_ANALOG_BUTTON].x = event->caxis.value;
                 button = RETRO_DEVICE_ID_JOYPAD_L2;
                 lastDir = pad->lastDir + 4;
             }
             else {
+                pad->analogs[RETRO_DEVICE_INDEX_ANALOG_BUTTON].y = event->caxis.value;
                 button = RETRO_DEVICE_ID_JOYPAD_R2;
                 lastDir = pad->lastDir + 5;
             }
@@ -626,15 +683,17 @@ void hc::Input::controllerAxis(const SDL_Event* event) {
             return;
     }
 
-    if (*lastDir != -1) {
-        pad->state[*lastDir] = false;
-    }
+    if (pad->digital) {
+        if (*lastDir != -1) {
+            pad->state[*lastDir] = false;
+        }
 
-    if (event->caxis.value < -threshold || event->caxis.value > threshold) {
-        pad->state[button] = true;
-    }
+        if (event->caxis.value < -threshold || event->caxis.value > threshold) {
+            pad->state[button] = true;
+        }
 
-    *lastDir = button;
+        *lastDir = button;
+    }
 }
 
 void hc::Input::keyboard(SDL_Event const* event) {
