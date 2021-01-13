@@ -336,9 +336,7 @@ bool hc::Config::setMemoryMaps(retro_memory_map const* map) {
     memcpy(descriptors, map->descriptors, sizeof(retro_memory_descriptor) * map->num_descriptors);
     
     if (!preprocessMemoryDescriptors(descriptors, map->num_descriptors)) {
-        _logger->error(TAG "Error processing memory descriptors");
-        free(static_cast<void*>(descriptors));
-        return false;
+        _logger->warn(TAG "Error processing memory descriptors, but will continue");
     }
 
     _logger->info(TAG "    ndx flags  ptr      offset   start    select   disconn  len      addrspace");
