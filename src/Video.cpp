@@ -268,7 +268,7 @@ void hc::Video::setupTexture() {
 
     switch (_pixelFormat) {
         case RETRO_PIXEL_FORMAT_XRGB8888:
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
             break;
 
         case RETRO_PIXEL_FORMAT_RGB565:
