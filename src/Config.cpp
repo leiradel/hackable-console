@@ -339,7 +339,7 @@ bool hc::Config::setMemoryMaps(retro_memory_map const* map) {
         _logger->warn(TAG "Error processing memory descriptors, but will continue");
     }
 
-    _logger->info(TAG "    ndx flags  ptr      offset   start    select   disconn  len      addrspace");
+    _logger->info(TAG "    ndx flags  ptr                offset   start    select   disconn  len      addrspace");
 
     for (unsigned i = 0; i < map->num_descriptors; i++) {
         retro_memory_descriptor const* const descriptor = descriptors + i;
@@ -367,8 +367,8 @@ bool hc::Config::setMemoryMaps(retro_memory_map const* map) {
         flags[5] = (descriptor->flags & RETRO_MEMDESC_CONST) != 0 ? 'C' : 'c';
 
         _logger->info(
-            TAG "    %3u %s %p %08X %08X %08X %08X %08X %s",
-            i, flags, descriptor->ptr, descriptor->offset, descriptor->start, descriptor->select,
+            TAG "    %3u %s 0x%016" PRIxPTR " %08X %08X %08X %08X %08X %s",
+            i, flags, (uintptr_t)descriptor->ptr, descriptor->offset, descriptor->start, descriptor->select,
             descriptor->disconnect, descriptor->len, descriptor->addrspace != nullptr ? descriptor->addrspace : ""
         );
 
