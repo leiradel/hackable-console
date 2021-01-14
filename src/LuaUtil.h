@@ -19,10 +19,11 @@ namespace hc {
         int const _top;
     };
 
-    int GetField(lua_State* const L, int const tableIndex, char const* const fieldName, Logger* const logger = nullptr);
-    bool ProtectedCall(lua_State* const L, int const nargs, int const nresults, Logger* const logger = nullptr);
+    void registerSearcher(lua_State* const L);
+    int getField(lua_State* const L, int const tableIndex, char const* const fieldName, Logger* const logger = nullptr);
+    bool protectedCall(lua_State* const L, int const nargs, int const nresults, Logger* const logger = nullptr);
 
-    bool ProtectedCallField(
+    bool protectedCallField(
         lua_State* const L,
         int const tableIndex,
         char const* const fieldName,
@@ -31,5 +32,5 @@ namespace hc {
         Logger* const logger = nullptr
     );
 
-    int PushFrontend(lua_State* const L, lrcpp::Frontend* const frontend);
+    int pushFrontend(lua_State* const L, lrcpp::Frontend* const frontend);
 }
