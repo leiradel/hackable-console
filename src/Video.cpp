@@ -2,7 +2,14 @@
 
 #include <IconsFontAwesome4.h>
 
+#include <chrono>
+
 #define TAG "[VID] "
+
+static int64_t getTimeUs() {
+    auto const now_us = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::system_clock::now());
+    return static_cast<int64_t>(now_us.time_since_epoch().count());
+}
 
 hc::Video::Video() : _logger(nullptr) {}
 
@@ -15,6 +22,10 @@ void hc::Video::init(Logger* logger) {
     _texture = 0;
     _textureWidth = _textureHeight = 0;
     _width = _height = 0;
+
+    _frameCount = 0;
+    _timeStarted = 0;
+    _fps = -1.0f;
 }
 
 char const* hc::Video::getName() {
@@ -37,7 +48,9 @@ char const* hc::Video::getUrl() {
     return "https://github.com/leiradel/hackable-console";
 }
 
-void hc::Video::onStarted() {}
+void hc::Video::onStarted() {
+    _timeStarted = getTimeUs();
+}
 
 void hc::Video::onConsoleLoaded() {}
 
@@ -52,6 +65,12 @@ void hc::Video::onGameReset() {}
 void hc::Video::onFrame() {}
 
 void hc::Video::onDraw() {
+    _frameCount++;
+
+    int64_t const t1 = getTimeUs();
+    int64_t const delta = t1 - _timeStarted;
+    _fps = static_cast<double>(_frameCount) * 1000000.0f / static_cast<double>(delta);
+
     if (!ImGui::Begin(ICON_FA_DESKTOP " Video")) {
         return;
     }
@@ -189,8 +208,8 @@ bool hc::Video::setHwSharedContext() {
 }
 
 bool hc::Video::getTargetRefreshRate(float* rate) {
-    *rate = 60;
-    _logger->warn(TAG "Returning fixed 60 for target refresh rate");
+    *rate = static_cast<float>(_fps);
+    _logger->info(TAG "Returning %f for target refresh rate", _fps);
     return true;
 }
 

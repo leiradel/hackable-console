@@ -7,6 +7,8 @@
 
 #include <SDL_opengl.h>
 
+#include <stdint.h>
+
 namespace hc {
     class Video: public Plugin, public lrcpp::Video {
     public:
@@ -70,5 +72,9 @@ namespace hc {
         float _aspectRatio;
         unsigned _width;
         unsigned _height;
+
+        uint64_t _frameCount;
+        int64_t _timeStarted;
+        double _fps;
     };
 }
