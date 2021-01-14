@@ -241,7 +241,7 @@ void hc::Video::refresh(void const* data, unsigned width, unsigned height, size_
 
         case RETRO_PIXEL_FORMAT_0RGB1555:
             glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / 2);
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, data);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, data);
             break;
 
         case RETRO_PIXEL_FORMAT_UNKNOWN:
@@ -286,7 +286,7 @@ void hc::Video::setupTexture(unsigned width, unsigned height) {
 
     switch (_pixelFormat) {
         case RETRO_PIXEL_FORMAT_XRGB8888:
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
             break;
 
         case RETRO_PIXEL_FORMAT_RGB565:
@@ -295,7 +295,7 @@ void hc::Video::setupTexture(unsigned width, unsigned height) {
 
         case RETRO_PIXEL_FORMAT_0RGB1555:
         default:
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
             break;
     }
 
