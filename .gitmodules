@@ -7,9 +7,6 @@
 [submodule "src/lrcpp"]
 	path = src/lrcpp
 	url = https://github.com/leiradel/lrcpp.git
-[submodule "src/libretro-common"]
-	path = src/libretro-common
-	url = https://github.com/libretro/libretro-common.git
 [submodule "src/lua"]
 	path = src/lua
 	url = https://github.com/lua/lua.git
