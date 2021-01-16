@@ -16,8 +16,10 @@ namespace hc {
         Audio();
         virtual ~Audio() {}
 
-        void init(Logger* logger, double sampleRate, Fifo* fifo);
+        void init(Logger* const logger, double const sampleRate, Fifo* const fifo);
         void flush();
+
+        static Audio* check(lua_State* const L, int const index);
 
         // hc::Plugin
         virtual char const* getName() override;
@@ -37,6 +39,8 @@ namespace hc {
         virtual void onGameUnloaded() override;
         virtual void onConsoleUnloaded() override;
         virtual void onQuit() override;
+
+        virtual int push(lua_State* const L) override;
 
         // lrcpp::Audio
         virtual bool setSystemAvInfo(retro_system_av_info const* info) override;

@@ -2,6 +2,10 @@
 
 #include <IconsFontAwesome4.h>
 
+extern "C" {
+    #include "lauxlib.h"
+}
+
 #define TAG "[AUD] "
 
 hc::Audio::Audio()
@@ -21,7 +25,7 @@ hc::Audio::Audio()
     memset(&_timing, 0, sizeof(_timing));
 }
 
-void hc::Audio::init(Logger* logger, double sampleRate, Fifo* fifo) {
+void hc::Audio::init(Logger* const logger, double const sampleRate, Fifo* const fifo) {
     _logger = logger;
     _sampleRate = sampleRate;
     _fifo = fifo;
@@ -229,4 +233,25 @@ size_t hc::Audio::sampleBatch(int16_t const* data, size_t frames) {
 void hc::Audio::sample(int16_t left, int16_t right) {
     int16_t frame[2] = {left, right};
     sampleBatch(frame, 1);
+}
+
+int hc::Audio::push(lua_State* const L) {
+    auto const self = static_cast<Audio**>(lua_newuserdata(L, sizeof(Audio*)));
+    *self = this;
+
+    if (luaL_newmetatable(L, "hc::Audio")) {
+        static luaL_Reg const methods[] = {
+            {nullptr, nullptr}
+        };
+
+        luaL_newlib(L, methods);
+        lua_setfield(L, -2, "__index");
+    }
+
+    lua_setmetatable(L, -2);
+    return 1;
+}
+
+hc::Audio* hc::Audio::check(lua_State* const L, int const index) {
+    return *static_cast<Audio**>(luaL_checkudata(L, index, "hc::Audio"));
 }
