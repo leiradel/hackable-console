@@ -15,7 +15,6 @@ namespace hc {
         void init(Logger* const logger, LifeCycle* const fsm);
 
         void setSystemInfo(retro_system_info const* info);
-        void addConsole(char const* const name);
 
         int push(lua_State* const L);
         static Control* check(lua_State* const L, int const index);
