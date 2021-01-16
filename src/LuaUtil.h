@@ -31,6 +31,4 @@ namespace hc {
         int const nresults,
         Logger* const logger = nullptr
     );
-
-    int pushFrontend(lua_State* const L, lrcpp::Frontend* const frontend);
 }

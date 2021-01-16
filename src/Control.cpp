@@ -251,6 +251,15 @@ int hc::Control::push(lua_State* const L) {
             {"step", l_step},
             {"unloadGame", l_unloadGame},
             {"pauseGame", l_pauseGame},
+            {"apiVersion", l_apiVersion},
+            {"getSystemInfo", l_getSystemInfo},
+            {"getSystemAvInfo", l_getSystemAvInfo},
+            {"serializeSize", l_serializeSize},
+            {"serialize", l_serialize},
+            {"unserialize", l_unserialize},
+            {"cheatReset", l_cheatReset},
+            {"cheatSet", l_cheatSet},
+            {"getRegion", l_getRegion},
             {"getMemoryData", l_getMemoryData},
             {"getMemorySize", l_getMemorySize},
             {nullptr, nullptr}
@@ -384,6 +393,195 @@ int hc::Control::l_pauseGame(lua_State* const L) {
     }
 
     return 0;
+}
+
+int hc::Control::l_apiVersion(lua_State* const L) {
+    check(L, 1);
+
+    auto& frontend = lrcpp::Frontend::getInstance();
+    unsigned version;
+
+    if (!frontend.apiVersion(&version)) {
+        return luaL_error(L, "error getting the API version");
+    }
+
+    lua_pushinteger(L, version);
+    return 1;
+}
+
+int hc::Control::l_getSystemInfo(lua_State* const L) {
+    check(L, 1);
+
+    auto& frontend = lrcpp::Frontend::getInstance();
+    retro_system_info info;
+
+    if (!frontend.getSystemInfo(&info)) {
+        return luaL_error(L, "error getting the system info");
+    }
+
+    lua_createtable(L, 0, 5);
+
+    lua_pushstring(L, info.library_name);
+    lua_setfield(L, -2, "libraryName");
+
+    lua_pushstring(L, info.library_version);
+    lua_setfield(L, -2, "libraryVersion");
+
+    lua_pushstring(L, info.valid_extensions);
+    lua_setfield(L, -2, "validExtensions");
+
+    lua_pushboolean(L, info.need_fullpath);
+    lua_setfield(L, -2, "needFullPath");
+
+    lua_pushboolean(L, info.block_extract);
+    lua_setfield(L, -2, "blockExtract");
+
+    return 1;
+}
+
+int hc::Control::l_getSystemAvInfo(lua_State* const L) {
+    check(L, 1);
+
+    auto& frontend = lrcpp::Frontend::getInstance();
+    retro_system_av_info info;
+
+    if (!frontend.getSystemAvInfo(&info)) {
+        return luaL_error(L, "error getting the system a/v info");
+    }
+
+    lua_createtable(L, 0, 2);
+
+    lua_createtable(L, 0, 5);
+
+    lua_pushinteger(L, info.geometry.base_width);
+    lua_setfield(L, -2, "baseWidth");
+
+    lua_pushinteger(L, info.geometry.base_height);
+    lua_setfield(L, -2, "baseHeight");
+
+    lua_pushinteger(L, info.geometry.max_width);
+    lua_setfield(L, -2, "maxWidth");
+
+    lua_pushinteger(L, info.geometry.max_height);
+    lua_setfield(L, -2, "maxHeight");
+
+    lua_pushnumber(L, info.geometry.aspect_ratio);
+    lua_setfield(L, -2, "aspectRatio");
+
+    lua_setfield(L, -2, "geometry");
+
+    lua_createtable(L, 0, 2);
+
+    lua_pushnumber(L, info.timing.fps);
+    lua_setfield(L, -2, "fps");
+
+    lua_pushnumber(L, info.timing.sample_rate);
+    lua_setfield(L, -2, "sampleRate");
+
+    lua_setfield(L, -2, "timing");
+
+    return 1;
+}
+
+int hc::Control::l_serializeSize(lua_State* const L) {
+    check(L, 1);
+
+    auto& frontend = lrcpp::Frontend::getInstance();
+    size_t size;
+
+    if (!frontend.serializeSize(&size)) {
+        return luaL_error(L, "error getting the size need to serialize the state");
+    }
+
+    lua_pushinteger(L, size);
+    return 1;
+}
+
+int hc::Control::l_serialize(lua_State* const L) {
+    check(L, 1);
+
+    auto& frontend = lrcpp::Frontend::getInstance();
+    size_t size;
+
+    if (!frontend.serializeSize(&size)) {
+        return luaL_error(L, "error serializing state");
+    }
+
+    void* const data = malloc(size);
+
+    if (data == nullptr) {
+        return luaL_error(L, "out of memory");
+    }
+
+    if (!frontend.serialize(data, size)) {
+        free(data);
+        return luaL_error(L, "error serializing state");
+    }
+
+    lua_pushlstring(L, static_cast<char*>(data), size);
+    free(data);
+    return 1;
+}
+
+int hc::Control::l_unserialize(lua_State* const L) {
+    check(L, 1);
+
+    size_t size;
+    char const* const data = luaL_checklstring(L, 2, &size);
+
+    auto& frontend = lrcpp::Frontend::getInstance();
+
+    if (!frontend.unserialize(data, size)) {
+        return luaL_error(L, "error unserializing state");
+    }
+
+    return 0;
+}
+
+int hc::Control::l_cheatReset(lua_State* const L) {
+    check(L, 1);
+
+    auto& frontend = lrcpp::Frontend::getInstance();
+
+    if (!frontend.cheatReset()) {
+        return luaL_error(L, "error resetting cheats");
+    }
+
+    return 0;
+}
+
+int hc::Control::l_cheatSet(lua_State* const L) {
+    check(L, 1);
+    unsigned const index = luaL_checkinteger(L, 2);
+    bool const enabled = lua_toboolean(L, 3);
+    char const* const code = luaL_checkstring(L, 4);
+
+    auto& frontend = lrcpp::Frontend::getInstance();
+
+    if (!frontend.cheatSet(index, enabled, code)) {
+        return luaL_error(L, "error setting cheat (%u, %s, \"%s\")", index, enabled ? "true" : "false", code);
+    }
+
+    return 0;
+}
+
+int hc::Control::l_getRegion(lua_State* const L) {
+    check(L, 1);
+
+    auto& frontend = lrcpp::Frontend::getInstance();
+    unsigned region;
+
+    if (!frontend.getRegion(&region)) {
+        return luaL_error(L, "error getting the region");
+    }
+
+    switch (region) {
+        case RETRO_REGION_NTSC: lua_pushliteral(L, "ntsc"); break;
+        case RETRO_REGION_PAL:  lua_pushliteral(L, "pal"); break;
+        default: return luaL_error(L, "invalid region: %u", region);
+    }
+
+    return 1;
 }
 
 int hc::Control::l_getMemoryData(lua_State* const L) {

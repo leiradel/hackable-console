@@ -57,6 +57,15 @@ namespace hc {
         static int l_unloadGame(lua_State* const L);
         static int l_pauseGame(lua_State* const L);
 
+        static int l_apiVersion(lua_State* const L);
+        static int l_getSystemInfo(lua_State* const L);
+        static int l_getSystemAvInfo(lua_State* const L);
+        static int l_serializeSize(lua_State* const L);
+        static int l_serialize(lua_State* const L);
+        static int l_unserialize(lua_State* const L);
+        static int l_cheatReset(lua_State* const L);
+        static int l_cheatSet(lua_State* const L);
+        static int l_getRegion(lua_State* const L);
         static int l_getMemoryData(lua_State* const L);
         static int l_getMemorySize(lua_State* const L);
 
