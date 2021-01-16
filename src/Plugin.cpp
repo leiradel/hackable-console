@@ -6,6 +6,7 @@
 #include <IconsFontAwesome4.h>
 
 #include <stdlib.h>
+#include <algorithm>
 
 #define TAG "[PMN] "
 
@@ -35,6 +36,10 @@ void hc::Plugins::init(Logger* const logger) {
 void hc::Plugins::add(Plugin* const plugin, bool const destroy) {
     View view = {plugin, destroy, true};
     _plugins.emplace_back(view);
+
+    std::sort(_plugins.begin(), _plugins.end(), [](View const& a, View const& b) -> bool {
+        return strcmp(a.plugin->getName(), b.plugin->getName()) < 0;
+    });
 }
 
 char const* hc::Plugins::getName() {
