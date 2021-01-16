@@ -32,8 +32,8 @@ void hc::Plugins::init(Logger* const logger) {
     _logger = logger;
 }
 
-void hc::Plugins::add(Plugin* const plugin) {
-    View view = {plugin, true};
+void hc::Plugins::add(Plugin* const plugin, bool const destroy) {
+    View view = {plugin, destroy, true};
     _plugins.emplace_back(view);
 }
 
@@ -175,7 +175,7 @@ void hc::Plugins::onQuit() {
         _logger->debug(TAG "onQuit plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onQuit();
 
-        if (plugin != this) {
+        if (plugin != this && view.destroy) {
             delete plugin;
         }
     }

@@ -94,7 +94,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
     }
 
     _plugins.init(_logger);
-    _plugins.add(_logger);
+    _plugins.add(_logger, false);
 
     {
         // Setup SDL
@@ -254,7 +254,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
         _control = new Control;
         _control->init(_logger, &_fsm);
-        _plugins.add(_control);
+        _plugins.add(_control, true);
 
         _config = new Config;
         
@@ -263,32 +263,32 @@ bool hc::Application::init(std::string const& title, int const width, int const 
             return false;
         }
 
-        _plugins.add(_config);
+        _plugins.add(_config, true);
 
         _video = new Video;
         _video->init(_logger);
-        _plugins.add(_video);
+        _plugins.add(_video, true);
 
         _audio = new Audio;
         _audio->init(_logger, _audioSpec.freq, &_fifo);
-        _plugins.add(_audio);
+        _plugins.add(_audio, true);
 
         _led = new Led;
         undo.add([this]() { delete _led; });
         _led->init(_logger);
-        _plugins.add(_led);
+        _plugins.add(_led, true);
 
         _input = new Input;
         _input->init(_logger, &frontend);
-        _plugins.add(_input);
+        _plugins.add(_input, true);
 
         _perf = new Perf;
         _perf->init(_logger);
-        _plugins.add(_perf);
+        _plugins.add(_perf, true);
 
         _memory = new Memory;
         _memory->init(_logger);
-        _plugins.add(_memory);
+        _plugins.add(_memory, true);
 
         frontend.setLogger(_logger);
         frontend.setConfig(_config);
@@ -343,6 +343,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
 void hc::Application::destroy() {
     _plugins.onQuit();
+    delete _logger;
     lua_close(_L);
 
     ImGui_ImplOpenGL2_Shutdown();

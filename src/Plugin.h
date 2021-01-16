@@ -60,7 +60,7 @@ namespace hc {
         virtual ~Plugins() {}
 
         void init(Logger* const logger);
-        void add(Plugin* const plugin);
+        void add(Plugin* const plugin, bool const destroy);
 
         // hc::Plugin
         virtual Type getType() override { return Type::Manager; }
@@ -87,6 +87,7 @@ namespace hc {
     protected:
         struct View {
             Plugin* plugin;
+            bool destroy;
             bool opened;
         };
 
