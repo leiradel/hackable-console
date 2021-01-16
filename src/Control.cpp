@@ -6,6 +6,8 @@
 #include <imguifilesystem.h>
 #include <IconsFontAwesome4.h>
 
+#include <algorithm>
+
 extern "C" {
     #include "lauxlib.h"
 }
@@ -37,7 +39,7 @@ static int str2id(char const* const str) {
     }
 }
 
-hc::Control::Control() : _logger(nullptr), _selected(0) {}
+hc::Control::Control() : _logger(nullptr), _selected(0), _opened(-1) {}
 
 void hc::Control::init(Logger* const logger, LifeCycle* const fsm) {
     _logger = logger;
@@ -69,10 +71,10 @@ void hc::Control::onStarted() {}
 void hc::Control::onConsoleLoaded() {}
 
 void hc::Control::onGameLoaded() {
-    for (auto const& cb : _onGameLoaded) {
-        lua_rawgeti(cb.L, LUA_REGISTRYINDEX, cb.ref);
-        protectedCall(cb.L, 0, 0, _logger);
-    }
+    auto const& cb = _consoles[_opened];
+    lua_rawgeti(cb.L, LUA_REGISTRYINDEX, cb.ref);
+    protectedCallField(cb.L, -1, "onGameLoaded", 0, 0, _logger);
+    lua_pop(cb.L, 1);
 }
 
 void hc::Control::onGamePaused() {}
@@ -85,20 +87,9 @@ void hc::Control::onFrame() {}
 
 void hc::Control::onDraw() {
     static auto const getter = [](void* const data, int idx, char const** const text) -> bool {
-        auto const consoles = (std::map<std::string, int>*)data;
-
-        if (idx < static_cast<int>(consoles->size())) {
-            for (auto const& pair : *consoles) {
-                if (idx == 0) {
-                    *text = pair.first.c_str();
-                    return true;
-                }
-
-                idx--;
-            }
-        }
-
-        return false;
+        auto const consoles = (std::vector<Console>*)data;
+        *text = (*consoles)[idx].name.c_str();
+        return true;
     };
 
     if (ImGui::Begin(ICON_FA_COG " Control")) {
@@ -109,15 +100,12 @@ void hc::Control::onDraw() {
         ImGui::SameLine();
 
         if (ImGuiAl::Button(ICON_FA_FOLDER_OPEN " Load Console", _fsm->currentState() == LifeCycle::State::Start && _selected < count, size)) {
-            char const* name = nullptr;
+            _opened = _selected;
+            Console const& cb = _consoles[_selected];
 
-            if (getter(&_consoles, _selected, &name)) {
-                auto const found = _consoles.find(name);
-                Callback const& cb = found->second;
-
-                lua_rawgeti(cb.L, LUA_REGISTRYINDEX, cb.ref);
-                protectedCall(cb.L, 0, 0, _logger);
-            }
+            lua_rawgeti(cb.L, LUA_REGISTRYINDEX, cb.ref);
+            protectedCallField(cb.L, -1, "onConsoleLoaded", 0, 0, _logger);
+            lua_pop(cb.L, 1);
         }
 
         bool loadGamePressed = false;
@@ -201,11 +189,11 @@ void hc::Control::onGameUnloaded() {}
 
 void hc::Control::onConsoleUnloaded() {
     _extensions.clear();
+    _opened = -1;
 }
 
 void hc::Control::onQuit() {
-    for (auto& pair : _consoles) {
-        Callback const& cb = pair.second;
+    for (auto const& cb : _consoles) {
         luaL_unref(cb.L, LUA_REGISTRYINDEX, cb.ref);
     }
 }
@@ -241,7 +229,6 @@ int hc::Control::push(lua_State* const L) {
     if (luaL_newmetatable(L, "hc::Control")) {
         static luaL_Reg const methods[] = {
             {"addConsole", l_addConsole},
-            {"onGameLoaded", l_onGameLoaded},
             {"loadCore", l_loadCore},
             {"quit", l_quit},
             {"unloadCore", l_unloadCore},
@@ -281,25 +268,18 @@ int hc::Control::l_addConsole(lua_State* const L) {
     auto const self = check(L, 1);
     size_t length = 0;
     char const* const name = lua_tolstring(L, 2, &length);
-    luaL_argexpected(L, lua_type(L, 3) == LUA_TFUNCTION, 3, "function");
+    luaL_argexpected(L, lua_type(L, 3) == LUA_TTABLE, 3, "table");
 
     lua_pushvalue(L, 3);
     int const ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    Callback cb = {L, ref};
-    self->_consoles.emplace(std::string(name, length), cb);
-    return 0;
-}
+    Console cb = {std::string(name, length), L, ref};
+    self->_consoles.emplace_back(cb);
 
-int hc::Control::l_onGameLoaded(lua_State* const L) {
-    auto const self = check(L, 1);
-    luaL_argexpected(L, lua_type(L, 2) == LUA_TFUNCTION, 2, "function");
+    std::sort(self->_consoles.begin(), self->_consoles.end(), [](Console const& a, Console const& b) -> bool {
+        return a.name < b.name;
+    });
 
-    lua_pushvalue(L, 2);
-    int const ref = luaL_ref(L, LUA_REGISTRYINDEX);
-
-    Callback cb = {L, ref};
-    self->_onGameLoaded.emplace_back(cb);
     return 0;
 }
 

@@ -5,7 +5,6 @@
 #include "LifeCycle.h"
 
 #include <string>
-#include <map>
 #include <vector>
 
 namespace hc {
@@ -45,7 +44,6 @@ namespace hc {
         // Control will also be responsible for exposing LifeCycle and Frontend
         // methods to Lua
         static int l_addConsole(lua_State* const L);
-        static int l_onGameLoaded(lua_State* const L);
 
         static int l_loadCore(lua_State* const L);
         static int l_quit(lua_State* const L);
@@ -69,19 +67,19 @@ namespace hc {
         static int l_getMemoryData(lua_State* const L);
         static int l_getMemorySize(lua_State* const L);
 
-        struct Callback {
-            lua_State* const L;
-            int const ref;
+        struct Console {
+            std::string name;
+            lua_State* L;
+            int ref;
         };
 
         LifeCycle* _fsm;
         Logger* _logger;
 
-        std::map<std::string, Callback> _consoles;
+        std::vector<Console> _consoles;
         int _selected;
+        int _opened;
         std::string _extensions;
         std::string _lastGameFolder;
-
-        std::vector<Callback> _onGameLoaded;
     };
 }
