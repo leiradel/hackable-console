@@ -2,6 +2,10 @@
 
 #include <Frontend.h>
 
+extern "C" {
+    #include <lua.h>
+}
+
 namespace hc {
     class Plugin {
     public:
@@ -24,5 +28,7 @@ namespace hc {
         virtual void onGameUnloaded() = 0;
         virtual void onConsoleUnloaded() = 0;
         virtual void onQuit() = 0;
+
+        virtual int push(lua_State* const L) = 0;
     };
 }
