@@ -54,11 +54,15 @@ void hc::Led::onGameReset() {
 
 void hc::Led::onFrame() {}
 
-void hc::Led::onDraw() {
+void hc::Led::onDraw(bool* opened) {
     static ImColor const on = ImColor(IM_COL32(255, 0, 0, 255));
     static ImColor const off = ImColor(IM_COL32(64, 64, 64, 255));
 
-    if (ImGui::Begin(ICON_FA_LIGHTBULB_O " Leds")) {
+    if (!*opened) {
+        return;
+    }
+
+    if (ImGui::Begin(ICON_FA_LIGHTBULB_O " Leds", opened)) {
         size_t const count = _states.size();
 
         for (size_t i = 0; i < count; i++) {

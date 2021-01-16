@@ -47,7 +47,9 @@ void hc::Perf::onGameReset() {}
 
 void hc::Perf::onFrame() {}
 
-void hc::Perf::onDraw() {}
+void hc::Perf::onDraw(bool* opened) {
+    (void)opened;
+}
 
 void hc::Perf::onGameUnloaded() {}
 

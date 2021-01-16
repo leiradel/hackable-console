@@ -68,14 +68,18 @@ void hc::Video::onGameReset() {}
 
 void hc::Video::onFrame() {}
 
-void hc::Video::onDraw() {
+void hc::Video::onDraw(bool* opened) {
     _frameCount++;
 
     int64_t const t1 = getTimeUs();
     int64_t const delta = t1 - _timeStarted;
     _fps = static_cast<double>(_frameCount) * 1000000.0f / static_cast<double>(delta);
 
-    if (!ImGui::Begin(ICON_FA_DESKTOP " Video")) {
+    if (!*opened) {
+        return;
+    }
+
+    if (!ImGui::Begin(ICON_FA_DESKTOP " Video", opened)) {
         return;
     }
 

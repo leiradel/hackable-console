@@ -72,8 +72,12 @@ void hc::Logger::onGameReset() {}
 
 void hc::Logger::onFrame() {}
 
-void hc::Logger::onDraw() {
-    if (!ImGui::Begin(ICON_FA_COMMENT " Log")) {
+void hc::Logger::onDraw(bool* opened) {
+    if (!*opened) {
+        return;
+    }
+
+    if (!ImGui::Begin(ICON_FA_COMMENT " Log", opened)) {
         return;
     }
 

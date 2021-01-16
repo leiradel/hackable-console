@@ -30,7 +30,7 @@ void hc::Plugins::init(Logger* const logger) {
 }
 
 void hc::Plugins::add(Plugin* const plugin) {
-    _plugins.emplace(plugin);
+    _plugins.emplace(plugin, true);
 }
 
 char const* hc::Plugins::getName() {
@@ -54,76 +54,94 @@ char const* hc::Plugins::getUrl() {
 }
 
 void hc::Plugins::onStarted() {
-    for (auto const plugin : _plugins) {
+    for (auto const& pair : _plugins) {
+        Plugin* const plugin = pair.first;
         _logger->debug(TAG "onStarted plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onStarted();
     }
 }
 
 void hc::Plugins::onConsoleLoaded() {
-    for (auto const plugin : _plugins) {
+    for (auto const& pair : _plugins) {
+        Plugin* const plugin = pair.first;
         _logger->debug(TAG "onConsoleLoaded plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onConsoleLoaded();
     }
 }
 
 void hc::Plugins::onGameLoaded() {
-    for (auto const plugin : _plugins) {
+    for (auto const& pair : _plugins) {
+        Plugin* const plugin = pair.first;
         _logger->debug(TAG "onGameLoaded plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onGameLoaded();
     }
 }
 
 void hc::Plugins::onGamePaused() {
-    for (auto const plugin : _plugins) {
+    for (auto const& pair : _plugins) {
+        Plugin* const plugin = pair.first;
         _logger->debug(TAG "onGamePaused plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onGamePaused();
     }
 }
 
 void hc::Plugins::onGameResumed() {
-    for (auto const plugin : _plugins) {
+    for (auto const& pair : _plugins) {
+        Plugin* const plugin = pair.first;
         _logger->debug(TAG "onGameResumed plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onGameResumed();
     }
 }
 
 void hc::Plugins::onGameReset() {
-    for (auto const plugin : _plugins) {
+    for (auto const& pair : _plugins) {
+        Plugin* const plugin = pair.first;
         _logger->debug(TAG "onGameReset plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onGameReset();
     }
 }
 
 void hc::Plugins::onFrame() {
-    for (auto const plugin : _plugins) {
+    for (auto const& pair : _plugins) {
+        Plugin* const plugin = pair.first;
         // Don't log stuff per frame
         plugin->onFrame();
     }
 }
 
-void hc::Plugins::onDraw() {
-    for (auto const plugin : _plugins) {
-        plugin->onDraw();
+void hc::Plugins::onDraw(bool* opened) {
+    (void)opened; // the plugin manager is always visible
+
+    for (auto& pair : _plugins) {
+        Plugin* const plugin = pair.first;
+        // Don't log stuff per frame
+
+        if (plugin != this) {
+            // Don't recursively draw the plugin manager
+            plugin->onDraw(&pair.second);
+        }
     }
 }
 
 void hc::Plugins::onGameUnloaded() {
-    for (auto const plugin : _plugins) {
+    for (auto const& pair : _plugins) {
+        Plugin* const plugin = pair.first;
         _logger->debug(TAG "onGameUnloaded plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onGameUnloaded();
     }
 }
 
 void hc::Plugins::onConsoleUnloaded() {
-    for (auto const plugin : _plugins) {
+    for (auto const& pair : _plugins) {
+        Plugin* const plugin = pair.first;
         _logger->debug(TAG "onConsoleUnloaded plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onConsoleUnloaded();
     }
 }
 
 void hc::Plugins::onQuit() {
-    for (auto const plugin : _plugins) {
+    for (auto const& pair : _plugins) {
+        Plugin* const plugin = pair.first;
         _logger->debug(TAG "onQuit plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onQuit();
 
@@ -138,7 +156,8 @@ void hc::Plugins::onQuit() {
 int hc::Plugins::push(lua_State* const L) {
     lua_createtable(L, 0, _plugins.size());
 
-    for (auto const& plugin : _plugins) {
+    for (auto const& pair : _plugins) {
+        Plugin* const plugin = pair.first;
         plugin->push(L);
         lua_setfield(L, -2, plugin->getTypeName());
     }

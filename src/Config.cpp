@@ -125,8 +125,12 @@ void hc::Config::onGameReset() {
 
 void hc::Config::onFrame() {}
 
-void hc::Config::onDraw() {
-    if (!ImGui::Begin(ICON_FA_WRENCH " Configuration")) {
+void hc::Config::onDraw(bool* opened) {
+    if (!*opened) {
+        return;
+    }
+
+    if (!ImGui::Begin(ICON_FA_WRENCH " Configuration", opened)) {
         return;
     }
 

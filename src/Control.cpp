@@ -85,14 +85,18 @@ void hc::Control::onGameReset() {}
 
 void hc::Control::onFrame() {}
 
-void hc::Control::onDraw() {
+void hc::Control::onDraw(bool* opened) {
     static auto const getter = [](void* const data, int idx, char const** const text) -> bool {
         auto const consoles = (std::vector<Console>*)data;
         *text = (*consoles)[idx].name.c_str();
         return true;
     };
 
-    if (ImGui::Begin(ICON_FA_COG " Control")) {
+    if (!*opened) {
+        return;
+    }
+
+    if (ImGui::Begin(ICON_FA_COG " Control", opened)) {
         int const count = static_cast<int>(_consoles.size());
         ImVec2 const size = ImVec2(120.0f, 0.0f);
 

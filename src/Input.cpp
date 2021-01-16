@@ -131,10 +131,14 @@ void hc::Input::onFrame() {
     }
 }
 
-void hc::Input::onDraw() {
+void hc::Input::onDraw(bool* opened) {
     static char const* const portNames[MaxPorts] = {"Port 1", "Port 2", "Port 3", "Port 4"};
 
-    if (!ImGui::Begin(ICON_FA_GAMEPAD " Input")) {
+    if (!*opened) {
+        return;
+    }
+
+    if (!ImGui::Begin(ICON_FA_GAMEPAD " Input", opened)) {
         return;
     }
 

@@ -359,7 +359,8 @@ void hc::Application::destroy() {
 
 void hc::Application::draw() {
     ImGui::DockSpaceOverViewport();
-    _plugins.onDraw();
+    bool dummy;
+    _plugins.onDraw(&dummy);
 }
 
 void hc::Application::run() {

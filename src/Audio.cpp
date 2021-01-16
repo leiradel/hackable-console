@@ -144,8 +144,12 @@ void hc::Audio::onGameReset() {
 
 void hc::Audio::onFrame() {}
 
-void hc::Audio::onDraw() {
-    if (!ImGui::Begin(ICON_FA_VOLUME_UP " Audio")) {
+void hc::Audio::onDraw(bool* opened) {
+    if (!*opened) {
+        return;
+    }
+
+    if (!ImGui::Begin(ICON_FA_VOLUME_UP " Audio", opened)) {
         return;
     }
 
