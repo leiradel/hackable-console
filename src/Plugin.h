@@ -2,7 +2,7 @@
 
 #include <Frontend.h>
 
-#include <unordered_map>
+#include <vector>
 
 extern "C" {
     #include <lua.h>
@@ -85,7 +85,12 @@ namespace hc {
         virtual int push(lua_State* const L) override;
 
     protected:
+        struct View {
+            Plugin* plugin;
+            bool opened;
+        };
+
         Logger* _logger;
-        std::unordered_map<Plugin*, bool> _plugins;        
+        std::vector<View> _plugins;        
     };
 }

@@ -2,6 +2,9 @@
 
 #include "Logger.h"
 
+#include <imguial_button.h>
+#include <IconsFontAwesome4.h>
+
 #include <stdlib.h>
 
 #define TAG "[PMN] "
@@ -30,7 +33,8 @@ void hc::Plugins::init(Logger* const logger) {
 }
 
 void hc::Plugins::add(Plugin* const plugin) {
-    _plugins.emplace(plugin, true);
+    View view = {plugin, true};
+    _plugins.emplace_back(view);
 }
 
 char const* hc::Plugins::getName() {
@@ -54,56 +58,56 @@ char const* hc::Plugins::getUrl() {
 }
 
 void hc::Plugins::onStarted() {
-    for (auto const& pair : _plugins) {
-        Plugin* const plugin = pair.first;
+    for (auto const& view : _plugins) {
+        Plugin* const plugin = view.plugin;
         _logger->debug(TAG "onStarted plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onStarted();
     }
 }
 
 void hc::Plugins::onConsoleLoaded() {
-    for (auto const& pair : _plugins) {
-        Plugin* const plugin = pair.first;
+    for (auto const& view : _plugins) {
+        Plugin* const plugin = view.plugin;
         _logger->debug(TAG "onConsoleLoaded plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onConsoleLoaded();
     }
 }
 
 void hc::Plugins::onGameLoaded() {
-    for (auto const& pair : _plugins) {
-        Plugin* const plugin = pair.first;
+    for (auto const& view : _plugins) {
+        Plugin* const plugin = view.plugin;
         _logger->debug(TAG "onGameLoaded plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onGameLoaded();
     }
 }
 
 void hc::Plugins::onGamePaused() {
-    for (auto const& pair : _plugins) {
-        Plugin* const plugin = pair.first;
+    for (auto const& view : _plugins) {
+        Plugin* const plugin = view.plugin;
         _logger->debug(TAG "onGamePaused plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onGamePaused();
     }
 }
 
 void hc::Plugins::onGameResumed() {
-    for (auto const& pair : _plugins) {
-        Plugin* const plugin = pair.first;
+    for (auto const& view : _plugins) {
+        Plugin* const plugin = view.plugin;
         _logger->debug(TAG "onGameResumed plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onGameResumed();
     }
 }
 
 void hc::Plugins::onGameReset() {
-    for (auto const& pair : _plugins) {
-        Plugin* const plugin = pair.first;
+    for (auto const& view : _plugins) {
+        Plugin* const plugin = view.plugin;
         _logger->debug(TAG "onGameReset plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onGameReset();
     }
 }
 
 void hc::Plugins::onFrame() {
-    for (auto const& pair : _plugins) {
-        Plugin* const plugin = pair.first;
+    for (auto const& view : _plugins) {
+        Plugin* const plugin = view.plugin;
         // Don't log stuff per frame
         plugin->onFrame();
     }
@@ -112,36 +116,62 @@ void hc::Plugins::onFrame() {
 void hc::Plugins::onDraw(bool* opened) {
     (void)opened; // the plugin manager is always visible
 
-    for (auto& pair : _plugins) {
-        Plugin* const plugin = pair.first;
+    if (ImGui::Begin(ICON_FA_PLUG " Plugins")) {
+        ImGui::Columns(3);
+
+        for (auto& view : _plugins) {
+            Plugin* const plugin = view.plugin;
+
+            ImGui::Text("%s", plugin->getName());
+            ImGui::NextColumn();
+            ImGui::Text("%s", plugin->getVersion());
+            ImGui::NextColumn();
+
+            char label[32];
+            snprintf(label, sizeof(label), "Open##%p", static_cast<void*>(&view));
+
+            if (ImGuiAl::Button(label, !view.opened)) {
+                view.opened = true;
+            }
+
+            ImGui::NextColumn();
+        }
+
+        ImGui::Columns(1);
+    }
+
+    ImGui::End();
+
+    for (auto& view : _plugins) {
+        Plugin* const plugin = view.plugin;
         // Don't log stuff per frame
 
         if (plugin != this) {
             // Don't recursively draw the plugin manager
-            plugin->onDraw(&pair.second);
+            plugin->onDraw(&view.opened);
         }
     }
 }
 
 void hc::Plugins::onGameUnloaded() {
-    for (auto const& pair : _plugins) {
-        Plugin* const plugin = pair.first;
+    for (auto const& view : _plugins) {
+        Plugin* const plugin = view.plugin;
         _logger->debug(TAG "onGameUnloaded plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onGameUnloaded();
     }
 }
 
 void hc::Plugins::onConsoleUnloaded() {
-    for (auto const& pair : _plugins) {
-        Plugin* const plugin = pair.first;
+    for (auto const& view : _plugins) {
+        Plugin* const plugin = view.plugin;
         _logger->debug(TAG "onConsoleUnloaded plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onConsoleUnloaded();
     }
 }
 
 void hc::Plugins::onQuit() {
-    for (auto const& pair : _plugins) {
-        Plugin* const plugin = pair.first;
+    for (auto const& view : _plugins) {
+        Plugin* const plugin = view.plugin;
         _logger->debug(TAG "onQuit plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onQuit();
 
@@ -156,8 +186,8 @@ void hc::Plugins::onQuit() {
 int hc::Plugins::push(lua_State* const L) {
     lua_createtable(L, 0, _plugins.size());
 
-    for (auto const& pair : _plugins) {
-        Plugin* const plugin = pair.first;
+    for (auto const& view : _plugins) {
+        Plugin* const plugin = view.plugin;
         plugin->push(L);
         lua_setfield(L, -2, plugin->getTypeName());
     }
