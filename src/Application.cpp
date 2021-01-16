@@ -291,11 +291,9 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         _perf->init(_logger);
         _plugins.emplace(_perf);
 
-        if (!_memory.init(_logger)) {
-            return false;
-        }
-
-        undo.add([this]() { _memory.destroy(); });
+        _memory = new Memory;
+        _memory->init(_logger);
+        _plugins.emplace(_memory);
 
         frontend.setLogger(_logger);
         frontend.setConfig(_config);
@@ -317,7 +315,38 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         undo.add([this]() { lua_close(_L); });
 
         luaL_openlibs(_L);
-        luaopen_hc(_L);
+
+        lua_createtable(_L, 0, _plugins.size());
+
+        for (auto const& plugin : _plugins) {
+            plugin->push(_L);
+            lua_setfield(_L, -2, plugin->getTypeName());
+        }
+
+        static struct {char const* const name; char const* const value;} const stringConsts[] = {
+            {"_COPYRIGHT", "Copyright (c) 2020 Andre Leiradella"},
+            {"_LICENSE", "MIT"},
+            {"_VERSION", "1.0.0"},
+            {"_NAME", "hc"},
+            {"_URL", "https://github.com/leiradel/hackable-console"},
+            {"_DESCRIPTION", "Hackable Console bindings"},
+
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
+            {"soExtension", "dll"}
+#elif __linux__
+            {"soExtension", "so"}
+#else
+            #error Unsupported platform
+#endif
+        };
+
+        size_t const stringCount = sizeof(stringConsts) / sizeof(stringConsts[0]);
+
+        for (size_t i = 0; i < stringCount; i++) {
+            lua_pushstring(_L, stringConsts[i].value);
+            lua_setfield(_L, -2, stringConsts[i].name);
+        }
+
         registerSearcher(_L);
 
         static auto const main = [](lua_State* const L) -> int {
@@ -351,8 +380,6 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 void hc::Application::destroy() {
     lua_close(_L);
 
-    _memory.destroy();
-
     ImGui_ImplOpenGL2_Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
@@ -371,8 +398,6 @@ void hc::Application::draw() {
     for (auto const plugin : _plugins) {
         plugin->onDraw();
     }
-
-    _memory.draw();
 }
 
 void hc::Application::run() {
@@ -639,7 +664,6 @@ bool hc::Application::unloadConsole() {
 
 bool hc::Application::unloadGame() {
     if (lrcpp::Frontend::getInstance().unloadGame()) {
-        _memory.reset();
         onGameUnloaded();
         return true;
     }
@@ -736,86 +760,4 @@ void hc::Application::audioCallback(void* const udata, Uint8* const stream, int 
     else {
         self->_fifo.read(static_cast<void*>(stream), len);
     }
-}
-
-int hc::Application::luaopen_hc(lua_State* const L) {
-    static luaL_Reg const functions[] = {
-        {"addConsole", l_addConsole},
-        {"addMemoryRegion", l_addMemoryRegion},
-        {nullptr, nullptr}
-    };
-
-    static struct {char const* const name; char const* const value;} const stringConsts[] = {
-        {"_COPYRIGHT", "Copyright (c) 2020 Andre Leiradella"},
-        {"_LICENSE", "MIT"},
-        {"_VERSION", "1.0.0"},
-        {"_NAME", "hc"},
-        {"_URL", "https://github.com/leiradel/hackable-console"},
-        {"_DESCRIPTION", "Hackable Console bindings"},
-
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
-        {"soExtension", "dll"}
-#elif __linux__
-        {"soExtension", "so"}
-#else
-        #error Unsupported platform
-#endif
-    };
-
-    size_t const functionsCount = sizeof(functions) / sizeof(functions[0]) - 1;
-    size_t const stringCount = sizeof(stringConsts) / sizeof(stringConsts[0]);
-
-    lua_createtable(L, 0, functionsCount + stringCount + 2);
-
-    lua_pushlightuserdata(L, this);
-    luaL_setfuncs(L, functions, 1);
-
-    for (size_t i = 0; i < stringCount; i++) {
-        lua_pushstring(L, stringConsts[i].value);
-        lua_setfield(L, -2, stringConsts[i].name);
-    }
-
-    _logger->push(L);
-    lua_setfield(L, -2, "logger");
-
-    _config->push(L);
-    lua_setfield(L, -2, "config");
-
-    return 1;
-}
-
-int hc::Application::l_addConsole(lua_State* const L) {
-    auto const self = static_cast<Application*>(lua_touserdata(L, lua_upvalueindex(1)));
-    luaL_argexpected(L, lua_type(L, 1) == LUA_TTABLE, 1, "table");
-
-    lua_getfield(L, 1, "name");
-
-    if (!lua_isstring(L, -1)) {
-        return luaL_error(L, "table for registerConsole must have a field \"name\"");
-    }
-
-    char const* const name = lua_tostring(L, -1);
-
-    lua_pushvalue(L, 1);
-    int const ref = luaL_ref(L, LUA_REGISTRYINDEX);
-
-    self->_control->addConsole(name);
-    self->_consoleRefs.emplace(name, ref);
-    return 0;
-}
-
-int hc::Application::l_addMemoryRegion(lua_State* const L) {
-    auto const self = static_cast<Application*>(lua_touserdata(L, lua_upvalueindex(1)));
-    char const* const name = luaL_checkstring(L, 1);
-    void* const data = lua_touserdata(L, 2);
-    lua_Integer const base = luaL_checkinteger(L, 3);
-    lua_Integer const size = luaL_checkinteger(L, 4);
-    int const readOnly = lua_toboolean(L, 5);
-
-    if (data == nullptr || size <= 0) {
-        return luaL_error(L, "invalid data or size: %p, %d", data, size);
-    }
-
-    self->_memory.addRegion(name, data, base, size, readOnly != 0);
-    return 0;
 }

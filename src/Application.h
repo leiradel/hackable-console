@@ -15,8 +15,6 @@
 #include "Memory.h"
 #include "Fifo.h"
 
-#include "LuaBind.h"
-
 #include <SDL.h>
 #include <SDL_opengl.h>
 
@@ -61,15 +59,9 @@ namespace hc {
         void onConsoleUnloaded();
         void onQuit();
 
-        int luaopen_hc(lua_State* const L);
-
-    public:
+    protected:
         static void vprintf(void* ud, char const* fmt, va_list args);
-
         static void audioCallback(void* const udata, Uint8* const stream, int const len);
-
-        static int l_addConsole(lua_State* const L);
-        static int l_addMemoryRegion(lua_State* const L);
 
         SDL_Window* _window;
         SDL_GLContext _glContext;
@@ -89,7 +81,7 @@ namespace hc {
         Perf* _perf;
 
         Control* _control;
-        Memory _memory;
+        Memory* _memory;
 
         Fifo _fifo;
         std::unordered_map<std::string, int> _consoleRefs;
