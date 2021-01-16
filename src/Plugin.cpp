@@ -126,7 +126,10 @@ void hc::Plugins::onQuit() {
     for (auto const plugin : _plugins) {
         _logger->debug(TAG "onQuit plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
         plugin->onQuit();
-        delete plugin;
+
+        if (plugin != this) {
+            delete plugin;
+        }
     }
 
     _plugins.clear();
