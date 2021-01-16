@@ -484,47 +484,47 @@ int hc::Config::push(lua_State* const L) {
 }
 
 hc::Config* hc::Config::check(lua_State* const L, int const index) {
-    return *(Config**)luaL_checkudata(L, index, "hc::Config");
+    return *static_cast<Config**>(luaL_checkudata(L, index, "hc::Config"));
 }
 
 int hc::Config::l_getRootPath(lua_State* const L) {
-    Config* const self = check(L, 1);
+    auto const self = check(L, 1);
     lua_pushlstring(L, self->_rootPath.c_str(), self->_rootPath.length());
     return 1;
 }
 
 int hc::Config::l_getAutorunPath(lua_State* const L) {
-    Config* const self = check(L, 1);
+    auto const self = check(L, 1);
     lua_pushlstring(L, self->_autorunPath.c_str(), self->_autorunPath.length());
     return 1;
 }
 
 int hc::Config::l_getSystemPath(lua_State* const L) {
-    Config* const self = check(L, 1);
+    auto const self = check(L, 1);
     lua_pushlstring(L, self->_systemPath.c_str(), self->_systemPath.length());
     return 1;
 }
 
 int hc::Config::l_getCoreAssetsPath(lua_State* const L) {
-    Config* const self = check(L, 1);
+    auto const self = check(L, 1);
     lua_pushlstring(L, self->_coreAssetsPath.c_str(), self->_coreAssetsPath.length());
     return 1;
 }
 
 int hc::Config::l_getSavePath(lua_State* const L) {
-    Config* const self = check(L, 1);
+    auto const self = check(L, 1);
     lua_pushlstring(L, self->_savePath.c_str(), self->_savePath.length());
     return 1;
 }
 
 int hc::Config::l_getCoresPath(lua_State* const L) {
-    Config* const self = check(L, 1);
+    auto const self = check(L, 1);
     lua_pushlstring(L, self->_coresPath.c_str(), self->_coresPath.length());
     return 1;
 }
 
 int hc::Config::l_getCoreOption(lua_State* const L) {
-    Config* const self = check(L, 1);
+    auto const self = check(L, 1);
     size_t length = 0;
     char const* key = luaL_checklstring(L, 2, &length);
 
@@ -569,7 +569,7 @@ int hc::Config::l_getCoreOption(lua_State* const L) {
 }
 
 int hc::Config::l_setCoreOption(lua_State* const L) {
-    Config* const self = check(L, 1);
+    auto const self = check(L, 1);
     size_t length = 0;
     char const* const key = luaL_checklstring(L, 2, &length);
 
