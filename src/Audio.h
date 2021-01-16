@@ -22,6 +22,7 @@ namespace hc {
         static Audio* check(lua_State* const L, int const index);
 
         // hc::Plugin
+        virtual Type getType() override { return Type::Audio; }
         virtual char const* getName() override;
         virtual char const* getVersion() override;
         virtual char const* getLicense() override;

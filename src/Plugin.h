@@ -9,8 +9,21 @@ extern "C" {
 namespace hc {
     class Plugin {
     public:
+        enum class Type {
+            Audio,
+            Config,
+            Control,
+            Input,
+            Led,
+            Logger,
+            Memory,
+            Perf,
+            Video
+        };
+
         virtual ~Plugin() {}
 
+        virtual Type getType() = 0;
         virtual char const* getName() = 0;
         virtual char const* getVersion() = 0;
         virtual char const* getLicense() = 0;
@@ -30,5 +43,7 @@ namespace hc {
         virtual void onQuit() = 0;
 
         virtual int push(lua_State* const L) = 0;
+
+        char const* getTypeName();
     };
 }

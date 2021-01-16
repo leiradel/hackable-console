@@ -20,6 +20,7 @@ namespace hc
         static Perf* check(lua_State* const L, int const index);
 
         // hc::Plugin
+        virtual Type getType() override { return Type::Perf; }
         virtual char const* getName() override;
         virtual char const* getVersion() override;
         virtual char const* getLicense() override;
