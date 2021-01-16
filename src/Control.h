@@ -5,17 +5,20 @@
 #include "LifeCycle.h"
 
 #include <string>
-#include <set>
+#include <map>
 
 namespace hc {
     class Control : public Plugin {
     public:
         Control();
 
-        void init(Logger* logger, LifeCycle* fsm);
+        void init(Logger* const logger, LifeCycle* const fsm);
 
         void setSystemInfo(retro_system_info const* info);
         void addConsole(char const* const name);
+
+        int push(lua_State* const L);
+        static Control* check(lua_State* const L, int const index);
 
         // hc::Plugin
         virtual char const* getName() override;
@@ -37,10 +40,27 @@ namespace hc {
         virtual void onQuit() override;
 
     protected:
+        // Control will also be responsible for exposing LifeCycle methods to Lua
+        static int l_addConsole(lua_State* const L);
+        static int l_loadConsole(lua_State* const L);
+        static int l_quit(lua_State* const L);
+        static int l_unloadConsole(lua_State* const L);
+        static int l_loadGame(lua_State* const L);
+        static int l_resumeGame(lua_State* const L);
+        static int l_resetGame(lua_State* const L);
+        static int l_step(lua_State* const L);
+        static int l_unloadGame(lua_State* const L);
+        static int l_pauseGame(lua_State* const L);
+
+        struct Callback {
+            lua_State* const L;
+            int const ref;
+        };
+
         LifeCycle* _fsm;
         Logger* _logger;
 
-        std::set<std::string> _consoles;
+        std::map<std::string, Callback> _consoles;
         int _selected;
         std::string _extensions;
         std::string _lastGameFolder;

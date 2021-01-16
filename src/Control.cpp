@@ -1,14 +1,20 @@
 #include "Control.h"
 
+#include "LuaUtil.h"
+
 #include <imguial_button.h>
 #include <imguifilesystem.h>
 #include <IconsFontAwesome4.h>
+
+extern "C" {
+    #include "lauxlib.h"
+}
 
 #define TAG "[CTR] "
 
 hc::Control::Control() : _logger(nullptr), _selected(0) {}
 
-void hc::Control::init(Logger* logger, LifeCycle* fsm) {
+void hc::Control::init(Logger* const logger, LifeCycle* const fsm) {
     _logger = logger;
     _fsm = fsm;
 }
@@ -49,12 +55,12 @@ void hc::Control::onFrame() {}
 
 void hc::Control::onDraw() {
     static auto const getter = [](void* const data, int idx, char const** const text) -> bool {
-        auto const consoles = (std::set<std::string>*)data;
+        auto const consoles = (std::map<std::string, int>*)data;
 
         if (idx < static_cast<int>(consoles->size())) {
-            for (auto const& name : *consoles) {
+            for (auto const& pair : *consoles) {
                 if (idx == 0) {
-                    *text = name.c_str();
+                    *text = pair.first.c_str();
                     return true;
                 }
 
@@ -76,7 +82,11 @@ void hc::Control::onDraw() {
             char const* name = nullptr;
 
             if (getter(&_consoles, _selected, &name)) {
-                _fsm->loadConsole(name);
+                auto const found = _consoles.find(name);
+                Callback const& cb = found->second;
+
+                lua_rawgeti(cb.L, LUA_REGISTRYINDEX, cb.ref);
+                protectedCall(cb.L, 0, 0, _logger);
             }
         }
 
@@ -160,7 +170,6 @@ void hc::Control::onDraw() {
 void hc::Control::onGameUnloaded() {}
 
 void hc::Control::onConsoleUnloaded() {
-    _selected = 0;
     _extensions.clear();
 }
 
@@ -190,7 +199,130 @@ void hc::Control::setSystemInfo(retro_system_info const* info) {
     }
 }
 
-void hc::Control::addConsole(char const* const name) {
-    _logger->info(TAG "Adding console %s", name);
-    _consoles.emplace(name);
+int hc::Control::push(lua_State* const L) {
+    auto const self = static_cast<Control**>(lua_newuserdata(L, sizeof(Control*)));
+    *self = this;
+
+    if (luaL_newmetatable(L, "hc::Control")) {
+        static luaL_Reg const methods[] = {
+            {"addConsole", l_addConsole},
+            {nullptr, nullptr}
+        };
+
+        luaL_newlib(L, methods);
+        lua_setfield(L, -2, "__index");
+    }
+
+    lua_setmetatable(L, -2);
+    return 1;
+}
+
+hc::Control* hc::Control::check(lua_State* const L, int const index) {
+    return *static_cast<Control**>(luaL_checkudata(L, index, "hc::Control"));
+}
+
+int hc::Control::l_addConsole(lua_State* const L) {
+    auto const self = check(L, 1);
+    size_t length = 0;
+    char const* const name = lua_tolstring(L, 2, &length);
+    luaL_argexpected(L, lua_type(L, 3) == LUA_TFUNCTION, 3, "function");
+
+    lua_pushvalue(L, 3);
+    int const ref = luaL_ref(L, LUA_REGISTRYINDEX);
+
+    Callback cb = {L, ref};
+    self->_consoles.emplace(std::string(name, length), cb);
+    return 0;
+}
+
+int hc::Control::l_loadConsole(lua_State* const L) {
+    auto const self = check(L, 1);
+    char const* const name = luaL_checkstring(L, 2);
+
+    if (!self->_fsm->loadConsole(name)) {
+        return luaL_error(L, "could not load console \"%s\"", name);
+    }
+
+    return 0;
+}
+
+int hc::Control::l_quit(lua_State* const L) {
+    auto const self = check(L, 1);
+
+    if (!self->_fsm->quit()) {
+        return luaL_error(L, "could not quit");
+    }
+
+    return 0;
+}
+
+int hc::Control::l_unloadConsole(lua_State* const L) {
+    auto const self = check(L, 1);
+
+    if (!self->_fsm->unloadConsole()) {
+        return luaL_error(L, "could not unload console");
+    }
+
+    return 0;
+}
+
+int hc::Control::l_loadGame(lua_State* const L) {
+    auto const self = check(L, 1);
+    char const* const name = luaL_checkstring(L, 2);
+
+    if (!self->_fsm->loadGame(name)) {
+        return luaL_error(L, "could not load game \"%s\"", name);
+    }
+
+    return 0;
+}
+
+int hc::Control::l_resumeGame(lua_State* const L) {
+    auto const self = check(L, 1);
+
+    if (!self->_fsm->resumeGame()) {
+        return luaL_error(L, "could not resume game");
+    }
+
+    return 0;
+}
+
+int hc::Control::l_resetGame(lua_State* const L) {
+    auto const self = check(L, 1);
+
+    if (!self->_fsm->resetGame()) {
+        return luaL_error(L, "could not reset game");
+    }
+
+    return 0;
+}
+
+int hc::Control::l_step(lua_State* const L) {
+    auto const self = check(L, 1);
+
+    if (!self->_fsm->step()) {
+        return luaL_error(L, "could not step one game frame");
+    }
+
+    return 0;
+}
+
+int hc::Control::l_unloadGame(lua_State* const L) {
+    auto const self = check(L, 1);
+
+    if (!self->_fsm->unloadGame()) {
+        return luaL_error(L, "could not unload game");
+    }
+
+    return 0;
+}
+
+int hc::Control::l_pauseGame(lua_State* const L) {
+    auto const self = check(L, 1);
+
+    if (!self->_fsm->pauseGame()) {
+        return luaL_error(L, "could not pause game");
+    }
+
+    return 0;
 }
