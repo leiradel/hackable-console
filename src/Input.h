@@ -19,7 +19,7 @@ namespace hc {
         Input();
         virtual ~Input() {}
 
-        void init(Logger* logger, lrcpp::Frontend* frontend);
+        void init(Logger* const logger, lrcpp::Frontend* const frontend);
         void processEvent(SDL_Event const* event);
 
         int push(lua_State* const L);

@@ -12,7 +12,7 @@ extern "C" {
 
 hc::Input::Input() : _logger(nullptr), _frontend(nullptr) {}
 
-void hc::Input::init(Logger* logger, lrcpp::Frontend* frontend) {
+void hc::Input::init(Logger* const logger, lrcpp::Frontend* const frontend) {
     _logger = logger;
     _frontend = frontend;
 
