@@ -19,13 +19,13 @@ namespace hc {
         Config();
         virtual ~Config() {}
 
-        bool init(Logger* logger);
+        bool init(Logger* const logger);
         bool getSupportNoGame() const;
         const std::string& getRootPath() const;
         const std::string& getAutorunPath() const;
 
-        int push(lua_State* L);
-        static Config* check(lua_State* L, int index);
+        int push(lua_State* const L);
+        static Config* check(lua_State* const L, int const index);
 
         // hc::Plugin
         virtual char const* getName() override;
@@ -69,14 +69,14 @@ namespace hc {
         virtual bool setCoreOptionsDisplay(retro_core_option_display const* display) override;
 
     protected:
-        static int l_getRootPath(lua_State* L);
-        static int l_getAutorunPath(lua_State* L);
-        static int l_getSystemPath(lua_State* L);
-        static int l_getCoreAssetsPath(lua_State* L);
-        static int l_getSavePath(lua_State* L);
-        static int l_getCoresPath(lua_State* L);
-        static int l_getCoreOption(lua_State* L);
-        static int l_setCoreOption(lua_State* L);
+        static int l_getRootPath(lua_State* const L);
+        static int l_getAutorunPath(lua_State* const L);
+        static int l_getSystemPath(lua_State* const L);
+        static int l_getCoreAssetsPath(lua_State* const L);
+        static int l_getSavePath(lua_State* const L);
+        static int l_getCoresPath(lua_State* const L);
+        static int l_getCoreOption(lua_State* const L);
+        static int l_setCoreOption(lua_State* const L);
 
         struct SubsystemInfo {
             struct Rom {

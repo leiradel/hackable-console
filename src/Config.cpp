@@ -22,7 +22,7 @@ hc::Config::Config()
     memset(&_getCoreProc, 0, sizeof(_getCoreProc));
 }
 
-bool hc::Config::init(Logger* logger) {
+bool hc::Config::init(Logger* const logger) {
     _logger = logger;
 
     if (fnkdat(NULL, 0, 0, FNKDAT_INIT) != 0) {
@@ -458,7 +458,7 @@ bool hc::Config::setCoreOptionsDisplay(retro_core_option_display const* display)
     return true;
 }
 
-int hc::Config::push(lua_State* L) {
+int hc::Config::push(lua_State* const L) {
     auto const self = static_cast<Config**>(lua_newuserdata(L, sizeof(Config*)));
     *self = this;
 
@@ -483,47 +483,47 @@ int hc::Config::push(lua_State* L) {
     return 1;
 }
 
-hc::Config* hc::Config::check(lua_State* L, int index) {
+hc::Config* hc::Config::check(lua_State* const L, int const index) {
     return *(Config**)luaL_checkudata(L, index, "hc::Config");
 }
 
-int hc::Config::l_getRootPath(lua_State* L) {
+int hc::Config::l_getRootPath(lua_State* const L) {
     Config* const self = check(L, 1);
     lua_pushlstring(L, self->_rootPath.c_str(), self->_rootPath.length());
     return 1;
 }
 
-int hc::Config::l_getAutorunPath(lua_State* L) {
+int hc::Config::l_getAutorunPath(lua_State* const L) {
     Config* const self = check(L, 1);
     lua_pushlstring(L, self->_autorunPath.c_str(), self->_autorunPath.length());
     return 1;
 }
 
-int hc::Config::l_getSystemPath(lua_State* L) {
+int hc::Config::l_getSystemPath(lua_State* const L) {
     Config* const self = check(L, 1);
     lua_pushlstring(L, self->_systemPath.c_str(), self->_systemPath.length());
     return 1;
 }
 
-int hc::Config::l_getCoreAssetsPath(lua_State* L) {
+int hc::Config::l_getCoreAssetsPath(lua_State* const L) {
     Config* const self = check(L, 1);
     lua_pushlstring(L, self->_coreAssetsPath.c_str(), self->_coreAssetsPath.length());
     return 1;
 }
 
-int hc::Config::l_getSavePath(lua_State* L) {
+int hc::Config::l_getSavePath(lua_State* const L) {
     Config* const self = check(L, 1);
     lua_pushlstring(L, self->_savePath.c_str(), self->_savePath.length());
     return 1;
 }
 
-int hc::Config::l_getCoresPath(lua_State* L) {
+int hc::Config::l_getCoresPath(lua_State* const L) {
     Config* const self = check(L, 1);
     lua_pushlstring(L, self->_coresPath.c_str(), self->_coresPath.length());
     return 1;
 }
 
-int hc::Config::l_getCoreOption(lua_State* L) {
+int hc::Config::l_getCoreOption(lua_State* const L) {
     Config* const self = check(L, 1);
     size_t length = 0;
     char const* key = luaL_checklstring(L, 2, &length);
@@ -568,7 +568,7 @@ int hc::Config::l_getCoreOption(lua_State* L) {
     return 1;
 }
 
-int hc::Config::l_setCoreOption(lua_State* L) {
+int hc::Config::l_setCoreOption(lua_State* const L) {
     Config* const self = check(L, 1);
     size_t length = 0;
     char const* const key = luaL_checklstring(L, 2, &length);
