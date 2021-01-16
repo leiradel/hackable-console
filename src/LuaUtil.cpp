@@ -157,7 +157,14 @@ bool hc::protectedCallField(
     int const nresults,
     Logger* const logger
 ) {
-    if (getField(L, tableIndex, fieldName) != LUA_TFUNCTION) {
+    int const type = getField(L, tableIndex, fieldName);
+
+    if (type == LUA_TNIL) {
+        // Don't spam the log if a function doesn't exist in the table
+        lua_pop(L, nargs + 1);
+        return false;
+    }
+    else if (type != LUA_TFUNCTION) {
         if (logger != nullptr) {
             logger->error(TAG "Field \"%s\" is not a function", fieldName);
         }
