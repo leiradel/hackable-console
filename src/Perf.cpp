@@ -1,5 +1,7 @@
 #include "Perf.h"
 
+#include <IconsFontAwesome4.h>
+
 #include <inttypes.h>
 #include <chrono>
 
@@ -48,7 +50,18 @@ void hc::Perf::onGameReset() {}
 void hc::Perf::onFrame() {}
 
 void hc::Perf::onDraw(bool* opened) {
-    (void)opened;
+    if (!*opened) {
+        return;
+    }
+
+    if (ImGui::Begin(ICON_FA_TASKS " Perf", opened)) {
+        for (const auto& pair : _counters) {
+            Counter const& cnt = pair.second;
+            _logger->debug(TAG " %20" PRIu64 " %20" PRIu64 " %s", cnt.counter->total, cnt.counter->call_cnt, cnt.counter->ident);
+        }
+    }
+
+    ImGui::End();
 }
 
 void hc::Perf::onGameUnloaded() {}
