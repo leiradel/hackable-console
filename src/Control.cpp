@@ -173,7 +173,12 @@ void hc::Control::onConsoleUnloaded() {
     _extensions.clear();
 }
 
-void hc::Control::onQuit() {}
+void hc::Control::onQuit() {
+    for (auto& pair : _consoles) {
+        Callback const& cb = pair.second;
+        luaL_unref(cb.L, LUA_REGISTRYINDEX, cb.ref);
+    }
+}
 
 void hc::Control::setSystemInfo(retro_system_info const* info) {
     char const* ext = info->valid_extensions;
