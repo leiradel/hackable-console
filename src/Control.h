@@ -16,7 +16,6 @@ namespace hc {
 
         void setSystemInfo(retro_system_info const* info);
 
-        int push(lua_State* const L);
         static Control* check(lua_State* const L, int const index);
 
         // hc::Plugin
@@ -37,6 +36,8 @@ namespace hc {
         virtual void onGameUnloaded() override;
         virtual void onConsoleUnloaded() override;
         virtual void onQuit() override;
+
+        virtual int push(lua_State* const L) override;
 
     protected:
         // Control will also be responsible for exposing LifeCycle methods to Lua

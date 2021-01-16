@@ -15,7 +15,6 @@ namespace hc {
 
         void init(hc::Logger* const logger);
 
-        int push(lua_State* const L);
         static Led* check(lua_State* const L, int const index);
 
         // hc::Plugin
@@ -36,6 +35,8 @@ namespace hc {
         virtual void onGameUnloaded() override;
         virtual void onConsoleUnloaded() override;
         virtual void onQuit() override;
+
+        virtual int push(lua_State* const L) override;
 
         // lrcpp::Led
         virtual void setState(int led, int state) override;

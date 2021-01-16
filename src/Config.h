@@ -24,7 +24,6 @@ namespace hc {
         const std::string& getRootPath() const;
         const std::string& getAutorunPath() const;
 
-        int push(lua_State* const L);
         static Config* check(lua_State* const L, int const index);
 
         // hc::Plugin
@@ -45,6 +44,8 @@ namespace hc {
         virtual void onGameUnloaded() override;
         virtual void onConsoleUnloaded() override;
         virtual void onQuit() override;
+
+        virtual int push(lua_State* const L) override;
 
         // lrcpp::Config
         virtual bool setPerformanceLevel(unsigned level) override;

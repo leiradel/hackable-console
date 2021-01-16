@@ -19,7 +19,6 @@ namespace hc {
 
         bool init();
 
-        virtual int push(lua_State* const L) override;
         static Logger* check(lua_State* const L, int const index);
 
         // hc::Plugin
@@ -40,6 +39,8 @@ namespace hc {
         virtual void onGameUnloaded() override;
         virtual void onConsoleUnloaded() override;
         virtual void onQuit() override;
+
+        virtual int push(lua_State* const L) override;
 
         // lrcpp::Logger
         virtual void vprintf(retro_log_level level, char const* format, va_list args) override;

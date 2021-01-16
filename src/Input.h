@@ -22,7 +22,6 @@ namespace hc {
         void init(Logger* const logger, lrcpp::Frontend* const frontend);
         void processEvent(SDL_Event const* event);
 
-        int push(lua_State* const L);
         static Input* check(lua_State* const L, int const index);
 
         // hc::Plugin
@@ -43,6 +42,8 @@ namespace hc {
         virtual void onGameUnloaded() override;
         virtual void onConsoleUnloaded() override;
         virtual void onQuit() override;
+
+        virtual int push(lua_State* const L) override;
 
         // lrcpp::Input
         virtual bool setInputDescriptors(retro_input_descriptor const* descriptors) override;
