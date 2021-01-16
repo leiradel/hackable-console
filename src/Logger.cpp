@@ -6,6 +6,8 @@ extern "C" {
     #include <lauxlib.h>
 }
 
+#define TAG "[LUA] "
+
 hc::Logger::Logger() : _mutex(nullptr) {}
 
 bool hc::Logger::init() {
@@ -34,46 +36,6 @@ bool hc::Logger::init() {
     _logger.setLevel(ImGuiAl::Log::Level::Info);
 
     return true;
-}
-
-int hc::Logger::push(lua_State* L) {
-    auto const self = static_cast<Logger**>(lua_newuserdata(L, sizeof(Logger*)));
-    *self = this;
-
-    if (luaL_newmetatable(L, "hc::Logger")) {
-        static luaL_Reg const methods[] = {
-            {"debug", l_debug},
-            {"info", l_info},
-            {"warn", l_warn},
-            {"error", l_error},
-            {nullptr, nullptr}
-        };
-
-        luaL_newlib(L, methods);
-
-        int const load = luaL_loadstring(L,
-            "local string = require 'string'\n"
-            "return function(fmt, ...)\n"
-            "    return string.format(fmt, ...)\n"
-            "end\n"
-        );
-
-        if (load != LUA_OK) {
-            return lua_error(L);
-        }
-
-        lua_call(L, 0, 1);
-        lua_setfield(L, -2, "format");
-
-        lua_setfield(L, -2, "__index");
-    }
-
-    lua_setmetatable(L, -2);
-    return 1;
-}
-
-hc::Logger* hc::Logger::check(lua_State* L, int index) {
-    return *(Logger**)luaL_checkudata(L, index, "hc::Logger");
 }
 
 char const* hc::Logger::getName() {
@@ -195,42 +157,82 @@ void hc::Logger::vprintf(enum retro_log_level level, const char* format, va_list
     SDL_UnlockMutex(_mutex);
 }
 
-int hc::Logger::l_debug(lua_State* L) {
+int hc::Logger::push(lua_State* const L) {
+    auto const self = static_cast<Logger**>(lua_newuserdata(L, sizeof(Logger*)));
+    *self = this;
+
+    if (luaL_newmetatable(L, "hc::Logger")) {
+        static luaL_Reg const methods[] = {
+            {"debug", l_debug},
+            {"info", l_info},
+            {"warn", l_warn},
+            {"error", l_error},
+            {nullptr, nullptr}
+        };
+
+        luaL_newlib(L, methods);
+
+        int const load = luaL_loadstring(L,
+            "local string = require 'string'\n"
+            "return function(fmt, ...)\n"
+            "    return string.format(fmt, ...)\n"
+            "end\n"
+        );
+
+        if (load != LUA_OK) {
+            return lua_error(L);
+        }
+
+        lua_call(L, 0, 1);
+        lua_setfield(L, -2, "format");
+
+        lua_setfield(L, -2, "__index");
+    }
+
+    lua_setmetatable(L, -2);
+    return 1;
+}
+
+hc::Logger* hc::Logger::check(lua_State* const L, int const index) {
+    return *static_cast<Logger**>(luaL_checkudata(L, index, "hc::Logger"));
+}
+
+int hc::Logger::l_debug(lua_State* const L) {
     Logger* const self = check(L, 1);
     lua_getfield(L, 1, "format");
     lua_insert(L, 2);
     lua_call(L, lua_gettop(L) - 2, 1);
-    self->debug("%s", lua_tostring(L, -1));
+    self->debug(TAG "%s", lua_tostring(L, -1));
     lua_pop(L, 1);
     return 0;
 }
 
-int hc::Logger::l_info(lua_State* L) {
+int hc::Logger::l_info(lua_State* const L) {
     Logger* const self = check(L, 1);
     lua_getfield(L, 1, "format");
     lua_insert(L, 2);
     lua_call(L, lua_gettop(L) - 2, 1);
-    self->info("%s", lua_tostring(L, -1));
+    self->info(TAG "%s", lua_tostring(L, -1));
     lua_pop(L, 1);
     return 0;
 }
 
-int hc::Logger::l_warn(lua_State* L) {
+int hc::Logger::l_warn(lua_State* const L) {
     Logger* const self = check(L, 1);
     lua_getfield(L, 1, "format");
     lua_insert(L, 2);
     lua_call(L, lua_gettop(L) - 2, 1);
-    self->warn("%s", lua_tostring(L, -1));
+    self->warn(TAG "%s", lua_tostring(L, -1));
     lua_pop(L, 1);
     return 0;
 }
 
-int hc::Logger::l_error(lua_State* L) {
+int hc::Logger::l_error(lua_State* const L) {
     Logger* const self = check(L, 1);
     lua_getfield(L, 1, "format");
     lua_insert(L, 2);
     lua_call(L, lua_gettop(L) - 2, 1);
-    self->error("%s", lua_tostring(L, -1));
+    self->error(TAG "%s", lua_tostring(L, -1));
     lua_pop(L, 1);
     return 0;
 }

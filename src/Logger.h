@@ -19,8 +19,8 @@ namespace hc {
 
         bool init();
 
-        int push(lua_State* L);
-        static Logger* check(lua_State* L, int index);
+        virtual int push(lua_State* const L) override;
+        static Logger* check(lua_State* const L, int const index);
 
         // hc::Plugin
         virtual char const* getName() override;
@@ -45,10 +45,10 @@ namespace hc {
         virtual void vprintf(retro_log_level level, char const* format, va_list args) override;
 
     protected:
-        static int l_debug(lua_State* L);
-        static int l_info(lua_State* L);
-        static int l_warn(lua_State* L);
-        static int l_error(lua_State* L);
+        static int l_debug(lua_State* const L);
+        static int l_info(lua_State* const L);
+        static int l_warn(lua_State* const L);
+        static int l_error(lua_State* const L);
 
         ImGuiAl::BufferedLog<1024 * 1024> _logger;
         SDL_mutex* _mutex;
