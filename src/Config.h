@@ -75,6 +75,8 @@ namespace hc {
         static int l_getCoreAssetsPath(lua_State* L);
         static int l_getSavePath(lua_State* L);
         static int l_getCoresPath(lua_State* L);
+        static int l_getCoreOption(lua_State* L);
+        static int l_setCoreOption(lua_State* L);
 
         struct SubsystemInfo {
             struct Rom {
@@ -119,7 +121,7 @@ namespace hc {
             std::string sublabel;
 
             std::vector<Value> values;
-            unsigned selected;
+            size_t selected;
             bool visible;
         };
 

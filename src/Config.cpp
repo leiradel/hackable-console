@@ -87,33 +87,6 @@ const std::string& hc::Config::getAutorunPath() const {
     return _autorunPath;
 }
 
-int hc::Config::push(lua_State* L) {
-    auto const self = static_cast<Config**>(lua_newuserdata(L, sizeof(Config*)));
-    *self = this;
-
-    if (luaL_newmetatable(L, "hc::Config")) {
-        static luaL_Reg const methods[] = {
-            {"getRootPath", l_getRootPath},
-            {"getAutorunPath", l_getAutorunPath},
-            {"getSystemPath", l_getSystemPath},
-            {"getCoreAssetsPath", l_getCoreAssetsPath},
-            {"getSavePath", l_getSavePath},
-            {"getCoresPath", l_getCoresPath},
-            {nullptr, nullptr}
-        };
-
-        luaL_newlib(L, methods);
-        lua_setfield(L, -2, "__index");
-    }
-
-    lua_setmetatable(L, -2);
-    return 1;
-}
-
-hc::Config* hc::Config::check(lua_State* L, int index) {
-    return *(Config**)luaL_checkudata(L, index, "hc::Config");
-}
-
 char const* hc::Config::getName() {
     return "hc::Config built-in configuration plugin";
 }
@@ -485,6 +458,35 @@ bool hc::Config::setCoreOptionsDisplay(retro_core_option_display const* display)
     return true;
 }
 
+int hc::Config::push(lua_State* L) {
+    auto const self = static_cast<Config**>(lua_newuserdata(L, sizeof(Config*)));
+    *self = this;
+
+    if (luaL_newmetatable(L, "hc::Config")) {
+        static luaL_Reg const methods[] = {
+            {"getRootPath", l_getRootPath},
+            {"getAutorunPath", l_getAutorunPath},
+            {"getSystemPath", l_getSystemPath},
+            {"getCoreAssetsPath", l_getCoreAssetsPath},
+            {"getSavePath", l_getSavePath},
+            {"getCoresPath", l_getCoresPath},
+            {"getCoreOption", l_getCoreOption},
+            {"setCoreOption", l_setCoreOption},
+            {nullptr, nullptr}
+        };
+
+        luaL_newlib(L, methods);
+        lua_setfield(L, -2, "__index");
+    }
+
+    lua_setmetatable(L, -2);
+    return 1;
+}
+
+hc::Config* hc::Config::check(lua_State* L, int index) {
+    return *(Config**)luaL_checkudata(L, index, "hc::Config");
+}
+
 int hc::Config::l_getRootPath(lua_State* L) {
     Config* const self = check(L, 1);
     lua_pushlstring(L, self->_rootPath.c_str(), self->_rootPath.length());
@@ -519,4 +521,91 @@ int hc::Config::l_getCoresPath(lua_State* L) {
     Config* const self = check(L, 1);
     lua_pushlstring(L, self->_coresPath.c_str(), self->_coresPath.length());
     return 1;
+}
+
+int hc::Config::l_getCoreOption(lua_State* L) {
+    Config* const self = check(L, 1);
+    size_t length = 0;
+    char const* key = luaL_checklstring(L, 2, &length);
+
+    auto const found = self->_coreMap.find(std::string(key, length));
+
+    if (found == self->_coreMap.end()) {
+        return luaL_error(L, "unknown core option: \"%s\"", key);
+    }
+
+    CoreOption const& option = self->_coreOptions[found->second];
+
+    lua_createtable(L, 0, 6);
+
+    lua_pushlstring(L, option.key.c_str(), option.key.length());
+    lua_setfield(L, -2, "key");
+    lua_pushlstring(L, option.label.c_str(), option.label.length());
+    lua_setfield(L, -2, "label");
+    lua_pushlstring(L, option.sublabel.c_str(), option.sublabel.length());
+    lua_setfield(L, -2, "sublabel");
+    lua_pushinteger(L, option.selected);
+    lua_setfield(L, -2, "selected");
+    lua_pushboolean(L, option.visible);
+    lua_setfield(L, -2, "visible");
+
+    size_t const count = option.values.size();
+    lua_createtable(L, count, 0);
+
+    for (size_t i = 0; i < count; i++) {
+        auto const& value = option.values[i];
+        lua_createtable(L, 0, 2);
+
+        lua_pushlstring(L, value.value.c_str(), value.value.length());
+        lua_setfield(L, -2, "value");
+        lua_pushlstring(L, value.label.c_str(), value.label.length());
+        lua_setfield(L, -2, "label");
+
+        lua_rawseti(L, -2, i + 1);
+    }
+
+    lua_setfield(L, -2, "values");
+    return 1;
+}
+
+int hc::Config::l_setCoreOption(lua_State* L) {
+    Config* const self = check(L, 1);
+    size_t length = 0;
+    char const* const key = luaL_checklstring(L, 2, &length);
+
+    auto const found = self->_coreMap.find(std::string(key, length));
+
+    if (found == self->_coreMap.end()) {
+        return luaL_error(L, "unknown core option: \"%s\"", key);
+    }
+
+    CoreOption& option = self->_coreOptions[found->second];
+
+    if (lua_isinteger(L, 3)) {
+        lua_Integer const i = lua_tointeger(L, 3);
+        size_t const index = i - 1;
+
+        if (index >= option.values.size()) {
+            return luaL_error(L, "invalid index into core option values: %I, \"%s\"", i, key);
+        }
+
+        option.selected = index;
+        return 0;
+    }
+    else {
+        size_t vlen = 0;
+        char const* const val = luaL_checklstring(L, 3, &vlen);
+        std::string const value(val, vlen);
+
+        size_t const count = option.values.size();
+
+        for (size_t i = 0; i < count; i++) {
+            if (option.values[i].value == value) {
+                option.selected = i;
+                return 0;
+            }
+        }
+
+        return luaL_error(L, "invalid value for core option: \"%s\", \"%s\"", val, key);
+    }
 }
