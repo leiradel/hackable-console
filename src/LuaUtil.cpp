@@ -355,71 +355,6 @@ static int l_getRegion(lua_State* const L) {
     return 1;
 }
 
-static int str2id(char const* const str) {
-    if (strcmp(str, "save") == 0) {
-        return RETRO_MEMORY_SAVE_RAM;
-    }
-    else if (strcmp(str, "rtc") == 0) {
-        return RETRO_MEMORY_RTC;
-    }
-    else if (strcmp(str, "sram") == 0) {
-        return RETRO_MEMORY_SYSTEM_RAM;
-    }
-    else if (strcmp(str, "vram") == 0) {
-        return RETRO_MEMORY_VIDEO_RAM;
-    }
-    else {
-        char* end;
-        long const id = strtol(str, &end, 10);
-
-        if (*str == 0 || *end != 0) {
-            return -1;
-        }
-
-        return static_cast<int>(id);
-    }
-}
-
-static int l_getMemoryData(lua_State* const L) {
-    auto const self = checkFrontend(L, 1);
-    char const* const idStr = luaL_checkstring(L, 2);
-
-    int const id = str2id(idStr);
-
-    if (id < 0) {
-        return luaL_error(L, "invalid memory id: \"%s\"", idStr);
-    }
-
-    void* data;
-
-    if (!self->getMemoryData(static_cast<unsigned>(id), &data)) {
-        return luaL_error(L, "error getting memory data for \"%s\"", idStr);
-    }
-
-    lua_pushlightuserdata(L, data);
-    return 1;
-}
-
-static int l_getMemorySize(lua_State* const L) {
-    auto const self = checkFrontend(L, 1);
-    char const* const idStr = luaL_checkstring(L, 2);
-
-    int const id = str2id(idStr);
-
-    if (id < 0) {
-        return luaL_error(L, "invalid memory id: \"%s\"", idStr);
-    }
-
-    size_t size;
-
-    if (!self->getMemorySize(static_cast<unsigned>(id), &size)) {
-        return luaL_error(L, "error getting memory size for \"%s\"", idStr);
-    }
-
-    lua_pushinteger(L, size);
-    return 1;
-}
-
 int hc::pushFrontend(lua_State* const L, lrcpp::Frontend* const frontend) {
     auto const self = static_cast<lrcpp::Frontend**>(lua_newuserdata(L, sizeof(lrcpp::Frontend*)));
     *self = frontend;
@@ -436,8 +371,6 @@ int hc::pushFrontend(lua_State* const L, lrcpp::Frontend* const frontend) {
             {"cheatReset", l_cheatReset},
             {"cheatSet", l_cheatSet},
             {"getRegion", l_getRegion},
-            {"getMemoryData", l_getMemoryData},
-            {"getMemorySize", l_getMemorySize},
             {nullptr, nullptr}
         };
 

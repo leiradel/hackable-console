@@ -6,6 +6,7 @@
 
 #include <string>
 #include <map>
+#include <vector>
 
 namespace hc {
     class Control : public Plugin {
@@ -41,8 +42,11 @@ namespace hc {
         virtual int push(lua_State* const L) override;
 
     protected:
-        // Control will also be responsible for exposing LifeCycle methods to Lua
+        // Control will also be responsible for exposing LifeCycle and Frontend
+        // methods to Lua
         static int l_addConsole(lua_State* const L);
+        static int l_onGameLoaded(lua_State* const L);
+
         static int l_loadCore(lua_State* const L);
         static int l_quit(lua_State* const L);
         static int l_unloadCore(lua_State* const L);
@@ -52,6 +56,9 @@ namespace hc {
         static int l_step(lua_State* const L);
         static int l_unloadGame(lua_State* const L);
         static int l_pauseGame(lua_State* const L);
+
+        static int l_getMemoryData(lua_State* const L);
+        static int l_getMemorySize(lua_State* const L);
 
         struct Callback {
             lua_State* const L;
@@ -65,5 +72,7 @@ namespace hc {
         int _selected;
         std::string _extensions;
         std::string _lastGameFolder;
+
+        std::vector<Callback> _onGameLoaded;
     };
 }

@@ -12,6 +12,31 @@ extern "C" {
 
 #define TAG "[CTR] "
 
+static int str2id(char const* const str) {
+    if (strcmp(str, "save") == 0) {
+        return RETRO_MEMORY_SAVE_RAM;
+    }
+    else if (strcmp(str, "rtc") == 0) {
+        return RETRO_MEMORY_RTC;
+    }
+    else if (strcmp(str, "sram") == 0) {
+        return RETRO_MEMORY_SYSTEM_RAM;
+    }
+    else if (strcmp(str, "vram") == 0) {
+        return RETRO_MEMORY_VIDEO_RAM;
+    }
+    else {
+        char* end;
+        long const id = strtol(str, &end, 10);
+
+        if (*str == 0 || *end != 0) {
+            return -1;
+        }
+
+        return static_cast<int>(id);
+    }
+}
+
 hc::Control::Control() : _logger(nullptr), _selected(0) {}
 
 void hc::Control::init(Logger* const logger, LifeCycle* const fsm) {
@@ -43,7 +68,12 @@ void hc::Control::onStarted() {}
 
 void hc::Control::onConsoleLoaded() {}
 
-void hc::Control::onGameLoaded() {}
+void hc::Control::onGameLoaded() {
+    for (auto const& cb : _onGameLoaded) {
+        lua_rawgeti(cb.L, LUA_REGISTRYINDEX, cb.ref);
+        protectedCall(cb.L, 0, 0, _logger);
+    }
+}
 
 void hc::Control::onGamePaused() {}
 
@@ -211,6 +241,7 @@ int hc::Control::push(lua_State* const L) {
     if (luaL_newmetatable(L, "hc::Control")) {
         static luaL_Reg const methods[] = {
             {"addConsole", l_addConsole},
+            {"onGameLoaded", l_onGameLoaded},
             {"loadCore", l_loadCore},
             {"quit", l_quit},
             {"unloadCore", l_unloadCore},
@@ -220,6 +251,8 @@ int hc::Control::push(lua_State* const L) {
             {"step", l_step},
             {"unloadGame", l_unloadGame},
             {"pauseGame", l_pauseGame},
+            {"getMemoryData", l_getMemoryData},
+            {"getMemorySize", l_getMemorySize},
             {nullptr, nullptr}
         };
 
@@ -246,6 +279,18 @@ int hc::Control::l_addConsole(lua_State* const L) {
 
     Callback cb = {L, ref};
     self->_consoles.emplace(std::string(name, length), cb);
+    return 0;
+}
+
+int hc::Control::l_onGameLoaded(lua_State* const L) {
+    auto const self = check(L, 1);
+    luaL_argexpected(L, lua_type(L, 2) == LUA_TFUNCTION, 2, "function");
+
+    lua_pushvalue(L, 2);
+    int const ref = luaL_ref(L, LUA_REGISTRYINDEX);
+
+    Callback cb = {L, ref};
+    self->_onGameLoaded.emplace_back(cb);
     return 0;
 }
 
@@ -339,4 +384,46 @@ int hc::Control::l_pauseGame(lua_State* const L) {
     }
 
     return 0;
+}
+
+int hc::Control::l_getMemoryData(lua_State* const L) {
+    check(L, 1);
+    char const* const idStr = luaL_checkstring(L, 2);
+
+    int const id = str2id(idStr);
+
+    if (id < 0) {
+        return luaL_error(L, "invalid memory id: \"%s\"", idStr);
+    }
+
+    auto& frontend = lrcpp::Frontend::getInstance();
+    void* data;
+
+    if (!frontend.getMemoryData(static_cast<unsigned>(id), &data)) {
+        return luaL_error(L, "error getting memory data for \"%s\"", idStr);
+    }
+
+    lua_pushlightuserdata(L, data);
+    return 1;
+}
+
+int hc::Control::l_getMemorySize(lua_State* const L) {
+    check(L, 1);
+    char const* const idStr = luaL_checkstring(L, 2);
+
+    int const id = str2id(idStr);
+
+    if (id < 0) {
+        return luaL_error(L, "invalid memory id: \"%s\"", idStr);
+    }
+
+    auto& frontend = lrcpp::Frontend::getInstance();
+    size_t size;
+
+    if (!frontend.getMemorySize(static_cast<unsigned>(id), &size)) {
+        return luaL_error(L, "error getting memory size for \"%s\"", idStr);
+    }
+
+    lua_pushinteger(L, size);
+    return 1;
 }

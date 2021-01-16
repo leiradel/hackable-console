@@ -166,7 +166,7 @@ int hc::Memory::l_addRegion(lua_State* const L) {
     self->_regions.emplace_back(std::string(name, length), data, offset, size, base, readOnly);
 
     self->_logger->info(
-        "Added memory region {\"%s\", 0x%016" PRIxPTR ", 0x%016" PRIxPTR", %zu, %zu, %s}",
+        TAG "Added memory region {\"%s\", 0x%016" PRIxPTR ", 0x%016" PRIxPTR", %zu, %zu, %s}",
         name, static_cast<uintptr_t>(base), reinterpret_cast<uintptr_t>(data), size, offset, readOnly ? "true" : "false"
     );
 
