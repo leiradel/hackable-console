@@ -24,10 +24,6 @@ extern "C" {
 
 #include <stdarg.h>
 
-#include <string>
-#include <unordered_set>
-#include <unordered_map>
-
 namespace hc {
     class Application {
     public:
@@ -70,8 +66,6 @@ namespace hc {
 
         LifeCycle _fsm;
 
-        std::unordered_set<Plugin*> _plugins;
-
         Audio* _audio;
         Config* _config;
         Led* _led;
@@ -83,9 +77,9 @@ namespace hc {
         Control* _control;
         Memory* _memory;
 
+        Plugins _plugins;
+
         Fifo _fifo;
-        std::unordered_map<std::string, int> _consoleRefs;
-        std::string _currentConsole;
         lua_State* _L;
     };
 }

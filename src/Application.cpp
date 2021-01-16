@@ -23,6 +23,7 @@ extern "C" {
 
 #define TAG "[HC ] "
 
+#if 0
 static void const* readAll(hc::Logger* logger, char const* const path, size_t* const size) {
     struct stat statbuf;
 
@@ -61,6 +62,7 @@ static void const* readAll(hc::Logger* logger, char const* const path, size_t* c
     *size = numread;
     return data;
 }
+#endif
 
 hc::Application::Application() : _fsm(*this, vprintf, this) {}
 
@@ -93,8 +95,8 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         return false;
     }
 
-    _plugins.emplace(_logger);
-    undo.add([this]() { delete _logger; });
+    _plugins.init(_logger);
+    _plugins.add(_logger);
 
     {
         // Setup SDL
@@ -253,47 +255,42 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         lrcpp::Frontend& frontend = lrcpp::Frontend::getInstance();
 
         _control = new Control;
-        undo.add([this]() { delete _control; });
         _control->init(_logger, &_fsm);
-        _plugins.emplace(_control);
+        _plugins.add(_control);
 
         _config = new Config;
-        undo.add([this]() { delete _config; });
         
         if (!_config->init(_logger)) {
+            delete _config;
             return false;
         }
 
-        _plugins.emplace(_config);
+        _plugins.add(_config);
 
         _video = new Video;
-        undo.add([this]() { delete _video; });
         _video->init(_logger);
-        _plugins.emplace(_video);
+        _plugins.add(_video);
 
         _audio = new Audio;
-        undo.add([this]() { delete _audio; });
         _audio->init(_logger, _audioSpec.freq, &_fifo);
-        _plugins.emplace(_audio);
+        _plugins.add(_audio);
 
         _led = new Led;
         undo.add([this]() { delete _led; });
         _led->init(_logger);
-        _plugins.emplace(_led);
+        _plugins.add(_led);
 
         _input = new Input;
-        undo.add([this]() { delete _input; });
         _input->init(_logger, &frontend);
-        _plugins.emplace(_input);
+        _plugins.add(_input);
 
         _perf = new Perf;
-        undo.add([this]() { delete _perf; });
         _perf->init(_logger);
-        _plugins.emplace(_perf);
+        _plugins.add(_perf);
 
         _memory = new Memory;
         _memory->init(_logger);
-        _plugins.emplace(_memory);
+        _plugins.add(_memory);
 
         frontend.setLogger(_logger);
         frontend.setConfig(_config);
@@ -315,38 +312,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         undo.add([this]() { lua_close(_L); });
 
         luaL_openlibs(_L);
-
-        lua_createtable(_L, 0, _plugins.size());
-
-        for (auto const& plugin : _plugins) {
-            plugin->push(_L);
-            lua_setfield(_L, -2, plugin->getTypeName());
-        }
-
-        static struct {char const* const name; char const* const value;} const stringConsts[] = {
-            {"_COPYRIGHT", "Copyright (c) 2020 Andre Leiradella"},
-            {"_LICENSE", "MIT"},
-            {"_VERSION", "1.0.0"},
-            {"_NAME", "hc"},
-            {"_URL", "https://github.com/leiradel/hackable-console"},
-            {"_DESCRIPTION", "Hackable Console bindings"},
-
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
-            {"soExtension", "dll"}
-#elif __linux__
-            {"soExtension", "so"}
-#else
-            #error Unsupported platform
-#endif
-        };
-
-        size_t const stringCount = sizeof(stringConsts) / sizeof(stringConsts[0]);
-
-        for (size_t i = 0; i < stringCount; i++) {
-            lua_pushstring(_L, stringConsts[i].value);
-            lua_setfield(_L, -2, stringConsts[i].name);
-        }
-
+        _plugins.push(_L);
         registerSearcher(_L);
 
         static auto const main = [](lua_State* const L) -> int {
@@ -394,10 +360,7 @@ void hc::Application::destroy() {
 
 void hc::Application::draw() {
     ImGui::DockSpaceOverViewport();
-
-    for (auto const plugin : _plugins) {
-        plugin->onDraw();
-    }
+    _plugins.onDraw();
 }
 
 void hc::Application::run() {
@@ -454,6 +417,7 @@ void hc::Application::run() {
 }
 
 bool hc::Application::loadConsole(char const* name) {
+#if 0
     LuaRewinder rewinder(_L);
 
     _logger->info(TAG "Loading console \"%s\"", name);
@@ -524,10 +488,12 @@ bool hc::Application::loadConsole(char const* name) {
     _logger->info(TAG "    block_extract    = %s", info.block_extract ? "true" : "false");
 
     onConsoleLoaded();
+#endif
     return true;
 }
 
 bool hc::Application::loadGame(char const* path) {
+#if 0
     LuaRewinder rewinder(_L);
 
     _logger->info(TAG "Loading game from \"%s\"", path);
@@ -625,6 +591,7 @@ bool hc::Application::loadGame(char const* path) {
     }
 
     onGameLoaded();
+#endif
     return true;
 }
 
@@ -672,76 +639,43 @@ bool hc::Application::unloadGame() {
 }
 
 void hc::Application::onStarted() {
-    for (auto const plugin : _plugins) {
-        _logger->debug(TAG "onStarted plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
-        plugin->onStarted();
-    }
+    _plugins.onStarted();
 }
 
 void hc::Application::onConsoleLoaded() {
-    for (auto const plugin : _plugins) {
-        _logger->debug(TAG "onConsoleLoaded plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
-        plugin->onConsoleLoaded();
-    }
+    _plugins.onConsoleLoaded();
 }
 
 void hc::Application::onGameLoaded() {
-    for (auto const plugin : _plugins) {
-        _logger->debug(TAG "onGameLoaded plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
-        plugin->onGameLoaded();
-    }
+    _plugins.onGameLoaded();
 }
 
 void hc::Application::onGamePaused() {
-    for (auto const plugin : _plugins) {
-        _logger->debug(TAG "onGamePaused plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
-        plugin->onGamePaused();
-    }
+    _plugins.onGamePaused();
 }
 
 void hc::Application::onGameResumed() {
-    for (auto const plugin : _plugins) {
-        _logger->debug(TAG "onGameResumed plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
-        plugin->onGameResumed();
-    }
+    _plugins.onGameResumed();
 }
 
 void hc::Application::onGameReset() {
-    for (auto const plugin : _plugins) {
-        _logger->debug(TAG "onGameReset plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
-        plugin->onGameReset();
-    }
+    _plugins.onGameReset();
 }
 
 void hc::Application::onFrame() {
-    for (auto const plugin : _plugins) {
-        // Don't log stuff per frame
-        plugin->onFrame();
-    }
+    _plugins.onFrame();
 }
 
 void hc::Application::onGameUnloaded() {
-    for (auto const plugin : _plugins) {
-        _logger->debug(TAG "onGameUnloaded plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
-        plugin->onGameUnloaded();
-    }
+    _plugins.onGameUnloaded();
 }
 
 void hc::Application::onConsoleUnloaded() {
-    for (auto const plugin : _plugins) {
-        _logger->debug(TAG "onConsoleUnloaded plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
-        plugin->onConsoleUnloaded();
-    }
+    _plugins.onConsoleUnloaded();
 }
 
 void hc::Application::onQuit() {
-    for (auto const plugin : _plugins) {
-        _logger->debug(TAG "onQuit plugin %s (%s): %s", plugin->getName(), plugin->getVersion(), plugin->getCopyright());
-        plugin->onQuit();
-        delete plugin;
-    }
-
-    _plugins.clear();
+    _plugins.onQuit();
 }
 
 void hc::Application::vprintf(void* ud, char const* fmt, va_list args) {

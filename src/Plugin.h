@@ -2,26 +2,35 @@
 
 #include <Frontend.h>
 
+#include <unordered_set>
+
 extern "C" {
     #include <lua.h>
 }
 
 namespace hc {
+    class Logger;
+
     class Plugin {
     public:
         enum class Type {
             Audio,
             Config,
-            Control,
             Input,
             Led,
             Logger,
-            Memory,
             Perf,
-            Video
+            Video,
+
+            Control,
+            Memory,
+
+            Manager
         };
 
         virtual ~Plugin() {}
+
+        char const* getTypeName();
 
         virtual Type getType() = 0;
         virtual char const* getName() = 0;
@@ -43,7 +52,40 @@ namespace hc {
         virtual void onQuit() = 0;
 
         virtual int push(lua_State* const L) = 0;
+    };
 
-        char const* getTypeName();
+    class Plugins : public Plugin {
+    public:
+        Plugins();
+        virtual ~Plugins() {}
+
+        void init(Logger* const logger);
+        void add(Plugin* const plugin);
+
+        // hc::Plugin
+        virtual Type getType() override { return Type::Manager; }
+        virtual char const* getName() override;
+        virtual char const* getVersion() override;
+        virtual char const* getLicense() override;
+        virtual char const* getCopyright() override;
+        virtual char const* getUrl() override;
+
+        virtual void onStarted() override;
+        virtual void onConsoleLoaded() override;
+        virtual void onGameLoaded() override;
+        virtual void onGamePaused() override;
+        virtual void onGameResumed() override;
+        virtual void onGameReset() override;
+        virtual void onFrame() override;
+        virtual void onDraw() override;
+        virtual void onGameUnloaded() override;
+        virtual void onConsoleUnloaded() override;
+        virtual void onQuit() override;
+
+        virtual int push(lua_State* const L) override;
+
+    protected:
+        Logger* _logger;
+        std::unordered_set<Plugin*> _plugins;        
     };
 }
