@@ -198,7 +198,7 @@ hc::Logger* hc::Logger::check(lua_State* const L, int const index) {
 }
 
 int hc::Logger::l_debug(lua_State* const L) {
-    Logger* const self = check(L, 1);
+    auto const self = check(L, 1);
     lua_getfield(L, 1, "format");
     lua_insert(L, 2);
     lua_call(L, lua_gettop(L) - 2, 1);
@@ -208,7 +208,7 @@ int hc::Logger::l_debug(lua_State* const L) {
 }
 
 int hc::Logger::l_info(lua_State* const L) {
-    Logger* const self = check(L, 1);
+    auto const self = check(L, 1);
     lua_getfield(L, 1, "format");
     lua_insert(L, 2);
     lua_call(L, lua_gettop(L) - 2, 1);
@@ -218,7 +218,7 @@ int hc::Logger::l_info(lua_State* const L) {
 }
 
 int hc::Logger::l_warn(lua_State* const L) {
-    Logger* const self = check(L, 1);
+    auto const self = check(L, 1);
     lua_getfield(L, 1, "format");
     lua_insert(L, 2);
     lua_call(L, lua_gettop(L) - 2, 1);
@@ -228,7 +228,7 @@ int hc::Logger::l_warn(lua_State* const L) {
 }
 
 int hc::Logger::l_error(lua_State* const L) {
-    Logger* const self = check(L, 1);
+    auto const self = check(L, 1);
     lua_getfield(L, 1, "format");
     lua_insert(L, 2);
     lua_call(L, lua_gettop(L) - 2, 1);
