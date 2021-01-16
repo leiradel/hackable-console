@@ -23,7 +23,6 @@ extern "C" {
 
 #define TAG "[HC ] "
 
-#if 0
 static void const* readAll(hc::Logger* logger, char const* const path, size_t* const size) {
     struct stat statbuf;
 
@@ -62,7 +61,6 @@ static void const* readAll(hc::Logger* logger, char const* const path, size_t* c
     *size = numread;
     return data;
 }
-#endif
 
 hc::Application::Application() : _fsm(*this, vprintf, this) {}
 
@@ -416,63 +414,14 @@ void hc::Application::run() {
     while (!done);
 }
 
-bool hc::Application::loadConsole(char const* name) {
-#if 0
-    LuaRewinder rewinder(_L);
-
-    _logger->info(TAG "Loading console \"%s\"", name);
-
-    auto const found = _consoleRefs.find(name);
-
-    if (found == _consoleRefs.end()) {
-        _logger->error(TAG "Unknown console \"%s\"", name);
-        return false;
-    }
-
-    lua_rawgeti(_L, LUA_REGISTRYINDEX, found->second);
-    int const tableIndex = lua_gettop(_L);
-
-    if (!protectedCallField(_L, tableIndex, "onLoadCore", 0, 1, _logger)) {
-        _logger->warn(TAG "onLoadCore crashed, will continue loading!");
-        lua_pushboolean(_L, 1);
-    }
-
-    if (!lua_toboolean(_L, -1)) {
-        _logger->warn(TAG "onLoadCore prevented loading the console");
-        return false;
-    }
-
-    if (getField(_L, tableIndex, "path", _logger) != LUA_TSTRING) {
-        return false;
-    }
-
-    char const* const path = lua_tostring(_L, -1);
-    _logger->info(TAG "Loading core from \"%s\"", path);
+bool hc::Application::loadCore(char const* path) {
+    _logger->info(TAG "Loading core \"%s\"", path);
 
     lrcpp::Frontend& frontend = lrcpp::Frontend::getInstance();
 
     if (!frontend.load(path)) {
         return false;
     }
-
-    pushFrontend(_L, &frontend);
-
-    if (!protectedCallField(_L, tableIndex, "onCoreLoaded", 1, 1, _logger)) {
-        _logger->warn(TAG "onCoreLoaded crashed, will continue loading!");
-        lua_pushboolean(_L, 1);
-    }
-
-    if (!lua_toboolean(_L, -1)) {
-        _logger->warn(TAG "onCoreLoaded prevented loading the console");
-
-        if (frontend.unload()) {
-            return false;
-        }
-
-        _logger->error(TAG "Couldn't unload the core, will continue loading!");
-    }
-    
-    _currentConsole = name;
 
     retro_system_info info;
 
@@ -488,43 +437,16 @@ bool hc::Application::loadConsole(char const* name) {
     _logger->info(TAG "    block_extract    = %s", info.block_extract ? "true" : "false");
 
     onConsoleLoaded();
-#endif
     return true;
 }
 
 bool hc::Application::loadGame(char const* path) {
-#if 0
-    LuaRewinder rewinder(_L);
-
     _logger->info(TAG "Loading game from \"%s\"", path);
-
-    auto const found = _consoleRefs.find(_currentConsole);
-
-    if (found == _consoleRefs.end()) {
-        _logger->error(TAG "Unknown console \"%s\"", _currentConsole.c_str());
-        return false;
-    }
 
     lrcpp::Frontend& frontend = lrcpp::Frontend::getInstance();
     retro_system_info info;
 
     if (!frontend.getSystemInfo(&info)) {
-        return false;
-    }
-
-    lua_rawgeti(_L, LUA_REGISTRYINDEX, found->second);
-    int const tableIndex = lua_gettop(_L);
-    
-    pushFrontend(_L, &frontend);
-    lua_pushstring(_L, path);
-
-    if (!protectedCallField(_L, tableIndex, "onLoadGame", 2, 1, _logger)) {
-        _logger->warn(TAG "onLoadGame crashed, will continue loading!");
-        lua_pushboolean(_L, 1);
-    }
-
-    if (!lua_toboolean(_L, -1)) {
-        _logger->warn(TAG "onLoadGame prevented loading the game");
         return false;
     }
 
@@ -547,23 +469,6 @@ bool hc::Application::loadGame(char const* path) {
 
     if (!ok) {
         return false;
-    }
-
-    pushFrontend(_L, &frontend);
-
-    if (!protectedCallField(_L, tableIndex, "onGameLoaded", 1, 1, _logger)) {
-        _logger->warn(TAG "onGameLoaded crashed, will continue loading!");
-        lua_pushboolean(_L, 1);
-    }
-
-    if (!lua_toboolean(_L, -1)) {
-        _logger->warn(TAG "onGameLoaded prevented loading the game");
-
-        if (frontend.unloadGame()) {
-            return false;
-        }
-
-        _logger->error(TAG "Couldn't unload the game, will continue loading!");
     }
 
     static struct {char const* const name; unsigned const id;} memory[] = {
@@ -591,7 +496,6 @@ bool hc::Application::loadGame(char const* path) {
     }
 
     onGameLoaded();
-#endif
     return true;
 }
 
@@ -620,7 +524,7 @@ bool hc::Application::step() {
     return lrcpp::Frontend::getInstance().run();
 }
 
-bool hc::Application::unloadConsole() {
+bool hc::Application::unloadCore() {
     if (lrcpp::Frontend::getInstance().unload()) {
         onConsoleUnloaded();
         return true;

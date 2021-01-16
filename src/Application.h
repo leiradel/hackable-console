@@ -34,14 +34,14 @@ namespace hc {
         void draw();
         void run();
 
-        bool loadConsole(char const* name);
+        bool loadCore(char const* path);
         bool loadGame(char const* path);
         bool pauseGame();
         bool quit();
         bool resetGame();
         bool resumeGame();
         bool step();
-        bool unloadConsole();
+        bool unloadCore();
         bool unloadGame();
 
         void onStarted();

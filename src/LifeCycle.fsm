@@ -15,8 +15,8 @@ fsm LifeCycle {
     class Application as ctx;
 
     Start {
-        loadConsole(const_cstr name) => ConsoleLoaded {
-            if (!ctx.loadConsole(name)) {
+        loadCore(const_cstr path) => ConsoleLoaded {
+            if (!ctx.loadCore(path)) {
                 forbid;
             }
         }
@@ -27,8 +27,8 @@ fsm LifeCycle {
     Quit {}
 
     ConsoleLoaded {
-        unloadConsole() => Start {
-            ctx.unloadConsole();
+        unloadCore() => Start {
+            ctx.unloadCore();
         }
 
         loadGame(const_cstr path) => GamePaused {
@@ -37,7 +37,7 @@ fsm LifeCycle {
             }
         }
 
-        quit() => unloadConsole() => quit();
+        quit() => unloadCore() => quit();
     }
 
     GamePaused {

@@ -52,7 +52,7 @@ void LifeCycle::after(State state) const {
     }
 }
 
-bool LifeCycle::loadConsole(const_cstr name) {
+bool LifeCycle::loadCore(const_cstr path) {
     switch (__state) {
         case State::Start: {
             if (!before()) {
@@ -79,7 +79,7 @@ bool LifeCycle::loadConsole(const_cstr name) {
 
 //#line 18 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
-            if (!ctx.loadConsole(name)) {
+            if (!ctx.loadCore(path)) {
                 return false;
             }
         
@@ -230,7 +230,7 @@ bool LifeCycle::quit() {
                 return false;
             }
 
-            bool __ok = unloadConsole() &&
+            bool __ok = unloadCore() &&
                         quit();
 
             if (__ok) {
@@ -574,7 +574,7 @@ bool LifeCycle::step() {
     return false;
 }
 
-bool LifeCycle::unloadConsole() {
+bool LifeCycle::unloadCore() {
     switch (__state) {
         case State::ConsoleLoaded: {
             if (!before()) {
@@ -601,7 +601,7 @@ bool LifeCycle::unloadConsole() {
 
 //#line 30 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
-            ctx.unloadConsole();
+            ctx.unloadCore();
         
             __state = State::Start;
             after(__state);

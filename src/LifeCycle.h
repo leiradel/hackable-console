@@ -36,14 +36,14 @@ public:
     void printf(const char* fmt, ...);
 #endif
 
-    bool loadConsole(const_cstr name);
+    bool loadCore(const_cstr path);
     bool loadGame(const_cstr path);
     bool pauseGame();
     bool quit();
     bool resetGame();
     bool resumeGame();
     bool step();
-    bool unloadConsole();
+    bool unloadCore();
     bool unloadGame();
 
 protected:
