@@ -4,6 +4,10 @@
 
 #include <chrono>
 
+extern "C" {
+    #include "lauxlib.h"
+}
+
 #define TAG "[VID] "
 
 static int64_t getTimeUs() {
@@ -13,7 +17,7 @@ static int64_t getTimeUs() {
 
 hc::Video::Video() : _logger(nullptr) {}
 
-void hc::Video::init(Logger* logger) {
+void hc::Video::init(Logger* const logger) {
     _logger = logger;
 
     _rotation = 0;
@@ -263,7 +267,7 @@ retro_proc_address_t hc::Video::getProcAddress(char const* symbol) {
     return nullptr;
 }
 
-void hc::Video::setupTexture(unsigned width, unsigned height) {
+void hc::Video::setupTexture(unsigned const width, unsigned const height) {
     if (width <= _textureWidth && height <= _textureHeight) {
         return;
     }
@@ -301,4 +305,25 @@ void hc::Video::setupTexture(unsigned width, unsigned height) {
 
     glBindTexture(GL_TEXTURE_2D, previous_texture);
     _logger->info(TAG "Texture set to %u x %u", width, height);
+}
+
+int hc::Video::push(lua_State* const L) {
+    auto const self = static_cast<Video**>(lua_newuserdata(L, sizeof(Video*)));
+    *self = this;
+
+    if (luaL_newmetatable(L, "hc::Video")) {
+        static luaL_Reg const methods[] = {
+            {nullptr, nullptr}
+        };
+
+        luaL_newlib(L, methods);
+        lua_setfield(L, -2, "__index");
+    }
+
+    lua_setmetatable(L, -2);
+    return 1;
+}
+
+hc::Video* hc::Video::check(lua_State* const L, int const index) {
+    return *static_cast<Video**>(luaL_checkudata(L, index, "hc::Video"));
 }

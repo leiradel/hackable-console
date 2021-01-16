@@ -15,7 +15,9 @@ namespace hc {
         Video();
         virtual ~Video() {}
 
-        void init(Logger* logger);
+        void init(Logger* const logger);
+
+        static Video* check(lua_State* const L, int const index);
 
         // hc::Plugin
         virtual char const* getName() override;
@@ -35,6 +37,8 @@ namespace hc {
         virtual void onGameUnloaded() override;
         virtual void onConsoleUnloaded() override;
         virtual void onQuit() override;
+
+        virtual int push(lua_State* const L) override;
 
         // lrcpp::Video
         virtual bool setRotation(unsigned rotation) override;
@@ -59,7 +63,7 @@ namespace hc {
         virtual retro_proc_address_t getProcAddress(char const* symbol) override;
 
     protected:
-        void setupTexture(unsigned width, unsigned height);
+        void setupTexture(unsigned const width, unsigned const height);
 
         Logger* _logger;
 
