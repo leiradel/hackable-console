@@ -15,7 +15,9 @@ namespace hc
         Perf() : _logger(nullptr) {}
         virtual ~Perf() {}
 
-        void init(Logger* logger);
+        void init(Logger* const logger);
+
+        static Perf* check(lua_State* const L, int const index);
 
         // hc::Plugin
         virtual char const* getName() override;
@@ -36,6 +38,8 @@ namespace hc
         virtual void onConsoleUnloaded() override;
         virtual void onQuit() override;
 
+        virtual int push(lua_State* const L) override;
+
         // lrcpp::Perf
         virtual retro_time_t getTimeUsec() override;
         virtual uint64_t getCpuFeatures() override;
@@ -46,8 +50,20 @@ namespace hc
         virtual void log() override;
 
     protected:
+        static int l_getTimeUsec(lua_State* const L);
+        static int l_getCounter(lua_State* const L);
+        static int l_register(lua_State* const L);
+        static int l_start(lua_State* const L);
+        static int l_stop(lua_State* const L);
+        static int l_log(lua_State* const L);
+
+        struct Counter {
+            retro_perf_counter* const counter;
+            bool const mustDelete;
+        };
+
         lrcpp::Logger* _logger;
 
-        std::unordered_map<std::string, retro_perf_counter*> _counters;
+        std::unordered_map<std::string, Counter> _counters;
     };
 }
