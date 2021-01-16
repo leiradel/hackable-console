@@ -2,11 +2,15 @@
 
 #include <IconsFontAwesome4.h>
 
+extern "C" {
+    #include "lauxlib.h"
+}
+
 #define TAG "[LED] "
 
 hc::Led::Led() : _logger(nullptr) {}
 
-void hc::Led::init(hc::Logger* logger) {
+void hc::Led::init(hc::Logger* const logger) {
     _logger = logger;
 }
 
@@ -80,4 +84,40 @@ void hc::Led::setState(int led, int state) {
     _logger->info(TAG "Set LED %d to %s", led, state ? "on" : "off");
     _states.resize(led + 1);
     _states[led] = state;
+}
+
+int hc::Led::push(lua_State* const L) {
+    auto const self = static_cast<Led**>(lua_newuserdata(L, sizeof(Led*)));
+    *self = this;
+
+    if (luaL_newmetatable(L, "hc::Led")) {
+        static luaL_Reg const methods[] = {
+            {"setState", l_setState},
+            {nullptr, nullptr}
+        };
+
+        luaL_newlib(L, methods);
+        lua_setfield(L, -2, "__index");
+    }
+
+    lua_setmetatable(L, -2);
+    return 1;
+}
+
+hc::Led* hc::Led::check(lua_State* const L, int const index) {
+    return *static_cast<Led**>(luaL_checkudata(L, index, "hc::Led"));
+}
+
+int hc::Led::l_setState(lua_State* const L) {
+    auto const self = check(L, 1);
+    lua_Integer const led = luaL_checkinteger(L, 2);
+    lua_Integer const state = lua_toboolean(L, 3);
+
+    if (led < 1 || led > 16) {
+        // Be reasonable
+        return luaL_error(L, "invalid led index %I", led);
+    }
+
+    self->setState(led, state);
+    return 0;
 }

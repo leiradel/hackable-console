@@ -13,7 +13,10 @@ namespace hc {
         Led();
         virtual ~Led() {}
 
-        void init(hc::Logger* logger);
+        void init(hc::Logger* const logger);
+
+        int push(lua_State* const L);
+        static Led* check(lua_State* const L, int const index);
 
         // hc::Plugin
         virtual char const* getName() override;
@@ -38,6 +41,8 @@ namespace hc {
         virtual void setState(int led, int state) override;
 
     protected:
+        static int l_setState(lua_State* const L);
+
         hc::Logger* _logger;
 
         std::vector<int> _states;
