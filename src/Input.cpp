@@ -2,6 +2,10 @@
 
 #include <IconsFontAwesome4.h>
 
+extern "C" {
+    #include "lauxlib.h"
+}
+
 #define NONE_ID -1
 #define KEYBOARD_ID -2
 #define TAG "[INP] "
@@ -721,4 +725,25 @@ void hc::Input::keyboard(SDL_Event const* event) {
         case SDLK_LEFT: pad.state[RETRO_DEVICE_ID_JOYPAD_LEFT] = event->key.state == SDL_PRESSED; break;
         case SDLK_RIGHT: pad.state[RETRO_DEVICE_ID_JOYPAD_RIGHT] = event->key.state == SDL_PRESSED; break;
     }
+}
+
+int hc::Input::push(lua_State* const L) {
+    auto const self = static_cast<Input**>(lua_newuserdata(L, sizeof(Input*)));
+    *self = this;
+
+    if (luaL_newmetatable(L, "hc::Input")) {
+        static luaL_Reg const methods[] = {
+            {nullptr, nullptr}
+        };
+
+        luaL_newlib(L, methods);
+        lua_setfield(L, -2, "__index");
+    }
+
+    lua_setmetatable(L, -2);
+    return 1;
+}
+
+hc::Input* hc::Input::check(lua_State* const L, int const index) {
+    return *static_cast<Input**>(luaL_checkudata(L, index, "hc::Input"));
 }

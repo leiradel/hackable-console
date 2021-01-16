@@ -22,6 +22,9 @@ namespace hc {
         void init(Logger* logger, lrcpp::Frontend* frontend);
         void processEvent(SDL_Event const* event);
 
+        int push(lua_State* const L);
+        static Input* check(lua_State* const L, int const index);
+
         // hc::Plugin
         virtual char const* getName() override;
         virtual char const* getVersion() override;
@@ -107,7 +110,7 @@ namespace hc {
          * specify when the core must set it when it does. The strategy here
          * is: after retro_set_environment is called, which happens right after
          * the core is loaded in lrcpp, we'll check if there were any
-         * controllers set in _controllers. If there weren't, we'll add one
+         * controllers set in _controllerTypes. If there weren't, we'll add one
          * fake RetroPad controller per port up to MaxPorts.
          */
         std::vector<ControllerInfo> _controllerTypes[MaxPorts];
