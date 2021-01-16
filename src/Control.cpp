@@ -160,7 +160,7 @@ void hc::Control::onDraw() {
         ImGui::SameLine();
 
         if (ImGuiAl::Button(ICON_FA_POWER_OFF " Unload Console", _fsm->currentState() == LifeCycle::State::ConsoleLoaded, size)) {
-            _fsm->unloadConsole();
+            _fsm->unloadCore();
         }
     }
 
@@ -211,6 +211,15 @@ int hc::Control::push(lua_State* const L) {
     if (luaL_newmetatable(L, "hc::Control")) {
         static luaL_Reg const methods[] = {
             {"addConsole", l_addConsole},
+            {"loadCore", l_loadCore},
+            {"quit", l_quit},
+            {"unloadCore", l_unloadCore},
+            {"loadGame", l_loadGame},
+            {"resumeGame", l_resumeGame},
+            {"resetGame", l_resetGame},
+            {"step", l_step},
+            {"unloadGame", l_unloadGame},
+            {"pauseGame", l_pauseGame},
             {nullptr, nullptr}
         };
 
@@ -240,12 +249,12 @@ int hc::Control::l_addConsole(lua_State* const L) {
     return 0;
 }
 
-int hc::Control::l_loadConsole(lua_State* const L) {
+int hc::Control::l_loadCore(lua_State* const L) {
     auto const self = check(L, 1);
-    char const* const name = luaL_checkstring(L, 2);
+    char const* const path = luaL_checkstring(L, 2);
 
-    if (!self->_fsm->loadConsole(name)) {
-        return luaL_error(L, "could not load console \"%s\"", name);
+    if (!self->_fsm->loadCore(path)) {
+        return luaL_error(L, "could not load core \"%s\"", path);
     }
 
     return 0;
@@ -261,10 +270,10 @@ int hc::Control::l_quit(lua_State* const L) {
     return 0;
 }
 
-int hc::Control::l_unloadConsole(lua_State* const L) {
+int hc::Control::l_unloadCore(lua_State* const L) {
     auto const self = check(L, 1);
 
-    if (!self->_fsm->unloadConsole()) {
+    if (!self->_fsm->unloadCore()) {
         return luaL_error(L, "could not unload console");
     }
 

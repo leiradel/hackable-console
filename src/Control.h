@@ -43,9 +43,9 @@ namespace hc {
     protected:
         // Control will also be responsible for exposing LifeCycle methods to Lua
         static int l_addConsole(lua_State* const L);
-        static int l_loadConsole(lua_State* const L);
+        static int l_loadCore(lua_State* const L);
         static int l_quit(lua_State* const L);
-        static int l_unloadConsole(lua_State* const L);
+        static int l_unloadCore(lua_State* const L);
         static int l_loadGame(lua_State* const L);
         static int l_resumeGame(lua_State* const L);
         static int l_resetGame(lua_State* const L);
