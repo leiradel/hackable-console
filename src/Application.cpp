@@ -342,6 +342,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 }
 
 void hc::Application::destroy() {
+    _plugins.onQuit();
     lua_close(_L);
 
     ImGui_ImplOpenGL2_Shutdown();
