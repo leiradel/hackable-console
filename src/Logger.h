@@ -14,7 +14,7 @@ extern "C" {
 namespace hc {
     class Logger: public View, public lrcpp::Logger {
     public:
-        Logger();
+        Logger(Desktop* desktop);
         virtual ~Logger() {}
 
         bool init();

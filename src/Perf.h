@@ -12,7 +12,7 @@ namespace hc
 {
     class Perf : public View, public lrcpp::Perf {
     public:
-        Perf() : _logger(nullptr) {}
+        Perf(Desktop* desktop) : View(desktop), _logger(nullptr) {}
         virtual ~Perf() {}
 
         void init(Logger* const logger);

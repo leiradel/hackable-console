@@ -15,7 +15,7 @@ static int64_t getTimeUs() {
     return static_cast<int64_t>(now_us.time_since_epoch().count());
 }
 
-hc::Video::Video() : _logger(nullptr) {}
+hc::Video::Video(Desktop* desktop) : View(desktop), _logger(nullptr) {}
 
 void hc::Video::init(Logger* const logger) {
     _logger = logger;

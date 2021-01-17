@@ -39,7 +39,7 @@ static int str2id(char const* const str) {
     }
 }
 
-hc::Control::Control() : _logger(nullptr), _selected(0), _opened(-1) {}
+hc::Control::Control(Desktop* desktop) : View(desktop), _logger(nullptr), _selected(0), _opened(-1) {}
 
 void hc::Control::init(Logger* const logger, LifeCycle* const fsm) {
     _logger = logger;

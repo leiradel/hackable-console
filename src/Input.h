@@ -16,7 +16,7 @@
 namespace hc {
     class Input: public View, public lrcpp::Input {
     public:
-        Input();
+        Input(Desktop* desktop);
         virtual ~Input() {}
 
         void init(Logger* const logger, lrcpp::Frontend* const frontend);

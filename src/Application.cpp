@@ -86,7 +86,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
     }
     undo;
 
-    _logger = new Logger;
+    _logger = new Logger(&_desktop);
 
     if (!_logger->init()) {
         delete _logger;
@@ -252,11 +252,11 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         // Initialize components (logger has already been initialized)
         lrcpp::Frontend& frontend = lrcpp::Frontend::getInstance();
 
-        _control = new Control;
+        _control = new Control(&_desktop);
         _control->init(_logger, &_fsm);
         _desktop.add(_control, true, false, "control");
 
-        _config = new Config;
+        _config = new Config(&_desktop);
         
         if (!_config->init(_logger)) {
             delete _config;
@@ -265,28 +265,28 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
         _desktop.add(_config, true, false, "config");
 
-        _video = new Video;
+        _video = new Video(&_desktop);
         _video->init(_logger);
         _desktop.add(_video, true, false, "video");
 
-        _audio = new Audio;
+        _audio = new Audio(&_desktop);
         _audio->init(_logger, _audioSpec.freq, &_fifo);
         _desktop.add(_audio, true, false, "desktop");
 
-        _led = new Led;
+        _led = new Led(&_desktop);
         undo.add([this]() { delete _led; });
         _led->init(_logger);
         _desktop.add(_led, true, false, "led");
 
-        _input = new Input;
+        _input = new Input(&_desktop);
         _input->init(_logger, &frontend);
         _desktop.add(_input, true, false, "input");
 
-        _perf = new Perf;
+        _perf = new Perf(&_desktop);
         _perf->init(_logger);
         _desktop.add(_perf, true, false, "perf");
 
-        _memory = new Memory;
+        _memory = new Memory(&_desktop);
         _memory->init(_logger);
         _desktop.add(_memory, true, false, "memory");
 

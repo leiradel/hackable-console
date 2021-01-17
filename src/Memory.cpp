@@ -16,13 +16,16 @@ hc::Memory::Region::Region(std::string&& name, void* data, size_t offset, size_t
     , readOnly(readOnly)
 {}
 
-hc::Memory::View::View(Region const& region) : region(region) {
-    editor.OptUpperCaseHex = false;
-    editor.ReadOnly = region.readOnly;
-}
-
 void hc::Memory::init(Logger* const logger) {
     _logger = logger;
+}
+
+hc::Memory::Region* hc::Memory::lock(Handle const handle) {
+    if (handle < _regions.size()) {
+        return &_regions[handle];
+    }
+
+    return nullptr;
 }
 
 char const* hc::Memory::getTitle() {
@@ -62,38 +65,18 @@ void hc::Memory::onDraw() {
     ImGui::SameLine();
 
     if (ImGuiAl::Button(ICON_FA_EYE " View Region", _selected < count, size)) {
-        _views.emplace_back(_regions[_selected]);
+        char title[128];
+        snprintf(title, sizeof(title), ICON_FA_EYE" %s##%u", _regions[_selected].name.c_str(), _viewCount++);
+
+        MemoryWatch* watch = new MemoryWatch(_desktop);
+        watch->init(_logger, title, this, _selected);
+        _desktop->add(watch, false, true, nullptr);
     }
-
-#if 0
-    for (size_t i = 0; i < _views.size();) {
-        auto& view = _views[i];
-
-        char label[128];
-        snprintf(label, sizeof(label), ICON_FA_EYE" %s##%zu", view.region.name.c_str(), i);
-
-        bool open = true;
-
-        if (ImGui::Begin(label, &open)) {
-            auto const data = static_cast<uint8_t*>(view.region.data) + view.region.offset;
-            view.editor.DrawContents(data, view.region.size, view.region.base);
-        }
-
-        if (open) {
-            i++;
-        }
-        else {
-            _views.erase(_views.begin() + i);
-        }
-
-        ImGui::End();
-    }
-#endif
 }
 
 void hc::Memory::onGameUnloaded() {
     _selected = 0;
-    _views.clear();
+    _viewCount = 0;
     _regions.clear();
 }
 
@@ -152,5 +135,52 @@ int hc::Memory::l_addRegion(lua_State* const L) {
         name, static_cast<uintptr_t>(base), reinterpret_cast<uintptr_t>(data), size, offset, readOnly ? "true" : "false"
     );
 
+    return 0;
+}
+
+void hc::MemoryWatch::init(Logger* const logger, char const* title, Memory* const memory, Memory::Handle const handle) {
+    _logger = logger;
+    _title = title;
+    _memory = memory;
+    _handle = handle;
+
+    _editor.OptUpperCaseHex = false;
+    _editor.ReadOnly = memory->lock(handle)->readOnly;
+}
+
+char const* hc::MemoryWatch::getTitle() {
+    return _title.c_str();
+}
+
+void hc::MemoryWatch::onStarted() {}
+
+void hc::MemoryWatch::onConsoleLoaded() {}
+
+void hc::MemoryWatch::onGameLoaded() {}
+
+void hc::MemoryWatch::onGamePaused() {}
+
+void hc::MemoryWatch::onGameResumed() {}
+
+void hc::MemoryWatch::onGameReset() {}
+
+void hc::MemoryWatch::onFrame() {}
+
+void hc::MemoryWatch::onDraw() {
+    Memory::Region* const region = _memory->lock(_handle);
+
+    if (region != nullptr) {
+        auto const data = static_cast<uint8_t*>(region->data) + region->offset;
+        _editor.DrawContents(data, region->size, region->base);
+    }
+}
+
+void hc::MemoryWatch::onGameUnloaded() {}
+
+void hc::MemoryWatch::onConsoleUnloaded() {}
+
+void hc::MemoryWatch::onQuit() {}
+
+int hc::MemoryWatch::push(lua_State* const L) {
     return 0;
 }

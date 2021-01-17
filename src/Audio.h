@@ -13,7 +13,7 @@
 namespace hc {
     class Audio: public View, public lrcpp::Audio {
     public:
-        Audio();
+        Audio(Desktop* desktop);
         virtual ~Audio() {}
 
         void init(Logger* const logger, double const sampleRate, Fifo* const fifo);

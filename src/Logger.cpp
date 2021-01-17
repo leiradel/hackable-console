@@ -8,7 +8,7 @@ extern "C" {
 
 #define TAG "[LUA] "
 
-hc::Logger::Logger() : _mutex(nullptr) {}
+hc::Logger::Logger(Desktop* desktop) : View(desktop), _mutex(nullptr) {}
 
 bool hc::Logger::init() {
     _mutex = SDL_CreateMutex();

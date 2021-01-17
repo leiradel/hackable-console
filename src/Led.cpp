@@ -8,7 +8,7 @@ extern "C" {
 
 #define TAG "[LED] "
 
-hc::Led::Led() : _logger(nullptr) {}
+hc::Led::Led(Desktop* desktop) : View(desktop), _logger(nullptr) {}
 
 void hc::Led::init(hc::Logger* const logger) {
     _logger = logger;

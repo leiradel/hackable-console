@@ -8,8 +8,9 @@ extern "C" {
 
 #define TAG "[AUD] "
 
-hc::Audio::Audio()
-    : _logger(nullptr)
+hc::Audio::Audio(Desktop* desktop)
+    : View(desktop)
+    , _logger(nullptr)
     , _sampleRate(0.0)
     , _fifo(nullptr)
     , _mutex(nullptr)

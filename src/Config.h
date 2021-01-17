@@ -16,7 +16,7 @@ extern "C" {
 namespace hc {
     class Config: public View, public lrcpp::Config {
     public:
-        Config();
+        Config(Desktop* desktop);
         virtual ~Config() {}
 
         bool init(Logger* const logger);

@@ -10,7 +10,7 @@
 namespace hc {
     class Control : public View {
     public:
-        Control();
+        Control(Desktop* desktop);
 
         void init(Logger* const logger, LifeCycle* const fsm);
 

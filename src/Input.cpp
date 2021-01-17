@@ -10,7 +10,7 @@ extern "C" {
 #define KEYBOARD_ID -2
 #define TAG "[INP] "
 
-hc::Input::Input() : _logger(nullptr), _frontend(nullptr) {}
+hc::Input::Input(Desktop* desktop) : View(desktop), _logger(nullptr), _frontend(nullptr) {}
 
 void hc::Input::init(Logger* const logger, lrcpp::Frontend* const frontend) {
     _logger = logger;

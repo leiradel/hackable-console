@@ -11,9 +11,11 @@ extern "C" {
 
 namespace hc {
     class Logger;
+    class Desktop;
 
     class View {
     public:
+        View(Desktop* desktop) : _desktop(desktop) {}
         virtual ~View() {}
 
         virtual char const* getTitle() = 0;
@@ -30,6 +32,9 @@ namespace hc {
         virtual void onQuit() = 0;
 
         virtual int push(lua_State* const L) = 0;
+
+    protected:
+        Desktop* _desktop;
     };
 
     class Desktop : public View {

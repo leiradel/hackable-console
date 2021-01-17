@@ -11,8 +11,9 @@ extern "C" {
 
 #define TAG "[CFG] "
 
-hc::Config::Config()
-    : _logger(nullptr)
+hc::Config::Config(Desktop* desktop)
+    : View(desktop)
+    , _logger(nullptr)
     , _performanceLevel(0)
     , _supportsNoGame(false)
     , _supportAchievements(false)

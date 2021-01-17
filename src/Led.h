@@ -10,7 +10,7 @@
 namespace hc {
     class Led : public View, public lrcpp::Led {
     public:
-        Led();
+        Led(Desktop* desktop);
         virtual ~Led() {}
 
         void init(hc::Logger* const logger);

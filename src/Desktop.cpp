@@ -9,7 +9,7 @@
 
 #define TAG "[DSK] "
 
-hc::Desktop::Desktop() : _logger(nullptr) {}
+hc::Desktop::Desktop() : View(nullptr), _logger(nullptr) {}
 
 void hc::Desktop::init(Logger* const logger) {
     _logger = logger;
@@ -17,7 +17,7 @@ void hc::Desktop::init(Logger* const logger) {
 
 void hc::Desktop::add(View* const view, bool const top, bool const free, char const* const id) {
     ViewProperties props = {view, top, free, id, true};
-    _views.emplace(id, props);
+    _views.emplace(id != nullptr ? id : view->getTitle(), props);
 }
 
 char const* hc::Desktop::getTitle() {

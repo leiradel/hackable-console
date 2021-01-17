@@ -12,7 +12,7 @@
 namespace hc {
     class Video: public View, public lrcpp::Video {
     public:
-        Video();
+        Video(Desktop* desktop);
         virtual ~Video() {}
 
         void init(Logger* const logger);
