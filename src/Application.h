@@ -79,6 +79,8 @@ namespace hc {
 
         Desktop _desktop;
 
+        retro_perf_counter _runPerf;
+
         Fifo _fifo;
         lua_State* _L;
     };

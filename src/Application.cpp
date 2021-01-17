@@ -391,7 +391,9 @@ void hc::Application::run() {
         }
 
         if (_fsm.currentState() == LifeCycle::State::GameRunning) {
+            _perf->start(&_runPerf);
             frontend.run();
+            _perf->stop(&_runPerf);
             onFrame();
         }
 
@@ -523,7 +525,12 @@ bool hc::Application::resumeGame() {
 
 bool hc::Application::step() {
     onFrame();
-    return lrcpp::Frontend::getInstance().run();
+
+    _perf->start(&_runPerf);
+    bool const ok = lrcpp::Frontend::getInstance().run();
+    _perf->stop(&_runPerf);
+
+    return ok;
 }
 
 bool hc::Application::unloadCore() {
@@ -538,6 +545,7 @@ bool hc::Application::unloadCore() {
 bool hc::Application::unloadGame() {
     if (lrcpp::Frontend::getInstance().unloadGame()) {
         onGameUnloaded();
+        _runPerf.start = _runPerf.total = _runPerf.call_cnt = 0;
         return true;
     }
 
@@ -549,6 +557,11 @@ void hc::Application::onStarted() {
 }
 
 void hc::Application::onConsoleLoaded() {
+    // Perf has to unregister all counters when a core is unloaded so we
+    // register this here.
+    _runPerf.ident = "hc::retro_run";
+    _perf->register_(&_runPerf);
+
     _desktop.onConsoleLoaded();
 }
 
