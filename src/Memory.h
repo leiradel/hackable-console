@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Plugin.h"
+#include "Desktop.h"
 #include "Logger.h"
 
 #include <imgui_memory_editor.h>
@@ -13,7 +13,7 @@ extern "C" {
 }
 
 namespace hc {
-    class Memory : public Plugin {
+    class Memory : public View {
     public:
         Memory() : _logger(nullptr), _selected(0) {}
 
@@ -21,7 +21,7 @@ namespace hc {
 
         static Memory* check(lua_State* const L, int const index);
 
-        // hc::Plugin
+        // hc::View
         virtual Type getType() override { return Type::Memory; }
         virtual char const* getName() override;
         virtual char const* getVersion() override;

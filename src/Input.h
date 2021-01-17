@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Plugin.h"
+#include "Desktop.h"
 #include "Logger.h"
 
 #include <Components.h>
@@ -14,7 +14,7 @@
 #include <vector>
 
 namespace hc {
-    class Input: public Plugin, public lrcpp::Input {
+    class Input: public View, public lrcpp::Input {
     public:
         Input();
         virtual ~Input() {}
@@ -24,7 +24,7 @@ namespace hc {
 
         static Input* check(lua_State* const L, int const index);
 
-        // hc::Plugin
+        // hc::View
         virtual Type getType() override { return Type::Input; }
         virtual char const* getName() override;
         virtual char const* getVersion() override;

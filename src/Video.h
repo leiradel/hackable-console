@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Plugin.h"
+#include "Desktop.h"
 #include "Logger.h"
 
 #include <Components.h>
@@ -10,7 +10,7 @@
 #include <stdint.h>
 
 namespace hc {
-    class Video: public Plugin, public lrcpp::Video {
+    class Video: public View, public lrcpp::Video {
     public:
         Video();
         virtual ~Video() {}
@@ -19,7 +19,7 @@ namespace hc {
 
         static Video* check(lua_State* const L, int const index);
 
-        // hc::Plugin
+        // hc::View
         virtual Type getType() override { return Type::Video; }
         virtual char const* getName() override;
         virtual char const* getVersion() override;

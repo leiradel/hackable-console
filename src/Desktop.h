@@ -11,7 +11,7 @@ extern "C" {
 namespace hc {
     class Logger;
 
-    class Plugin {
+    class View {
     public:
         enum class Type {
             Audio,
@@ -28,7 +28,7 @@ namespace hc {
             Manager
         };
 
-        virtual ~Plugin() {}
+        virtual ~View() {}
 
         char const* getTypeName();
 
@@ -54,13 +54,13 @@ namespace hc {
         virtual int push(lua_State* const L) = 0;
     };
 
-    class Plugins : public Plugin {
+    class Desktop : public View {
     public:
-        Plugins();
-        virtual ~Plugins() {}
+        Desktop();
+        virtual ~Desktop() {}
 
         void init(Logger* const logger);
-        void add(Plugin* const plugin, bool const destroy);
+        void add(View* const plugin, bool const destroy);
 
         // hc::Plugin
         virtual Type getType() override { return Type::Manager; }
@@ -85,13 +85,13 @@ namespace hc {
         virtual int push(lua_State* const L) override;
 
     protected:
-        struct View {
-            Plugin* plugin;
+        struct Vieww {
+            View* view;
             bool destroy;
             bool opened;
         };
 
         Logger* _logger;
-        std::vector<View> _plugins;        
+        std::vector<Vieww> _views;        
     };
 }

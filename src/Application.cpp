@@ -93,8 +93,8 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         return false;
     }
 
-    _plugins.init(_logger);
-    _plugins.add(_logger, false);
+    _desktop.init(_logger);
+    _desktop.add(_logger, false);
 
     {
         // Setup SDL
@@ -254,7 +254,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
         _control = new Control;
         _control->init(_logger, &_fsm);
-        _plugins.add(_control, true);
+        _desktop.add(_control, true);
 
         _config = new Config;
         
@@ -263,32 +263,32 @@ bool hc::Application::init(std::string const& title, int const width, int const 
             return false;
         }
 
-        _plugins.add(_config, true);
+        _desktop.add(_config, true);
 
         _video = new Video;
         _video->init(_logger);
-        _plugins.add(_video, true);
+        _desktop.add(_video, true);
 
         _audio = new Audio;
         _audio->init(_logger, _audioSpec.freq, &_fifo);
-        _plugins.add(_audio, true);
+        _desktop.add(_audio, true);
 
         _led = new Led;
         undo.add([this]() { delete _led; });
         _led->init(_logger);
-        _plugins.add(_led, true);
+        _desktop.add(_led, true);
 
         _input = new Input;
         _input->init(_logger, &frontend);
-        _plugins.add(_input, true);
+        _desktop.add(_input, true);
 
         _perf = new Perf;
         _perf->init(_logger);
-        _plugins.add(_perf, true);
+        _desktop.add(_perf, true);
 
         _memory = new Memory;
         _memory->init(_logger);
-        _plugins.add(_memory, true);
+        _desktop.add(_memory, true);
 
         frontend.setLogger(_logger);
         frontend.setConfig(_config);
@@ -310,7 +310,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         undo.add([this]() { lua_close(_L); });
 
         luaL_openlibs(_L);
-        _plugins.push(_L);
+        _desktop.push(_L);
         registerSearcher(_L);
 
         static auto const main = [](lua_State* const L) -> int {
@@ -342,7 +342,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 }
 
 void hc::Application::destroy() {
-    _plugins.onQuit();
+    _desktop.onQuit();
     delete _logger;
     lua_close(_L);
 
@@ -361,7 +361,7 @@ void hc::Application::destroy() {
 void hc::Application::draw() {
     ImGui::DockSpaceOverViewport();
     bool dummy;
-    _plugins.onDraw(&dummy);
+    _desktop.onDraw(&dummy);
 }
 
 void hc::Application::run() {
@@ -546,43 +546,43 @@ bool hc::Application::unloadGame() {
 }
 
 void hc::Application::onStarted() {
-    _plugins.onStarted();
+    _desktop.onStarted();
 }
 
 void hc::Application::onConsoleLoaded() {
-    _plugins.onConsoleLoaded();
+    _desktop.onConsoleLoaded();
 }
 
 void hc::Application::onGameLoaded() {
-    _plugins.onGameLoaded();
+    _desktop.onGameLoaded();
 }
 
 void hc::Application::onGamePaused() {
-    _plugins.onGamePaused();
+    _desktop.onGamePaused();
 }
 
 void hc::Application::onGameResumed() {
-    _plugins.onGameResumed();
+    _desktop.onGameResumed();
 }
 
 void hc::Application::onGameReset() {
-    _plugins.onGameReset();
+    _desktop.onGameReset();
 }
 
 void hc::Application::onFrame() {
-    _plugins.onFrame();
+    _desktop.onFrame();
 }
 
 void hc::Application::onGameUnloaded() {
-    _plugins.onGameUnloaded();
+    _desktop.onGameUnloaded();
 }
 
 void hc::Application::onConsoleUnloaded() {
-    _plugins.onConsoleUnloaded();
+    _desktop.onConsoleUnloaded();
 }
 
 void hc::Application::onQuit() {
-    _plugins.onQuit();
+    _desktop.onQuit();
 }
 
 void hc::Application::vprintf(void* ud, char const* fmt, va_list args) {

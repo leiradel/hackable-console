@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Plugin.h"
+#include "Desktop.h"
 
 #include <Components.h>
 #include <imguial_term.h>
@@ -12,7 +12,7 @@ extern "C" {
 #include <SDL.h>
 
 namespace hc {
-    class Logger: public Plugin, public lrcpp::Logger {
+    class Logger: public View, public lrcpp::Logger {
     public:
         Logger();
         virtual ~Logger() {}
@@ -21,7 +21,7 @@ namespace hc {
 
         static Logger* check(lua_State* const L, int const index);
 
-        // hc::Plugin
+        // hc::View
         virtual Type getType() override { return Type::Logger; }
         virtual char const* getName() override;
         virtual char const* getVersion() override;

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "LifeCycle.h"
-#include "Plugin.h"
+#include "Desktop.h"
 
 #include "Logger.h"
 #include "Config.h"
@@ -77,7 +77,7 @@ namespace hc {
         Control* _control;
         Memory* _memory;
 
-        Plugins _plugins;
+        Desktop _desktop;
 
         Fifo _fifo;
         lua_State* _L;

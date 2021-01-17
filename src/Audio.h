@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Plugin.h"
+#include "Desktop.h"
 #include "Logger.h"
 
 #include <Components.h>
@@ -11,7 +11,7 @@
 #include <vector>
 
 namespace hc {
-    class Audio: public Plugin, public lrcpp::Audio {
+    class Audio: public View, public lrcpp::Audio {
     public:
         Audio();
         virtual ~Audio() {}
@@ -21,7 +21,7 @@ namespace hc {
 
         static Audio* check(lua_State* const L, int const index);
 
-        // hc::Plugin
+        // hc::View
         virtual Type getType() override { return Type::Audio; }
         virtual char const* getName() override;
         virtual char const* getVersion() override;

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Plugin.h"
+#include "Desktop.h"
 #include "Logger.h"
 
 #include <Components.h>
@@ -8,7 +8,7 @@
 #include <vector>
 
 namespace hc {
-    class Led : public Plugin, public lrcpp::Led {
+    class Led : public View, public lrcpp::Led {
     public:
         Led();
         virtual ~Led() {}
@@ -17,7 +17,7 @@ namespace hc {
 
         static Led* check(lua_State* const L, int const index);
 
-        // hc::Plugin
+        // hc::View
         virtual Type getType() override { return Type::Led; }
         virtual char const* getName() override;
         virtual char const* getVersion() override;

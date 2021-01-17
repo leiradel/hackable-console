@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Plugin.h"
+#include "Desktop.h"
 #include "Logger.h"
 
 #include <Components.h>
@@ -10,7 +10,7 @@
 
 namespace hc
 {
-    class Perf : public Plugin, public lrcpp::Perf {
+    class Perf : public View, public lrcpp::Perf {
     public:
         Perf() : _logger(nullptr) {}
         virtual ~Perf() {}
@@ -19,7 +19,7 @@ namespace hc
 
         static Perf* check(lua_State* const L, int const index);
 
-        // hc::Plugin
+        // hc::View
         virtual Type getType() override { return Type::Perf; }
         virtual char const* getName() override;
         virtual char const* getVersion() override;

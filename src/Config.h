@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Plugin.h"
+#include "Desktop.h"
 #include "Logger.h"
 
 #include <Components.h>
@@ -14,7 +14,7 @@ extern "C" {
 #include <unordered_map>
 
 namespace hc {
-    class Config: public Plugin, public lrcpp::Config {
+    class Config: public View, public lrcpp::Config {
     public:
         Config();
         virtual ~Config() {}
@@ -26,7 +26,7 @@ namespace hc {
 
         static Config* check(lua_State* const L, int const index);
 
-        // hc::Plugin
+        // hc::View
         virtual Type getType() override { return Type::Config; }
         virtual char const* getName() override;
         virtual char const* getVersion() override;
