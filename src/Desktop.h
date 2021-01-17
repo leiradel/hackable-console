@@ -68,6 +68,7 @@ namespace hc {
         };
 
         Logger* _logger;
-        std::vector<Vieww> _views;        
+        
+        std::vector<Vieww> _views;
     };
 }
