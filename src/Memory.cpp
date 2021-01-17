@@ -145,7 +145,11 @@ void hc::MemoryWatch::init(Logger* const logger, char const* title, Memory* cons
     _handle = handle;
 
     _editor.OptUpperCaseHex = false;
+    _editor.OptShowDataPreview = true;
     _editor.ReadOnly = memory->lock(handle)->readOnly;
+
+    _lastEndianess = -1;
+    _lastType = ImGuiDataType_COUNT;
 }
 
 char const* hc::MemoryWatch::getTitle() {
@@ -164,14 +168,64 @@ void hc::MemoryWatch::onGameResumed() {}
 
 void hc::MemoryWatch::onGameReset() {}
 
-void hc::MemoryWatch::onFrame() {}
+void hc::MemoryWatch::onFrame() {
+    static uint8_t sizes[ImGuiDataType_COUNT] = {1, 1, 2, 2, 4, 4, 8, 8, 4, 8};
+
+    Memory::Region* const region = _memory->lock(_handle);
+
+    if (region != nullptr) {
+        if (_lastEndianess != _editor.PreviewEndianess || _lastType != _editor.PreviewDataType) {
+            _sparkline.clear();
+            _lastEndianess = _editor.PreviewEndianess;
+            _lastType = _editor.PreviewDataType;
+        }
+
+        auto const data = static_cast<uint8_t*>(region->data) + region->offset;
+        uint64_t address = _editor.DataPreviewAddr - region->offset;
+        uint64_t const left = region->size - address;
+        uint64_t const size = sizes[_editor.PreviewDataType];
+
+        uint64_t value = 0;
+
+        switch (std::min(left, size)) {
+            case 8: value = value << 8 | data[address++];
+            case 7: value = value << 8 | data[address++];
+            case 6: value = value << 8 | data[address++];
+            case 5: value = value << 8 | data[address++];
+            case 4: value = value << 8 | data[address++];
+            case 3: value = value << 8 | data[address++];
+            case 2: value = value << 8 | data[address++];
+            case 1: value = value << 8 | data[address++];
+        }
+
+        if (_editor.PreviewEndianess == 0) {
+            uint64_t le = 0;
+            uint8_t* dest = (uint8_t*)&le;
+            uint8_t* source = (uint8_t*)&value + size - 1;
+
+            for (uint64_t i = 0; i < size; i++) {
+                memcpy(dest++, source--, 1);
+            }
+
+            value = le;
+        }
+
+        _sparkline.add(value);
+    }
+}
 
 void hc::MemoryWatch::onDraw() {
+    static auto const custom = [](MemoryEditor* editor, void* userdata) {
+        auto* const self = static_cast<MemoryWatch*>(userdata);
+        ImVec2 const max = ImGui::GetContentRegionAvail();
+        self->_sparkline.draw("#sparkline", max);
+    };
+
     Memory::Region* const region = _memory->lock(_handle);
 
     if (region != nullptr) {
         auto const data = static_cast<uint8_t*>(region->data) + region->offset;
-        _editor.DrawContents(data, region->size, region->base);
+        _editor.DrawContents(data, region->size, region->base, custom, this, ImGui::GetTextLineHeight() * 5.0f);
     }
 }
 
@@ -184,3 +238,44 @@ void hc::MemoryWatch::onQuit() {}
 int hc::MemoryWatch::push(lua_State* const L) {
     return 0;
 }
+
+#if 0
+void hc::Sparkline::init(char const* title, Memory* const memory, Memory::Handle const handle, uint64_t const address) {
+    _title = title;
+    _memory = memory;
+    _handle = handle;
+    _address = address;
+    _sparkline.setLimits(0, 255);
+}
+
+char const* hc::Sparkline::getTitle() {
+    return _title.c_str();
+}
+
+void hc::Sparkline::onStarted() {}
+
+void hc::Sparkline::onConsoleLoaded() {}
+
+void hc::Sparkline::onGameLoaded() {}
+
+void hc::Sparkline::onGamePaused() {}
+
+void hc::Sparkline::onGameResumed() {}
+
+void hc::Sparkline::onGameReset() {}
+
+void hc::Sparkline::onFrame() {}
+
+void hc::Sparkline::onDraw() {
+}
+
+void hc::Sparkline::onGameUnloaded() {}
+
+void hc::Sparkline::onConsoleUnloaded() {}
+
+void hc::Sparkline::onQuit() {}
+
+int hc::Sparkline::push(lua_State* const L) {
+    return 0;
+}
+#endif

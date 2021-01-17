@@ -19,7 +19,8 @@ CC=gcc
 CXX=g++
 INCLUDES=\
 	-Isrc -Isrc/imgui -Isrc/imgui/backends -Isrc/ImGuiAl/term -Isrc/ImGuiAl/fonts \
-	-Isrc/ImGuiAl/button -Isrc/IconFontCppHeaders -Isrc/ImGui-Addons/addons/imguifilesystem \
+	-Isrc/ImGuiAl/button -Isrc/ImGuiAl/sparkline -Isrc/IconFontCppHeaders \
+	-Isrc/ImGui-Addons/addons/imguifilesystem \
 	-Isrc/fnkdat -Isrc/speex -Isrc/lrcpp/src -Isrc/lua -Isrc/luafilesystem/src \
 	-Isrc/imgui_club/imgui_memory_editor
 DEFINES=-DIMGUI_DISABLE_WIN32_DEFAULT_IME_FUNCS -D"IM_ASSERT(x)=do{(void)(x);}while(0)"
