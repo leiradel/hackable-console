@@ -43,7 +43,7 @@ void hc::Memory::onGameReset() {}
 
 void hc::Memory::onFrame() {}
 
-void hc::Memory::onDraw(bool* opened) {
+void hc::Memory::onDraw() {
     static auto const getter = [](void* const data, int const idx, char const** const text) -> bool {
         auto const regions = (std::vector<Region>*)data;
 
@@ -55,22 +55,17 @@ void hc::Memory::onDraw(bool* opened) {
         return false;
     };
 
-    if (*opened) {
-        if (ImGui::Begin(ICON_FA_MICROCHIP " Memory", opened)) {
-            int const count = static_cast<int>(_regions.size());
-            ImVec2 const size = ImVec2(120.0f, 0.0f);
+    int const count = static_cast<int>(_regions.size());
+    ImVec2 const size = ImVec2(120.0f, 0.0f);
 
-            ImGui::Combo("##Regions", &_selected, getter, &_regions, count);
-            ImGui::SameLine();
+    ImGui::Combo("##Regions", &_selected, getter, &_regions, count);
+    ImGui::SameLine();
 
-            if (ImGuiAl::Button(ICON_FA_EYE " View Region", _selected < count, size)) {
-                _views.emplace_back(_regions[_selected]);
-            }
-        }
-
-        ImGui::End();
+    if (ImGuiAl::Button(ICON_FA_EYE " View Region", _selected < count, size)) {
+        _views.emplace_back(_regions[_selected]);
     }
 
+#if 0
     for (size_t i = 0; i < _views.size();) {
         auto& view = _views[i];
 
@@ -93,6 +88,7 @@ void hc::Memory::onDraw(bool* opened) {
 
         ImGui::End();
     }
+#endif
 }
 
 void hc::Memory::onGameUnloaded() {

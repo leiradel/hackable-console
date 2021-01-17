@@ -69,108 +69,100 @@ void hc::Control::onGameReset() {}
 
 void hc::Control::onFrame() {}
 
-void hc::Control::onDraw(bool* opened) {
+void hc::Control::onDraw() {
     static auto const getter = [](void* const data, int idx, char const** const text) -> bool {
         auto const consoles = (std::vector<Console>*)data;
         *text = (*consoles)[idx].name.c_str();
         return true;
     };
 
-    if (!*opened) {
-        return;
+    int const count = static_cast<int>(_consoles.size());
+    ImVec2 const size = ImVec2(120.0f, 0.0f);
+
+    ImGui::Combo("##Consoles", &_selected, getter, &_consoles, count);
+    ImGui::SameLine();
+
+    if (ImGuiAl::Button(ICON_FA_FOLDER_OPEN " Load Console", _fsm->currentState() == LifeCycle::State::Start && _selected < count, size)) {
+        _opened = _selected;
+        Console const& cb = _consoles[_selected];
+
+        lua_rawgeti(cb.L, LUA_REGISTRYINDEX, cb.ref);
+        protectedCallField(cb.L, -1, "onConsoleLoaded", 0, 0, _logger);
+        lua_pop(cb.L, 1);
     }
 
-    if (ImGui::Begin(ICON_FA_COG " Control", opened)) {
-        int const count = static_cast<int>(_consoles.size());
-        ImVec2 const size = ImVec2(120.0f, 0.0f);
+    bool loadGamePressed = false;
 
-        ImGui::Combo("##Consoles", &_selected, getter, &_consoles, count);
-        ImGui::SameLine();
+    if (ImGuiAl::Button(ICON_FA_ROCKET " Load Game", _fsm->currentState() == LifeCycle::State::ConsoleLoaded, size)) {
+        loadGamePressed = true;
+    }
 
-        if (ImGuiAl::Button(ICON_FA_FOLDER_OPEN " Load Console", _fsm->currentState() == LifeCycle::State::Start && _selected < count, size)) {
-            _opened = _selected;
-            Console const& cb = _consoles[_selected];
+    static ImGuiFs::Dialog gameDialog;
 
-            lua_rawgeti(cb.L, LUA_REGISTRYINDEX, cb.ref);
-            protectedCallField(cb.L, -1, "onConsoleLoaded", 0, 0, _logger);
-            lua_pop(cb.L, 1);
-        }
+    ImVec2 const gameDialogSize = ImVec2(
+        ImGui::GetIO().DisplaySize.x / 2.0f,
+        ImGui::GetIO().DisplaySize.y / 2.0f
+    );
 
-        bool loadGamePressed = false;
+    ImVec2 const gameDialogPos = ImVec2(
+        (ImGui::GetIO().DisplaySize.x - gameDialogSize.x) / 2.0f,
+        (ImGui::GetIO().DisplaySize.y - gameDialogSize.y) / 2.0f
+    );
 
-        if (ImGuiAl::Button(ICON_FA_ROCKET " Load Game", _fsm->currentState() == LifeCycle::State::ConsoleLoaded, size)) {
-            loadGamePressed = true;
-        }
+    char const* const path = gameDialog.chooseFileDialog(
+        loadGamePressed,
+        _lastGameFolder.c_str(),
+        _extensions.c_str(),
+        ICON_FA_ROCKET" Load Game",
+        gameDialogSize,
+        gameDialogPos
+    );
 
-        static ImGuiFs::Dialog gameDialog;
-
-        ImVec2 const gameDialogSize = ImVec2(
-            ImGui::GetIO().DisplaySize.x / 2.0f,
-            ImGui::GetIO().DisplaySize.y / 2.0f
-        );
-
-        ImVec2 const gameDialogPos = ImVec2(
-            (ImGui::GetIO().DisplaySize.x - gameDialogSize.x) / 2.0f,
-            (ImGui::GetIO().DisplaySize.y - gameDialogSize.y) / 2.0f
-        );
-
-        char const* const path = gameDialog.chooseFileDialog(
-            loadGamePressed,
-            _lastGameFolder.c_str(),
-            _extensions.c_str(),
-            ICON_FA_ROCKET" Load Game",
-            gameDialogSize,
-            gameDialogPos
-        );
-
-        if (path != nullptr && path[0] != 0) {
-            if (_fsm->loadGame(path)) {
-                char temp[ImGuiFs::MAX_PATH_BYTES];
-                ImGuiFs::PathGetDirectoryName(path, temp);
-                _lastGameFolder = temp;
-            }
-        }
-
-        ImGui::SameLine();
-
-        if (_fsm->currentState() == LifeCycle::State::GameRunning) {
-            if (ImGuiAl::Button(ICON_FA_PAUSE " Pause", true, size)) {
-                _fsm->pauseGame();
-            }
-        }
-        else {
-            if (ImGuiAl::Button(ICON_FA_PLAY " Run", _fsm->currentState() == LifeCycle::State::GamePaused, size)) {
-                _fsm->resumeGame();
-            }
-        }
-
-        ImGui::SameLine();
-
-        if (ImGuiAl::Button(ICON_FA_STEP_FORWARD " Frame Step", _fsm->currentState() == LifeCycle::State::GamePaused, size)) {
-            _fsm->step();
-        }
-
-        bool const gameLoaded = _fsm->currentState() == LifeCycle::State::GameRunning ||
-                                _fsm->currentState() == LifeCycle::State::GamePaused;
-
-        if (ImGuiAl::Button(ICON_FA_REFRESH " Reset Game", gameLoaded, size)) {
-            _fsm->resetGame();
-        }
-
-        ImGui::SameLine();
-
-        if (ImGuiAl::Button(ICON_FA_EJECT " Unload Game", gameLoaded, size)) {
-            _fsm->unloadGame();
-        }
-
-        ImGui::SameLine();
-
-        if (ImGuiAl::Button(ICON_FA_POWER_OFF " Unload Console", _fsm->currentState() == LifeCycle::State::ConsoleLoaded, size)) {
-            _fsm->unloadCore();
+    if (path != nullptr && path[0] != 0) {
+        if (_fsm->loadGame(path)) {
+            char temp[ImGuiFs::MAX_PATH_BYTES];
+            ImGuiFs::PathGetDirectoryName(path, temp);
+            _lastGameFolder = temp;
         }
     }
 
-    ImGui::End();
+    ImGui::SameLine();
+
+    if (_fsm->currentState() == LifeCycle::State::GameRunning) {
+        if (ImGuiAl::Button(ICON_FA_PAUSE " Pause", true, size)) {
+            _fsm->pauseGame();
+        }
+    }
+    else {
+        if (ImGuiAl::Button(ICON_FA_PLAY " Run", _fsm->currentState() == LifeCycle::State::GamePaused, size)) {
+            _fsm->resumeGame();
+        }
+    }
+
+    ImGui::SameLine();
+
+    if (ImGuiAl::Button(ICON_FA_STEP_FORWARD " Frame Step", _fsm->currentState() == LifeCycle::State::GamePaused, size)) {
+        _fsm->step();
+    }
+
+    bool const gameLoaded = _fsm->currentState() == LifeCycle::State::GameRunning ||
+                            _fsm->currentState() == LifeCycle::State::GamePaused;
+
+    if (ImGuiAl::Button(ICON_FA_REFRESH " Reset Game", gameLoaded, size)) {
+        _fsm->resetGame();
+    }
+
+    ImGui::SameLine();
+
+    if (ImGuiAl::Button(ICON_FA_EJECT " Unload Game", gameLoaded, size)) {
+        _fsm->unloadGame();
+    }
+
+    ImGui::SameLine();
+
+    if (ImGuiAl::Button(ICON_FA_POWER_OFF " Unload Console", _fsm->currentState() == LifeCycle::State::ConsoleLoaded, size)) {
+        _fsm->unloadCore();
+    }
 }
 
 void hc::Control::onGameUnloaded() {}

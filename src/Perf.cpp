@@ -33,19 +33,11 @@ void hc::Perf::onGameReset() {}
 
 void hc::Perf::onFrame() {}
 
-void hc::Perf::onDraw(bool* opened) {
-    if (!*opened) {
-        return;
+void hc::Perf::onDraw() {
+    for (const auto& pair : _counters) {
+        Counter const& cnt = pair.second;
+        ImGui::Text("%20" PRIu64 " %20" PRIu64 " %s", cnt.counter->total, cnt.counter->call_cnt, cnt.counter->ident);
     }
-
-    if (ImGui::Begin(ICON_FA_TASKS " Perf", opened)) {
-        for (const auto& pair : _counters) {
-            Counter const& cnt = pair.second;
-            _logger->debug(TAG " %20" PRIu64 " %20" PRIu64 " %s", cnt.counter->total, cnt.counter->call_cnt, cnt.counter->ident);
-        }
-    }
-
-    ImGui::End();
 }
 
 void hc::Perf::onGameUnloaded() {}

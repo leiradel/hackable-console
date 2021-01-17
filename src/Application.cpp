@@ -360,8 +360,7 @@ void hc::Application::destroy() {
 
 void hc::Application::draw() {
     ImGui::DockSpaceOverViewport();
-    bool dummy;
-    _desktop.onDraw(&dummy);
+    _desktop.onDraw();
 }
 
 void hc::Application::run() {

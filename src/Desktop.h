@@ -23,7 +23,7 @@ namespace hc {
         virtual void onGameResumed() = 0;
         virtual void onGameReset() = 0;
         virtual void onFrame() = 0;
-        virtual void onDraw(bool* opened) = 0;
+        virtual void onDraw() = 0;
         virtual void onGameUnloaded() = 0;
         virtual void onConsoleUnloaded() = 0;
         virtual void onQuit() = 0;
@@ -53,7 +53,7 @@ namespace hc {
         virtual void onGameResumed() override;
         virtual void onGameReset() override;
         virtual void onFrame() override;
-        virtual void onDraw(bool* opened) override;
+        virtual void onDraw() override;
         virtual void onGameUnloaded() override;
         virtual void onConsoleUnloaded() override;
         virtual void onQuit() override;

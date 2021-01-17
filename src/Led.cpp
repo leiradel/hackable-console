@@ -38,26 +38,18 @@ void hc::Led::onGameReset() {
 
 void hc::Led::onFrame() {}
 
-void hc::Led::onDraw(bool* opened) {
+void hc::Led::onDraw() {
     static ImColor const on = ImColor(IM_COL32(255, 0, 0, 255));
     static ImColor const off = ImColor(IM_COL32(64, 64, 64, 255));
 
-    if (!*opened) {
-        return;
+    size_t const count = _states.size();
+
+    for (size_t i = 0; i < count; i++) {
+        ImGui::PushStyleColor(ImGuiCol_Text, _states[i] ? on.Value : off.Value);
+        ImGui::Text(ICON_FA_CIRCLE);
+        ImGui::PopStyleColor(1);
+        ImGui::SameLine();
     }
-
-    if (ImGui::Begin(ICON_FA_LIGHTBULB_O " Leds", opened)) {
-        size_t const count = _states.size();
-
-        for (size_t i = 0; i < count; i++) {
-            ImGui::PushStyleColor(ImGuiCol_Text, _states[i] ? on.Value : off.Value);
-            ImGui::Text(ICON_FA_CIRCLE);
-            ImGui::PopStyleColor(1);
-            ImGui::SameLine();
-        }
-    }
-
-    ImGui::End();
 }
 
 void hc::Led::onGameUnloaded() {

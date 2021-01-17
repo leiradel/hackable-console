@@ -52,20 +52,12 @@ void hc::Video::onGameReset() {}
 
 void hc::Video::onFrame() {}
 
-void hc::Video::onDraw(bool* opened) {
+void hc::Video::onDraw() {
     _frameCount++;
 
     int64_t const t1 = getTimeUs();
     int64_t const delta = t1 - _timeStarted;
     _fps = static_cast<double>(_frameCount) * 1000000.0f / static_cast<double>(delta);
-
-    if (!*opened) {
-        return;
-    }
-
-    if (!ImGui::Begin(ICON_FA_DESKTOP " Video", opened)) {
-        return;
-    }
 
     if (_texture != 0) {
         ImVec2 const min = ImGui::GetWindowContentRegionMin();
@@ -85,8 +77,6 @@ void hc::Video::onDraw(bool* opened) {
 
         ImGui::Image((ImTextureID)(uintptr_t)_texture, size, uv0, uv1);
     }
-
-    ImGui::End();
 }
 
 void hc::Video::onGameUnloaded() {

@@ -109,15 +109,7 @@ void hc::Config::onGameReset() {
 
 void hc::Config::onFrame() {}
 
-void hc::Config::onDraw(bool* opened) {
-    if (!*opened) {
-        return;
-    }
-
-    if (!ImGui::Begin(ICON_FA_WRENCH " Configuration", opened)) {
-        return;
-    }
-
+void hc::Config::onDraw() {
     for (auto& option : _coreOptions) {
         if (!option.visible) {
             continue;
@@ -145,8 +137,6 @@ void hc::Config::onDraw(bool* opened) {
             _logger->info(TAG "Variable \"%s\" changed to \"%s\"", option.key.c_str(), option.values[selected].value.c_str());
         }
     }
-
-    ImGui::End();
 }
 
 void hc::Config::onGameUnloaded() {}

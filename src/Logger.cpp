@@ -56,15 +56,7 @@ void hc::Logger::onGameReset() {}
 
 void hc::Logger::onFrame() {}
 
-void hc::Logger::onDraw(bool* opened) {
-    if (!*opened) {
-        return;
-    }
-
-    if (!ImGui::Begin(ICON_FA_COMMENT " Log", opened)) {
-        return;
-    }
-
+void hc::Logger::onDraw() {
     SDL_LockMutex(_mutex);
     int const button = _logger.draw();
     SDL_UnlockMutex(_mutex);
@@ -96,8 +88,6 @@ void hc::Logger::onDraw(bool* opened) {
             break;
         }
     }
-
-    ImGui::End();
 }
 
 void hc::Logger::onGameUnloaded() {}

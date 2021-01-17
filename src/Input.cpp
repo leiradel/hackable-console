@@ -115,16 +115,8 @@ void hc::Input::onFrame() {
     }
 }
 
-void hc::Input::onDraw(bool* opened) {
+void hc::Input::onDraw() {
     static char const* const portNames[MaxPorts] = {"Port 1", "Port 2", "Port 3", "Port 4"};
-
-    if (!*opened) {
-        return;
-    }
-
-    if (!ImGui::Begin(ICON_FA_GAMEPAD " Input", opened)) {
-        return;
-    }
 
     if (ImGui::BeginTabBar("##ports")) {
         for (size_t port = 0; port < MaxPorts; port++) {
@@ -184,8 +176,6 @@ void hc::Input::onDraw(bool* opened) {
 
         ImGui::EndTabBar();
     }
-
-    ImGui::End();
 }
 
 void hc::Input::onGameUnloaded() {}

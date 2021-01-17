@@ -86,9 +86,7 @@ void hc::Desktop::onFrame() {
     }
 }
 
-void hc::Desktop::onDraw(bool* opened) {
-    (void)opened; // the plugin manager is always visible
-
+void hc::Desktop::onDraw() {
     if (ImGui::Begin(ICON_FA_PLUG " Views")) {
         ImGui::Columns(2);
 
@@ -117,9 +115,12 @@ void hc::Desktop::onDraw(bool* opened) {
         View* const view = vieww.view;
         // Don't log stuff per frame
 
-        if (view != this) {
-            // Don't recursively draw the plugin manager
-            view->onDraw(&view->_opened);
+        // Don't recursively draw the plugin manager
+        if (view != this && view->_opened) {
+            if (ImGui::Begin(view->getTitle(), &view->_opened)) {
+                view->onDraw();
+                ImGui::End();
+            }
         }
     }
 }

@@ -128,15 +128,7 @@ void hc::Audio::onGameReset() {
 
 void hc::Audio::onFrame() {}
 
-void hc::Audio::onDraw(bool* opened) {
-    if (!*opened) {
-        return;
-    }
-
-    if (!ImGui::Begin(ICON_FA_VOLUME_UP " Audio", opened)) {
-        return;
-    }
-
+void hc::Audio::onDraw() {
     ImGui::Checkbox("Mute", &_mute);
     ImGui::SameLine();
 
@@ -171,8 +163,6 @@ void hc::Audio::onDraw(bool* opened) {
         ImGui::SameLine(0.0f, 0.0f);
         ImGui::PlotLines("", right, this, size, 0, nullptr, _min, _max, max);
     }
-
-    ImGui::End();
 }
 
 void hc::Audio::onGameUnloaded() {

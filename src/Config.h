@@ -35,7 +35,7 @@ namespace hc {
         virtual void onGameResumed() override;
         virtual void onGameReset() override;
         virtual void onFrame() override;
-        virtual void onDraw(bool* opened) override;
+        virtual void onDraw() override;
         virtual void onGameUnloaded() override;
         virtual void onConsoleUnloaded() override;
         virtual void onQuit() override;
