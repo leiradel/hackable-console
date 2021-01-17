@@ -29,11 +29,6 @@ namespace hc {
         virtual void onQuit() = 0;
 
         virtual int push(lua_State* const L) = 0;
-
-    protected:
-        friend class Desktop;
-
-        bool _opened;
     };
 
     class Desktop : public View {
@@ -42,7 +37,7 @@ namespace hc {
         virtual ~Desktop() {}
 
         void init(Logger* const logger);
-        void add(View* const view, bool const destroy, char const* const id);
+        void add(View* const view, bool const top, bool const free, char const* const id);
 
         // hc::View
         virtual char const* getTitle() override;
@@ -61,14 +56,16 @@ namespace hc {
         virtual int push(lua_State* const L) override;
 
     protected:
-        struct Vieww {
+        struct ViewProperties {
             View* view;
-            bool destroy;
+            bool top;
+            bool free;
             char const* id;
+            bool opened;
         };
 
         Logger* _logger;
         
-        std::vector<Vieww> _views;
+        std::vector<ViewProperties> _views;
     };
 }
