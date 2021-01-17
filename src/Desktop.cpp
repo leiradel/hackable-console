@@ -10,23 +10,6 @@
 
 #define TAG "[DSK] "
 
-char const* hc::View::getTypeName() {
-    switch (getType()) {
-        case Type::Audio: return "audio";
-        case Type::Config: return "config";
-        case Type::Input: return "input";
-        case Type::Led: return "led";
-        case Type::Logger: return "logger";
-        case Type::Perf: return "perf";
-        case Type::Video: return "video";
-        case Type::Control: return "control";
-        case Type::Memory: return "memory";
-        case Type::Manager: return "manager";
-    }
-
-    abort();
-}
-
 hc::Desktop::Desktop() : _logger(nullptr) {}
 
 void hc::Desktop::init(Logger* const logger) {
@@ -39,34 +22,18 @@ void hc::Desktop::add(View* const view, bool const destroy) {
     _views.emplace_back(vieww);
 
     std::sort(_views.begin(), _views.end(), [](Vieww const& a, Vieww const& b) -> bool {
-        return strcmp(a.view->getName(), b.view->getName()) < 0;
+        return strcmp(a.view->getTitle(), b.view->getTitle()) < 0;
     });
 }
 
-char const* hc::Desktop::getName() {
-    return "hc::Desktop built-in view manager";
-}
-
-char const* hc::Desktop::getVersion() {
-    return "0.0.0";
-}
-
-char const* hc::Desktop::getLicense() {
-    return "MIT";
-}
-
-char const* hc::Desktop::getCopyright() {
-    return "Copyright (c) Andre Leiradella";
-}
-
-char const* hc::Desktop::getUrl() {
-    return "https://github.com/leiradel/hackable-console";
+char const* hc::Desktop::getTitle() {
+    return ICON_FA_PLUG " Views";
 }
 
 void hc::Desktop::onStarted() {
     for (auto const& vieww : _views) {
         View* const view = vieww.view;
-        _logger->debug(TAG "onStarted plugin %s (%s): %s", view->getName(), view->getVersion(), view->getCopyright());
+        _logger->debug(TAG "onStarted %s", view->getTitle());
         view->onStarted();
     }
 }
@@ -74,7 +41,7 @@ void hc::Desktop::onStarted() {
 void hc::Desktop::onConsoleLoaded() {
     for (auto const& vieww : _views) {
         View* const view = vieww.view;
-        _logger->debug(TAG "onConsoleLoaded plugin %s (%s): %s", view->getName(), view->getVersion(), view->getCopyright());
+        _logger->debug(TAG "onConsoleLoaded %s", view->getTitle());
         view->onConsoleLoaded();
     }
 }
@@ -82,7 +49,7 @@ void hc::Desktop::onConsoleLoaded() {
 void hc::Desktop::onGameLoaded() {
     for (auto const& vieww : _views) {
         View* const view = vieww.view;
-        _logger->debug(TAG "onGameLoaded plugin %s (%s): %s", view->getName(), view->getVersion(), view->getCopyright());
+        _logger->debug(TAG "onGameLoaded %s", view->getTitle());
         view->onGameLoaded();
     }
 }
@@ -90,7 +57,7 @@ void hc::Desktop::onGameLoaded() {
 void hc::Desktop::onGamePaused() {
     for (auto const& vieww : _views) {
         View* const view = vieww.view;
-        _logger->debug(TAG "onGamePaused plugin %s (%s): %s", view->getName(), view->getVersion(), view->getCopyright());
+        _logger->debug(TAG "onGamePaused %s", view->getTitle());
         view->onGamePaused();
     }
 }
@@ -98,7 +65,7 @@ void hc::Desktop::onGamePaused() {
 void hc::Desktop::onGameResumed() {
     for (auto const& vieww : _views) {
         View* const view = vieww.view;
-        _logger->debug(TAG "onGameResumed plugin %s (%s): %s", view->getName(), view->getVersion(), view->getCopyright());
+        _logger->debug(TAG "onGameResumed %s", view->getTitle());
         view->onGameResumed();
     }
 }
@@ -106,7 +73,7 @@ void hc::Desktop::onGameResumed() {
 void hc::Desktop::onGameReset() {
     for (auto const& vieww : _views) {
         View* const view = vieww.view;
-        _logger->debug(TAG "onGameReset plugin %s (%s): %s", view->getName(), view->getVersion(), view->getCopyright());
+        _logger->debug(TAG "onGameReset %s", view->getTitle());
         view->onGameReset();
     }
 }
@@ -122,15 +89,13 @@ void hc::Desktop::onFrame() {
 void hc::Desktop::onDraw(bool* opened) {
     (void)opened; // the plugin manager is always visible
 
-    if (ImGui::Begin(ICON_FA_PLUG " Plugins")) {
-        ImGui::Columns(3);
+    if (ImGui::Begin(ICON_FA_PLUG " Views")) {
+        ImGui::Columns(2);
 
         for (auto& vieww : _views) {
             View* const view = vieww.view;
 
-            ImGui::Text("%s", view->getName());
-            ImGui::NextColumn();
-            ImGui::Text("%s", view->getVersion());
+            ImGui::Text("%s", view->getTitle());
             ImGui::NextColumn();
 
             char label[32];
@@ -162,7 +127,7 @@ void hc::Desktop::onDraw(bool* opened) {
 void hc::Desktop::onGameUnloaded() {
     for (auto const& vieww : _views) {
         View* const view = vieww.view;
-        _logger->debug(TAG "onGameUnloaded plugin %s (%s): %s", view->getName(), view->getVersion(), view->getCopyright());
+        _logger->debug(TAG "onGameUnloaded %s", view->getTitle());
         view->onGameUnloaded();
     }
 }
@@ -170,7 +135,7 @@ void hc::Desktop::onGameUnloaded() {
 void hc::Desktop::onConsoleUnloaded() {
     for (auto const& vieww : _views) {
         View* const view = vieww.view;
-        _logger->debug(TAG "onConsoleUnloaded plugin %s (%s): %s", view->getName(), view->getVersion(), view->getCopyright());
+        _logger->debug(TAG "onConsoleUnloaded %s", view->getTitle());
         view->onConsoleUnloaded();
     }
 }
@@ -178,7 +143,7 @@ void hc::Desktop::onConsoleUnloaded() {
 void hc::Desktop::onQuit() {
     for (auto const& vieww : _views) {
         View* const view = vieww.view;
-        _logger->debug(TAG "onQuit plugin %s (%s): %s", view->getName(), view->getVersion(), view->getCopyright());
+        _logger->debug(TAG "onQuit plugin %s", view->getTitle());
         view->onQuit();
 
         if (view != this && vieww.destroy) {
@@ -195,7 +160,7 @@ int hc::Desktop::push(lua_State* const L) {
     for (auto const& vieww : _views) {
         View* const view = vieww.view;
         view->push(L);
-        lua_setfield(L, -2, view->getTypeName());
+        lua_setfield(L, -2, view->getTitle());
     }
 
     static struct {char const* const name; char const* const value;} const stringConsts[] = {

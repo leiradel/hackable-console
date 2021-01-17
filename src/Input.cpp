@@ -77,24 +77,8 @@ void hc::Input::processEvent(SDL_Event const* event) {
     }
 }
 
-char const* hc::Input::getName() {
-    return "hc::Input built-in input plugin";
-}
-
-char const* hc::Input::getVersion() {
-    return "0.0.0";
-}
-
-char const* hc::Input::getLicense() {
-    return "MIT";
-}
-
-char const* hc::Input::getCopyright() {
-    return "Copyright (c) Andre Leiradella";
-}
-
-char const* hc::Input::getUrl() {
-    return "https://github.com/leiradel/hackable-console";
+char const* hc::Input::getTitle() {
+    return ICON_FA_GAMEPAD " Input";
 }
 
 void hc::Input::onStarted() {}

@@ -25,24 +25,8 @@ void hc::Memory::init(Logger* const logger) {
     _logger = logger;
 }
 
-char const* hc::Memory::getName() {
-    return "hc::Memory built-in memory plugin";
-}
-
-char const* hc::Memory::getVersion() {
-    return "0.0.0";
-}
-
-char const* hc::Memory::getLicense() {
-    return "MIT";
-}
-
-char const* hc::Memory::getCopyright() {
-    return "Copyright (c) Andre Leiradella";
-}
-
-char const* hc::Memory::getUrl() {
-    return "https://github.com/leiradel/hackable-console";
+char const* hc::Memory::getTitle() {
+    return ICON_FA_MICROCHIP " Memory";
 }
 
 void hc::Memory::onStarted() {}

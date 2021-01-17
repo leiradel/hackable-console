@@ -38,24 +38,8 @@ bool hc::Logger::init() {
     return true;
 }
 
-char const* hc::Logger::getName() {
-    return "hc::Logger built-in logger plugin";
-}
-
-char const* hc::Logger::getVersion() {
-    return "0.0.0";
-}
-
-char const* hc::Logger::getLicense() {
-    return "MIT";
-}
-
-char const* hc::Logger::getCopyright() {
-    return "Copyright (c) Andre Leiradella";
-}
-
-char const* hc::Logger::getUrl() {
-    return "https://github.com/leiradel/hackable-console";
+char const* hc::Logger::getTitle() {
+    return ICON_FA_COMMENT " Log";
 }
 
 void hc::Logger::onStarted() {}

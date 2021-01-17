@@ -46,24 +46,8 @@ void hc::Control::init(Logger* const logger, LifeCycle* const fsm) {
     _fsm = fsm;
 }
 
-char const* hc::Control::getName() {
-    return "hc::Control built-in control plugin";
-}
-
-char const* hc::Control::getVersion() {
-    return "0.0.0";
-}
-
-char const* hc::Control::getLicense() {
-    return "MIT";
-}
-
-char const* hc::Control::getCopyright() {
-    return "Copyright (c) Andre Leiradella";
-}
-
-char const* hc::Control::getUrl() {
-    return "https://github.com/leiradel/hackable-console";
+char const* hc::Control::getTitle() {
+    return ICON_FA_COG " Control";
 }
 
 void hc::Control::onStarted() {}

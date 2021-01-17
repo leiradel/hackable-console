@@ -15,24 +15,8 @@ void hc::Perf::init(Logger* const logger) {
     _logger = logger;
 }
 
-char const* hc::Perf::getName() {
-    return "hc::Perf built-in perf plugin";
-}
-
-char const* hc::Perf::getVersion() {
-    return "0.0.0";
-}
-
-char const* hc::Perf::getLicense() {
-    return "MIT";
-}
-
-char const* hc::Perf::getCopyright() {
-    return "Copyright (c) Andre Leiradella";
-}
-
-char const* hc::Perf::getUrl() {
-    return "https://github.com/leiradel/hackable-console";
+char const* hc::Perf::getTitle() {
+    return ICON_FA_TASKS " Perf";
 }
 
 void hc::Perf::onStarted() {}

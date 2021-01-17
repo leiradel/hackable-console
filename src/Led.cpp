@@ -14,24 +14,8 @@ void hc::Led::init(hc::Logger* const logger) {
     _logger = logger;
 }
 
-char const* hc::Led::getName() {
-    return "hc::Led built-in led plugin";
-}
-
-char const* hc::Led::getVersion() {
-    return "0.0.0";
-}
-
-char const* hc::Led::getLicense() {
-    return "MIT";
-}
-
-char const* hc::Led::getCopyright() {
-    return "Copyright (c) Andre Leiradella";
-}
-
-char const* hc::Led::getUrl() {
-    return "https://github.com/leiradel/hackable-console";
+char const* hc::Led::getTitle() {
+    return ICON_FA_LIGHTBULB_O " Leds";
 }
 
 void hc::Led::onStarted() {}

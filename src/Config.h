@@ -27,13 +27,7 @@ namespace hc {
         static Config* check(lua_State* const L, int const index);
 
         // hc::View
-        virtual Type getType() override { return Type::Config; }
-        virtual char const* getName() override;
-        virtual char const* getVersion() override;
-        virtual char const* getLicense() override;
-        virtual char const* getCopyright() override;
-        virtual char const* getUrl() override;
-
+        virtual char const* getTitle() override;
         virtual void onStarted() override;
         virtual void onConsoleLoaded() override;
         virtual void onGameLoaded() override;

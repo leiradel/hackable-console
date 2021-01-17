@@ -32,24 +32,8 @@ void hc::Video::init(Logger* const logger) {
     _fps = -1.0f;
 }
 
-char const* hc::Video::getName() {
-    return "hc::Video built-in video plugin";
-}
-
-char const* hc::Video::getVersion() {
-    return "0.0.0";
-}
-
-char const* hc::Video::getLicense() {
-    return "MIT";
-}
-
-char const* hc::Video::getCopyright() {
-    return "Copyright (c) Andre Leiradella";
-}
-
-char const* hc::Video::getUrl() {
-    return "https://github.com/leiradel/hackable-console";
+char const* hc::Video::getTitle() {
+    return ICON_FA_DESKTOP " Video";
 }
 
 void hc::Video::onStarted() {

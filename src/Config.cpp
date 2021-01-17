@@ -87,24 +87,8 @@ const std::string& hc::Config::getAutorunPath() const {
     return _autorunPath;
 }
 
-char const* hc::Config::getName() {
-    return "hc::Config built-in configuration plugin";
-}
-
-char const* hc::Config::getVersion() {
-    return "0.0.0";
-}
-
-char const* hc::Config::getLicense() {
-    return "MIT";
-}
-
-char const* hc::Config::getCopyright() {
-    return "Copyright (c) Andre Leiradella";
-}
-
-char const* hc::Config::getUrl() {
-    return "https://github.com/leiradel/hackable-console";
+char const* hc::Config::getTitle() {
+    return ICON_FA_WRENCH " Configuration";
 }
 
 void hc::Config::onStarted() {}

@@ -13,32 +13,9 @@ namespace hc {
 
     class View {
     public:
-        enum class Type {
-            Audio,
-            Config,
-            Input,
-            Led,
-            Logger,
-            Perf,
-            Video,
-
-            Control,
-            Memory,
-
-            Manager
-        };
-
         virtual ~View() {}
 
-        char const* getTypeName();
-
-        virtual Type getType() = 0;
-        virtual char const* getName() = 0;
-        virtual char const* getVersion() = 0;
-        virtual char const* getLicense() = 0;
-        virtual char const* getCopyright() = 0;
-        virtual char const* getUrl() = 0;
-
+        virtual char const* getTitle() = 0;
         virtual void onStarted() = 0;
         virtual void onConsoleLoaded() = 0;
         virtual void onGameLoaded() = 0;
@@ -67,14 +44,8 @@ namespace hc {
         void init(Logger* const logger);
         void add(View* const plugin, bool const destroy);
 
-        // hc::Plugin
-        virtual Type getType() override { return Type::Manager; }
-        virtual char const* getName() override;
-        virtual char const* getVersion() override;
-        virtual char const* getLicense() override;
-        virtual char const* getCopyright() override;
-        virtual char const* getUrl() override;
-
+        // hc::View
+        virtual char const* getTitle() override;
         virtual void onStarted() override;
         virtual void onConsoleLoaded() override;
         virtual void onGameLoaded() override;

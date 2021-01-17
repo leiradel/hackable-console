@@ -81,24 +81,8 @@ void hc::Audio::flush() {
     _fifo->write(output, size <= avail ? size : avail);
 }
 
-char const* hc::Audio::getName() {
-    return "hc::Audio built-in audio plugin";
-}
-
-char const* hc::Audio::getVersion() {
-    return "0.0.0";
-}
-
-char const* hc::Audio::getLicense() {
-    return "MIT";
-}
-
-char const* hc::Audio::getCopyright() {
-    return "Copyright (c) Andre Leiradella";
-}
-
-char const* hc::Audio::getUrl() {
-    return "https://github.com/leiradel/hackable-console";
+char const* hc::Audio::getTitle() {
+    return ICON_FA_VOLUME_UP " Audio";
 }
 
 void hc::Audio::onStarted() {
