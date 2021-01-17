@@ -36,7 +36,13 @@ void hc::Perf::onFrame() {}
 void hc::Perf::onDraw() {
     for (const auto& pair : _counters) {
         Counter const& cnt = pair.second;
-        ImGui::Text("%20" PRIu64 " %20" PRIu64 " %s", cnt.counter->total, cnt.counter->call_cnt, cnt.counter->ident);
+
+        uint64_t const nsPerCall = cnt.counter->call_cnt != 0 ? cnt.counter->total / cnt.counter->call_cnt : 0;
+        uint64_t const usPerCall = nsPerCall / 1000;
+        unsigned const ms = usPerCall / 1000;
+        unsigned const us = usPerCall - ms * 1000;
+
+        ImGui::Text("%6" PRIu64 " %2u.%03u %s", cnt.counter->call_cnt, ms, us, cnt.counter->ident);
     }
 }
 
@@ -75,7 +81,7 @@ retro_perf_tick_t hc::Perf::getCounter() {
 void hc::Perf::register_(retro_perf_counter* counter) {
     auto found = _counters.find(counter->ident);
 
-    if (found != _counters.end()) {
+    if (found == _counters.end()) {
         counter->start = 0;
         counter->total = 0;
         counter->call_cnt = 0;
@@ -100,7 +106,13 @@ void hc::Perf::stop(retro_perf_counter* counter) {
 void hc::Perf::log() {
     for (const auto& pair : _counters) {
         Counter const& cnt = pair.second;
-        _logger->debug(TAG " %20" PRIu64 " %20" PRIu64 " %s", cnt.counter->total, cnt.counter->call_cnt, cnt.counter->ident);
+
+        uint64_t const nsPerCall = cnt.counter->call_cnt != 0 ? cnt.counter->total / cnt.counter->call_cnt : 0;
+        uint64_t const usPerCall = nsPerCall / 1000;
+        unsigned const ms = usPerCall / 1000;
+        unsigned const us = usPerCall - ms * 1000;
+
+        _logger->debug(TAG "%6" PRIu64 " %2u.%03u %s", cnt.counter->call_cnt, ms, us, cnt.counter->ident);
     }
 }
 
