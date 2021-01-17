@@ -44,6 +44,7 @@ namespace hc {
 
         void init(Logger* const logger);
         void add(View* const view, bool const top, bool const free, char const* const id);
+        double currentFps();
 
         // hc::View
         virtual char const* getTitle() override;
@@ -77,5 +78,9 @@ namespace hc {
         Logger* _logger;
         
         std::map<std::string, ViewProperties> _views;
+
+        uint64_t _frameCount;
+        int64_t _timeStarted;
+        double _fps;
     };
 }

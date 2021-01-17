@@ -1,6 +1,7 @@
 #include "Desktop.h"
 
 #include "Logger.h"
+#include "Perf.h"
 
 #include <imguial_button.h>
 #include <IconsFontAwesome4.h>
@@ -13,6 +14,10 @@ hc::Desktop::Desktop() : View(nullptr), _logger(nullptr) {}
 
 void hc::Desktop::init(Logger* const logger) {
     _logger = logger;
+
+    _frameCount = 0;
+    _timeStarted = 0;
+    _fps = -1.0f;
 }
 
 void hc::Desktop::add(View* const view, bool const top, bool const free, char const* const id) {
@@ -20,11 +25,17 @@ void hc::Desktop::add(View* const view, bool const top, bool const free, char co
     _views.emplace(id != nullptr ? id : view->getTitle(), props);
 }
 
+double hc::Desktop::currentFps() {
+    return _fps;
+}
+
 char const* hc::Desktop::getTitle() {
     return ICON_FA_PLUG " Views";
 }
 
 void hc::Desktop::onStarted() {
+    _timeStarted = Perf::getTimeUs();
+
     for (auto const& pair : _views) {
         View* const view = pair.second.view;
         _logger->debug(TAG "onStarted %s", view->getTitle());
@@ -81,6 +92,12 @@ void hc::Desktop::onFrame() {
 }
 
 void hc::Desktop::onDraw() {
+    _frameCount++;
+
+    int64_t const t1 = Perf::getTimeUs();
+    int64_t const delta = t1 - _timeStarted;
+    _fps = static_cast<double>(_frameCount) * 1000000.0f / static_cast<double>(delta);
+
     if (ImGui::Begin(ICON_FA_PLUG " Views")) {
         ImGui::Columns(2);
 

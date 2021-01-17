@@ -5,6 +5,7 @@
 
 #include <Components.h>
 
+#include <stdint.h>
 #include <string>
 #include <unordered_map>
 
@@ -16,6 +17,9 @@ namespace hc
         virtual ~Perf() {}
 
         void init(Logger* const logger);
+
+        static uint64_t getTimeUs();
+        static uint64_t getTimeNs();
 
         static Perf* check(lua_State* const L, int const index);
 

@@ -15,6 +15,16 @@ void hc::Perf::init(Logger* const logger) {
     _logger = logger;
 }
 
+uint64_t hc::Perf::getTimeUs() {
+    auto const now_us = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::system_clock::now());
+    return static_cast<int64_t>(now_us.time_since_epoch().count());
+}
+
+uint64_t hc::Perf::getTimeNs() {
+    auto const now_ns = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now());
+    return static_cast<uint64_t>(now_ns.time_since_epoch().count());
+}
+
 char const* hc::Perf::getTitle() {
     return ICON_FA_TASKS " Perf";
 }
@@ -64,8 +74,7 @@ void hc::Perf::onConsoleUnloaded() {
 void hc::Perf::onQuit() {}
 
 retro_time_t hc::Perf::getTimeUsec() {
-    auto const now_us = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::system_clock::now());
-    return static_cast<retro_time_t>(now_us.time_since_epoch().count());
+    return static_cast<retro_time_t>(getTimeUs());
 }
 
 uint64_t hc::Perf::getCpuFeatures() {
@@ -74,8 +83,7 @@ uint64_t hc::Perf::getCpuFeatures() {
 }
 
 retro_perf_tick_t hc::Perf::getCounter() {
-    auto const now_ns = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now());
-    return static_cast<retro_perf_tick_t>(now_ns.time_since_epoch().count());
+    return static_cast<retro_perf_tick_t>(getTimeNs());
 }
 
 void hc::Perf::register_(retro_perf_counter* counter) {

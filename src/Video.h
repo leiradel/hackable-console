@@ -71,9 +71,5 @@ namespace hc {
         float _aspectRatio;
         unsigned _width;
         unsigned _height;
-
-        uint64_t _frameCount;
-        int64_t _timeStarted;
-        double _fps;
     };
 }

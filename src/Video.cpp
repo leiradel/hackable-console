@@ -2,18 +2,11 @@
 
 #include <IconsFontAwesome4.h>
 
-#include <chrono>
-
 extern "C" {
     #include "lauxlib.h"
 }
 
 #define TAG "[VID] "
-
-static int64_t getTimeUs() {
-    auto const now_us = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::system_clock::now());
-    return static_cast<int64_t>(now_us.time_since_epoch().count());
-}
 
 hc::Video::Video(Desktop* desktop) : View(desktop), _logger(nullptr) {}
 
@@ -26,19 +19,13 @@ void hc::Video::init(Logger* const logger) {
     _texture = 0;
     _textureWidth = _textureHeight = 0;
     _width = _height = 0;
-
-    _frameCount = 0;
-    _timeStarted = 0;
-    _fps = -1.0f;
 }
 
 char const* hc::Video::getTitle() {
     return ICON_FA_DESKTOP " Video";
 }
 
-void hc::Video::onStarted() {
-    _timeStarted = getTimeUs();
-}
+void hc::Video::onStarted() {}
 
 void hc::Video::onConsoleLoaded() {}
 
@@ -53,12 +40,6 @@ void hc::Video::onGameReset() {}
 void hc::Video::onFrame() {}
 
 void hc::Video::onDraw() {
-    _frameCount++;
-
-    int64_t const t1 = getTimeUs();
-    int64_t const delta = t1 - _timeStarted;
-    _fps = static_cast<double>(_frameCount) * 1000000.0f / static_cast<double>(delta);
-
     if (_texture != 0) {
         ImVec2 const min = ImGui::GetWindowContentRegionMin();
         ImVec2 const max = ImGui::GetWindowContentRegionMax();
@@ -190,8 +171,8 @@ bool hc::Video::setHwSharedContext() {
 }
 
 bool hc::Video::getTargetRefreshRate(float* rate) {
-    *rate = static_cast<float>(_fps);
-    _logger->info(TAG "Returning %f for target refresh rate", _fps);
+    *rate = static_cast<float>(_desktop->currentFps());
+    _logger->info(TAG "Returning %f for target refresh rate", *rate);
     return true;
 }
 
