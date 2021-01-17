@@ -52,6 +52,11 @@ namespace hc {
         virtual void onQuit() = 0;
 
         virtual int push(lua_State* const L) = 0;
+
+    protected:
+        friend class Desktop;
+
+        bool _opened;
     };
 
     class Desktop : public View {
@@ -88,7 +93,6 @@ namespace hc {
         struct Vieww {
             View* view;
             bool destroy;
-            bool opened;
         };
 
         Logger* _logger;

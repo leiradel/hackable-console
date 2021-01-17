@@ -34,7 +34,8 @@ void hc::Desktop::init(Logger* const logger) {
 }
 
 void hc::Desktop::add(View* const view, bool const destroy) {
-    Vieww vieww = {view, destroy, true};
+    view->_opened = true;
+    Vieww vieww = {view, destroy};
     _views.emplace_back(vieww);
 
     std::sort(_views.begin(), _views.end(), [](Vieww const& a, Vieww const& b) -> bool {
@@ -135,8 +136,8 @@ void hc::Desktop::onDraw(bool* opened) {
             char label[32];
             snprintf(label, sizeof(label), "Open##%p", static_cast<void*>(&vieww));
 
-            if (ImGuiAl::Button(label, !vieww.opened)) {
-                vieww.opened = true;
+            if (ImGuiAl::Button(label, !view->_opened)) {
+                view->_opened = true;
             }
 
             ImGui::NextColumn();
@@ -153,7 +154,7 @@ void hc::Desktop::onDraw(bool* opened) {
 
         if (view != this) {
             // Don't recursively draw the plugin manager
-            view->onDraw(&vieww.opened);
+            view->onDraw(&view->_opened);
         }
     }
 }
