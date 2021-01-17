@@ -2,7 +2,8 @@
 
 #include <Frontend.h>
 
-#include <vector>
+#include <string.h>
+#include <map>
 
 extern "C" {
     #include <lua.h>
@@ -62,10 +63,14 @@ namespace hc {
             bool free;
             char const* id;
             bool opened;
+
+            bool operator<(ViewProperties const& other) const {
+                return strcmp(id, other.id) < 0;
+            }
         };
 
         Logger* _logger;
         
-        std::vector<ViewProperties> _views;
+        std::map<std::string, ViewProperties> _views;
     };
 }

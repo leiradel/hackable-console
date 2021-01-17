@@ -6,7 +6,6 @@
 #include <IconsFontAwesome4.h>
 
 #include <stdlib.h>
-#include <algorithm>
 
 #define TAG "[DSK] "
 
@@ -18,11 +17,7 @@ void hc::Desktop::init(Logger* const logger) {
 
 void hc::Desktop::add(View* const view, bool const top, bool const free, char const* const id) {
     ViewProperties props = {view, top, free, id, true};
-    _views.emplace_back(props);
-
-    std::sort(_views.begin(), _views.end(), [](ViewProperties const& a, ViewProperties const& b) -> bool {
-        return strcmp(a.id, b.id) < 0;
-    });
+    _views.emplace(id, props);
 }
 
 char const* hc::Desktop::getTitle() {
@@ -30,56 +25,56 @@ char const* hc::Desktop::getTitle() {
 }
 
 void hc::Desktop::onStarted() {
-    for (auto const& props : _views) {
-        View* const view = props.view;
+    for (auto const& pair : _views) {
+        View* const view = pair.second.view;
         _logger->debug(TAG "onStarted %s", view->getTitle());
         view->onStarted();
     }
 }
 
 void hc::Desktop::onConsoleLoaded() {
-    for (auto const& props : _views) {
-        View* const view = props.view;
+    for (auto const& pair : _views) {
+        View* const view = pair.second.view;
         _logger->debug(TAG "onConsoleLoaded %s", view->getTitle());
         view->onConsoleLoaded();
     }
 }
 
 void hc::Desktop::onGameLoaded() {
-    for (auto const& props : _views) {
-        View* const view = props.view;
+    for (auto const& pair : _views) {
+        View* const view = pair.second.view;
         _logger->debug(TAG "onGameLoaded %s", view->getTitle());
         view->onGameLoaded();
     }
 }
 
 void hc::Desktop::onGamePaused() {
-    for (auto const& props : _views) {
-        View* const view = props.view;
+    for (auto const& pair : _views) {
+        View* const view = pair.second.view;
         _logger->debug(TAG "onGamePaused %s", view->getTitle());
         view->onGamePaused();
     }
 }
 
 void hc::Desktop::onGameResumed() {
-    for (auto const& props : _views) {
-        View* const view = props.view;
+    for (auto const& pair : _views) {
+        View* const view = pair.second.view;
         _logger->debug(TAG "onGameResumed %s", view->getTitle());
         view->onGameResumed();
     }
 }
 
 void hc::Desktop::onGameReset() {
-    for (auto const& props : _views) {
-        View* const view = props.view;
+    for (auto const& pair : _views) {
+        View* const view = pair.second.view;
         _logger->debug(TAG "onGameReset %s", view->getTitle());
         view->onGameReset();
     }
 }
 
 void hc::Desktop::onFrame() {
-    for (auto const& props : _views) {
-        View* const view = props.view;
+    for (auto const& pair : _views) {
+        View* const view = pair.second.view;
         // Don't log stuff per frame
         view->onFrame();
     }
@@ -89,7 +84,8 @@ void hc::Desktop::onDraw() {
     if (ImGui::Begin(ICON_FA_PLUG " Views")) {
         ImGui::Columns(2);
 
-        for (auto& props : _views) {
+        for (auto& pair : _views) {
+            ViewProperties& props = pair.second;
             View* const view = props.view;
 
             if (!props.top) {
@@ -100,7 +96,7 @@ void hc::Desktop::onDraw() {
             ImGui::NextColumn();
 
             char label[32];
-            snprintf(label, sizeof(label), "Open##%p", static_cast<void*>(&props));
+            snprintf(label, sizeof(label), "Open##%p", reinterpret_cast<void const*>(&props));
 
             if (ImGuiAl::Button(label, !props.opened)) {
                 props.opened = true;
@@ -114,8 +110,9 @@ void hc::Desktop::onDraw() {
 
     ImGui::End();
 
-    for (auto& props : _views) {
-        View* const view = props.view;
+    for (auto& pair : _views) {
+        ViewProperties& props = pair.second;
+        View* const view = pair.second.view;
         // Don't log stuff per frame
 
         // Don't recursively draw the plugin manager
@@ -129,23 +126,24 @@ void hc::Desktop::onDraw() {
 }
 
 void hc::Desktop::onGameUnloaded() {
-    for (auto const& props : _views) {
-        View* const view = props.view;
+    for (auto const& pair : _views) {
+        View* const view = pair.second.view;
         _logger->debug(TAG "onGameUnloaded %s", view->getTitle());
         view->onGameUnloaded();
     }
 }
 
 void hc::Desktop::onConsoleUnloaded() {
-    for (auto const& props : _views) {
-        View* const view = props.view;
+    for (auto const& pair : _views) {
+        View* const view = pair.second.view;
         _logger->debug(TAG "onConsoleUnloaded %s", view->getTitle());
         view->onConsoleUnloaded();
     }
 }
 
 void hc::Desktop::onQuit() {
-    for (auto const& props : _views) {
+    for (auto const& pair : _views) {
+        ViewProperties const& props = pair.second;
         View* const view = props.view;
         _logger->debug(TAG "onQuit plugin %s", view->getTitle());
         view->onQuit();
@@ -161,7 +159,8 @@ void hc::Desktop::onQuit() {
 int hc::Desktop::push(lua_State* const L) {
     lua_createtable(L, 0, _views.size());
 
-    for (auto const& props : _views) {
+    for (auto const& pair : _views) {
+        ViewProperties const& props = pair.second;
         View* const view = props.view;
         view->push(L);
         lua_setfield(L, -2, props.id);
