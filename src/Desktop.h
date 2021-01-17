@@ -42,7 +42,7 @@ namespace hc {
         virtual ~Desktop() {}
 
         void init(Logger* const logger);
-        void add(View* const plugin, bool const destroy);
+        void add(View* const view, bool const destroy, char const* const id);
 
         // hc::View
         virtual char const* getTitle() override;
@@ -64,6 +64,7 @@ namespace hc {
         struct Vieww {
             View* view;
             bool destroy;
+            char const* id;
         };
 
         Logger* _logger;

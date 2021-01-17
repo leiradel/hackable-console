@@ -94,7 +94,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
     }
 
     _desktop.init(_logger);
-    _desktop.add(_logger, false);
+    _desktop.add(_logger, false, "logger");
 
     {
         // Setup SDL
@@ -254,7 +254,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
         _control = new Control;
         _control->init(_logger, &_fsm);
-        _desktop.add(_control, true);
+        _desktop.add(_control, true, "control");
 
         _config = new Config;
         
@@ -263,32 +263,32 @@ bool hc::Application::init(std::string const& title, int const width, int const 
             return false;
         }
 
-        _desktop.add(_config, true);
+        _desktop.add(_config, true, "config");
 
         _video = new Video;
         _video->init(_logger);
-        _desktop.add(_video, true);
+        _desktop.add(_video, true, "video");
 
         _audio = new Audio;
         _audio->init(_logger, _audioSpec.freq, &_fifo);
-        _desktop.add(_audio, true);
+        _desktop.add(_audio, true, "desktop");
 
         _led = new Led;
         undo.add([this]() { delete _led; });
         _led->init(_logger);
-        _desktop.add(_led, true);
+        _desktop.add(_led, true, "led");
 
         _input = new Input;
         _input->init(_logger, &frontend);
-        _desktop.add(_input, true);
+        _desktop.add(_input, true, "input");
 
         _perf = new Perf;
         _perf->init(_logger);
-        _desktop.add(_perf, true);
+        _desktop.add(_perf, true, "perf");
 
         _memory = new Memory;
         _memory->init(_logger);
-        _desktop.add(_memory, true);
+        _desktop.add(_memory, true, "memory");
 
         frontend.setLogger(_logger);
         frontend.setConfig(_config);

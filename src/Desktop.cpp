@@ -16,13 +16,13 @@ void hc::Desktop::init(Logger* const logger) {
     _logger = logger;
 }
 
-void hc::Desktop::add(View* const view, bool const destroy) {
+void hc::Desktop::add(View* const view, bool const destroy, char const* const id) {
     view->_opened = true;
-    Vieww vieww = {view, destroy};
+    Vieww vieww = {view, destroy, id};
     _views.emplace_back(vieww);
 
     std::sort(_views.begin(), _views.end(), [](Vieww const& a, Vieww const& b) -> bool {
-        return strcmp(a.view->getTitle(), b.view->getTitle()) < 0;
+        return strcmp(a.id, b.id) < 0;
     });
 }
 
@@ -160,7 +160,7 @@ int hc::Desktop::push(lua_State* const L) {
     for (auto const& vieww : _views) {
         View* const view = vieww.view;
         view->push(L);
-        lua_setfield(L, -2, view->getTitle());
+        lua_setfield(L, -2, vieww.id);
     }
 
     static struct {char const* const name; char const* const value;} const stringConsts[] = {
