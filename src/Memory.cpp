@@ -21,8 +21,8 @@ void hc::Memory::init(Logger* const logger) {
 }
 
 hc::Memory::Region* hc::Memory::lock(Handle const handle) {
-    if (handle < _regions.size()) {
-        return &_regions[handle];
+    if (handle != 0 && handle <= _regions.size()) {
+        return &_regions[handle - 1];
     }
 
     return nullptr;
@@ -69,7 +69,7 @@ void hc::Memory::onDraw() {
         snprintf(title, sizeof(title), ICON_FA_EYE" %s##%u", _regions[_selected].name.c_str(), _viewCount++);
 
         MemoryWatch* watch = new MemoryWatch(_desktop);
-        watch->init(_logger, title, this, _selected);
+        watch->init(_logger, title, this, _selected + 1);
         _desktop->add(watch, false, true, nullptr);
     }
 }
@@ -173,7 +173,7 @@ void hc::MemoryWatch::onFrame() {
 
     Memory::Region* const region = _memory->lock(_handle);
 
-    if (region != nullptr) {
+    if (region != nullptr && _editor.DataPreviewAddr != (size_t)-1) {
         if (_lastEndianess != _editor.PreviewEndianess || _lastType != _editor.PreviewDataType) {
             _sparkline.clear();
             _lastEndianess = _editor.PreviewEndianess;
@@ -201,16 +201,35 @@ void hc::MemoryWatch::onFrame() {
         if (_editor.PreviewEndianess == 0) {
             uint64_t le = 0;
             uint8_t* dest = (uint8_t*)&le;
-            uint8_t* source = (uint8_t*)&value + size - 1;
+            uint8_t* source = (uint8_t*)&value + size;
 
-            for (uint64_t i = 0; i < size; i++) {
-                memcpy(dest++, source--, 1);
+            switch (size) {
+                case 8: *dest++ = *--source;
+                case 7: *dest++ = *--source;
+                case 6: *dest++ = *--source;
+                case 5: *dest++ = *--source;
+                case 4: *dest++ = *--source;
+                case 3: *dest++ = *--source;
+                case 2: *dest++ = *--source;
+                case 1: *dest++ = *--source;
             }
 
             value = le;
         }
 
-        _sparkline.add(value);
+        if (_editor.PreviewDataType == ImGuiDataType_Float) {
+            float val;
+            memcpy(&val, &value, sizeof(val));
+            _sparkline.add(val);
+        }
+        else if (_editor.PreviewDataType == ImGuiDataType_Double) {
+            double val;
+            memcpy(&val, &value, sizeof(val));
+            _sparkline.add(static_cast<float>(val));
+        }
+        else {
+            _sparkline.add(static_cast<float>(value));
+        }
     }
 }
 
