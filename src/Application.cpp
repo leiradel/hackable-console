@@ -229,6 +229,13 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
         undo.add([]() { ImGui::DestroyContext(); });
 
+        ImGuiStyle& style = ImGui::GetStyle();
+        style.WindowRounding = 0.0f;
+        style.FrameRounding = 0.0f;
+        style.ScrollbarRounding = 0.0f;
+        style.GrabRounding = 0.0f;
+        style.TabRounding = 0.0f;
+
         ImGuiIO& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
