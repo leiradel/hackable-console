@@ -8,15 +8,9 @@ extern "C" {
 
 #define TAG "[LUA] "
 
-hc::Logger::Logger(Desktop* desktop) : View(desktop), _mutex(nullptr) {}
+hc::Logger::Logger(Desktop* desktop) : View(desktop) {}
 
 bool hc::Logger::init() {
-    _mutex = SDL_CreateMutex();
-
-    if (_mutex == nullptr) {
-        return false;
-    }
-
     static char const* actions[] = {
         ICON_FA_FILES_O " Copy",
         ICON_FA_FILE_O " Clear",
@@ -57,9 +51,9 @@ void hc::Logger::onGameReset() {}
 void hc::Logger::onFrame() {}
 
 void hc::Logger::onDraw() {
-    SDL_LockMutex(_mutex);
+    _mutex.lock();
     int const button = _logger.draw();
-    SDL_UnlockMutex(_mutex);
+    _mutex.unlock();
 
     switch (button) {
         case 1: {
@@ -96,9 +90,7 @@ void hc::Logger::onConsoleUnloaded() {
     _logger.clear();
 }
 
-void hc::Logger::onQuit() {
-    SDL_DestroyMutex(_mutex);
-}
+void hc::Logger::onQuit() {}
 
 void hc::Logger::vprintf(enum retro_log_level level, const char* format, va_list args) {
     if (level > RETRO_LOG_DEBUG) {
@@ -121,7 +113,7 @@ void hc::Logger::vprintf(enum retro_log_level level, const char* format, va_list
         va_end(copy);
     }
 
-    SDL_LockMutex(_mutex);
+    _mutex.lock();
 
     switch (level) {
         case RETRO_LOG_DEBUG: _logger.debug(format, args); break;
@@ -132,7 +124,7 @@ void hc::Logger::vprintf(enum retro_log_level level, const char* format, va_list
     }
 
     _logger.scrollToBottom();
-    SDL_UnlockMutex(_mutex);
+    _mutex.unlock();
 }
 
 int hc::Logger::push(lua_State* const L) {

@@ -5,11 +5,11 @@
 #include <Components.h>
 #include <imguial_term.h>
 
+#include <mutex>
+
 extern "C" {
     #include <lua.h>
 }
-
-#include <SDL.h>
 
 namespace hc {
     class Logger: public View, public lrcpp::Logger {
@@ -47,6 +47,6 @@ namespace hc {
         static int l_error(lua_State* const L);
 
         ImGuiAl::BufferedLog<1024 * 1024> _logger;
-        SDL_mutex* _mutex;
+        std::mutex _mutex;
     };
 }
