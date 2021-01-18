@@ -97,6 +97,39 @@ bool hc::Application::init(std::string const& title, int const width, int const 
     _desktop.add(_logger, true, false, "logger");
 
     {
+        // Redirect SDL logs
+        static auto const sdlLogger = [](void* userdata, int category, SDL_LogPriority priority, char const* message) {
+            auto const logger = static_cast<Logger*>(userdata);
+
+            char const* categoryStr = "?";
+
+            switch (category) {
+                case SDL_LOG_CATEGORY_APPLICATION: categoryStr = "application"; break;
+                case SDL_LOG_CATEGORY_ERROR: categoryStr = "error"; break;
+                case SDL_LOG_CATEGORY_ASSERT: categoryStr = "assert"; break;
+                case SDL_LOG_CATEGORY_SYSTEM: categoryStr = "system"; break;
+                case SDL_LOG_CATEGORY_AUDIO: categoryStr = "audio"; break;
+                case SDL_LOG_CATEGORY_VIDEO: categoryStr = "video"; break;
+                case SDL_LOG_CATEGORY_RENDER: categoryStr = "render"; break;
+                case SDL_LOG_CATEGORY_INPUT: categoryStr = "input"; break;
+                case SDL_LOG_CATEGORY_TEST: categoryStr = "test"; break;
+                case SDL_LOG_CATEGORY_CUSTOM: categoryStr = "custom"; break;
+            }
+
+            switch (priority) {
+                case SDL_LOG_PRIORITY_VERBOSE:
+                case SDL_LOG_PRIORITY_DEBUG: logger->debug("[SDL] (%s): %s", categoryStr, message); break;
+                case SDL_LOG_PRIORITY_INFO: logger->info("[SDL] (%s): %s", categoryStr, message); break;
+                case SDL_LOG_PRIORITY_WARN: logger->warn("[SDL] (%s): %s", categoryStr, message); break;
+                case SDL_LOG_PRIORITY_ERROR:
+                case SDL_LOG_PRIORITY_CRITICAL: logger->error("[SDL] (%s): %s", categoryStr, message); break;
+                case SDL_NUM_LOG_PRIORITIES: logger->error("[SDL] (%s): Invalid priority %d", categoryStr, priority); break;
+            }
+        };
+
+        SDL_LogSetOutputFunction(sdlLogger, _logger);
+        SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
+
         // Setup SDL
         if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
             _logger->error(TAG "Error in SDL_Init: %s", SDL_GetError());
@@ -343,7 +376,6 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
 void hc::Application::destroy() {
     _desktop.onQuit();
-    delete _logger;
     lua_close(_L);
 
     ImGui_ImplOpenGL2_Shutdown();
@@ -356,6 +388,8 @@ void hc::Application::destroy() {
     SDL_GL_DeleteContext(_glContext);
     SDL_DestroyWindow(_window);
     SDL_Quit();
+
+    delete _logger;
 }
 
 void hc::Application::draw() {
