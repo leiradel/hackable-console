@@ -74,6 +74,10 @@ void hc::Input::processEvent(SDL_Event const* event) {
         case SDL_KEYDOWN:
             keyboard(event);
             break;
+
+        case SDL_JOYDEVICEADDED:
+            joystickAdded(event);
+            break;
     }
 }
 
@@ -321,6 +325,7 @@ void hc::Input::poll() {}
 
 void hc::Input::addController(int which) {
     if (!SDL_IsGameController(which)) {
+        _logger->error("SDL device %d is not a controller", which);
         return;
     }
 
@@ -702,6 +707,21 @@ void hc::Input::keyboard(SDL_Event const* event) {
         case SDLK_DOWN: pad.state[RETRO_DEVICE_ID_JOYPAD_DOWN] = event->key.state == SDL_PRESSED; break;
         case SDLK_LEFT: pad.state[RETRO_DEVICE_ID_JOYPAD_LEFT] = event->key.state == SDL_PRESSED; break;
         case SDLK_RIGHT: pad.state[RETRO_DEVICE_ID_JOYPAD_RIGHT] = event->key.state == SDL_PRESSED; break;
+    }
+}
+
+void hc::Input::joystickAdded(SDL_Event const* event) {
+    SDL_JoystickGUID const guid = SDL_JoystickGetDeviceGUID(event->jdevice.which);
+    char const* const mapping = SDL_GameControllerMappingForGUID(guid);
+    char const* const name = SDL_JoystickNameForIndex(event->jdevice.which);
+
+    if (mapping == nullptr) {
+        char guidStr[128];
+        SDL_JoystickGetGUIDString(guid, guidStr, sizeof(guidStr));
+        _logger->error(TAG "No mapping for joystick \"%s\" (GUID %s), joystick unusable", name, guidStr);
+    }
+    else {
+        SDL_free((void*)mapping);
     }
 }
 

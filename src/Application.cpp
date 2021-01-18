@@ -419,6 +419,7 @@ void hc::Application::run() {
                 case SDL_CONTROLLERAXISMOTION:
                 case SDL_KEYUP:
                 case SDL_KEYDOWN:
+                case SDL_JOYDEVICEADDED:
                     _input->processEvent(&event);
                     break;
             }

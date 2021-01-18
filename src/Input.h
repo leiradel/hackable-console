@@ -93,6 +93,7 @@ namespace hc {
         void controllerButton(SDL_Event const* event);
         void controllerAxis(SDL_Event const* event);
         void keyboard(SDL_Event const* event);
+        void joystickAdded(SDL_Event const* event);
 
         Logger* _logger;
         lrcpp::Frontend* _frontend;
