@@ -2,7 +2,7 @@
 
 #include "Logger.h"
 
-#include <Frontend.h>
+#include <lrcpp/Frontend.h>
 
 extern "C" {
     #include "lua.h"

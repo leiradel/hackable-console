@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Frontend.h>
+#include <lrcpp/Frontend.h>
 
 #include <string.h>
 #include <map>

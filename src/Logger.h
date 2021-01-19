@@ -2,7 +2,7 @@
 
 #include "Desktop.h"
 
-#include <Components.h>
+#include <lrcpp/Components.h>
 #include <imguial_term.h>
 
 #include <mutex>

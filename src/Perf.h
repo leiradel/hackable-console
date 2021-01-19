@@ -3,7 +3,7 @@
 #include "Desktop.h"
 #include "Logger.h"
 
-#include <Components.h>
+#include <lrcpp/Components.h>
 
 #include <stdint.h>
 #include <string>

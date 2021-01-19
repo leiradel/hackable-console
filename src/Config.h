@@ -3,7 +3,7 @@
 #include "Desktop.h"
 #include "Logger.h"
 
-#include <Components.h>
+#include <lrcpp/Components.h>
 
 extern "C" {
     #include <lua.h>

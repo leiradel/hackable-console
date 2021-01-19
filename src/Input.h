@@ -3,8 +3,8 @@
 #include "Desktop.h"
 #include "Logger.h"
 
-#include <Components.h>
-#include <Frontend.h>
+#include <lrcpp/Components.h>
+#include <lrcpp/Frontend.h>
 
 #include <SDL.h>
 #include <SDL_opengl.h>
