@@ -20,7 +20,7 @@ char const* hc::Led::getTitle() {
 
 void hc::Led::onStarted() {}
 
-void hc::Led::onConsoleLoaded() {}
+void hc::Led::onCoreLoaded() {}
 
 void hc::Led::onGameLoaded() {}
 

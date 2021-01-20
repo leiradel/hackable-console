@@ -27,7 +27,7 @@ char const* hc::Video::getTitle() {
 
 void hc::Video::onStarted() {}
 
-void hc::Video::onConsoleLoaded() {}
+void hc::Video::onCoreLoaded() {}
 
 void hc::Video::onGameLoaded() {}
 

@@ -34,7 +34,7 @@ char const* hc::Memory::getTitle() {
 
 void hc::Memory::onStarted() {}
 
-void hc::Memory::onConsoleLoaded() {}
+void hc::Memory::onCoreLoaded() {}
 
 void hc::Memory::onGameLoaded() {}
 
@@ -158,7 +158,7 @@ char const* hc::MemoryWatch::getTitle() {
 
 void hc::MemoryWatch::onStarted() {}
 
-void hc::MemoryWatch::onConsoleLoaded() {}
+void hc::MemoryWatch::onCoreLoaded() {}
 
 void hc::MemoryWatch::onGameLoaded() {}
 
@@ -273,7 +273,7 @@ char const* hc::Sparkline::getTitle() {
 
 void hc::Sparkline::onStarted() {}
 
-void hc::Sparkline::onConsoleLoaded() {}
+void hc::Sparkline::onCoreLoaded() {}
 
 void hc::Sparkline::onGameLoaded() {}
 

@@ -43,11 +43,11 @@ void hc::Desktop::onStarted() {
     }
 }
 
-void hc::Desktop::onConsoleLoaded() {
+void hc::Desktop::onCoreLoaded() {
     for (auto const& pair : _views) {
         View* const view = pair.second.view;
-        _logger->debug(TAG "onConsoleLoaded %s", view->getTitle());
-        view->onConsoleLoaded();
+        _logger->debug(TAG "onCoreLoaded %s", view->getTitle());
+        view->onCoreLoaded();
     }
 }
 

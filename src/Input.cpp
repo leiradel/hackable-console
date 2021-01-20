@@ -87,7 +87,7 @@ char const* hc::Input::getTitle() {
 
 void hc::Input::onStarted() {}
 
-void hc::Input::onConsoleLoaded() {
+void hc::Input::onCoreLoaded() {
     for (size_t port = 0; port < MaxPorts; port++) {
         // All ports start disconnected
         _ports[port].selectedType = 0;

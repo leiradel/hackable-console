@@ -38,7 +38,7 @@ char const* hc::Logger::getTitle() {
 
 void hc::Logger::onStarted() {}
 
-void hc::Logger::onConsoleLoaded() {}
+void hc::Logger::onCoreLoaded() {}
 
 void hc::Logger::onGameLoaded() {}
 

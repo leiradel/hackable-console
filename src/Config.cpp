@@ -94,7 +94,7 @@ char const* hc::Config::getTitle() {
 
 void hc::Config::onStarted() {}
 
-void hc::Config::onConsoleLoaded() {}
+void hc::Config::onCoreLoaded() {}
 
 void hc::Config::onGameLoaded() {
     _optionsUpdated = false;

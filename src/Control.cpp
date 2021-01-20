@@ -52,7 +52,7 @@ char const* hc::Control::getTitle() {
 
 void hc::Control::onStarted() {}
 
-void hc::Control::onConsoleLoaded() {}
+void hc::Control::onCoreLoaded() {}
 
 void hc::Control::onGameLoaded() {
     auto const& cb = _consoles[_opened];

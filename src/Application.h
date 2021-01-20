@@ -45,7 +45,7 @@ namespace hc {
         bool unloadGame();
 
         void onStarted();
-        void onConsoleLoaded();
+        void onCoreLoaded();
         void onGameLoaded();
         void onGamePaused();
         void onGameResumed();

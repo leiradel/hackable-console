@@ -31,7 +31,7 @@ char const* hc::Perf::getTitle() {
 
 void hc::Perf::onStarted() {}
 
-void hc::Perf::onConsoleLoaded() {}
+void hc::Perf::onCoreLoaded() {}
 
 void hc::Perf::onGameLoaded() {}
 

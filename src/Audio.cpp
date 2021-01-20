@@ -94,7 +94,7 @@ void hc::Audio::onStarted() {
     }
 }
 
-void hc::Audio::onConsoleLoaded() {}
+void hc::Audio::onCoreLoaded() {}
 
 void hc::Audio::onGameLoaded() {
     // setSystemAvInfo has been called by now

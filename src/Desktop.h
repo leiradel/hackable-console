@@ -20,7 +20,7 @@ namespace hc {
 
         virtual char const* getTitle() = 0;
         virtual void onStarted() = 0;
-        virtual void onConsoleLoaded() = 0;
+        virtual void onCoreLoaded() = 0;
         virtual void onGameLoaded() = 0;
         virtual void onGamePaused() = 0;
         virtual void onGameResumed() = 0;
@@ -49,7 +49,7 @@ namespace hc {
         // hc::View
         virtual char const* getTitle() override;
         virtual void onStarted() override;
-        virtual void onConsoleLoaded() override;
+        virtual void onCoreLoaded() override;
         virtual void onGameLoaded() override;
         virtual void onGamePaused() override;
         virtual void onGameResumed() override;

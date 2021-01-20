@@ -482,7 +482,7 @@ bool hc::Application::loadCore(char const* path) {
     _logger->info(TAG "    need_fullpath    = %s", info.need_fullpath ? "true" : "false");
     _logger->info(TAG "    block_extract    = %s", info.block_extract ? "true" : "false");
 
-    onConsoleLoaded();
+    onCoreLoaded();
     return true;
 }
 
@@ -598,13 +598,13 @@ void hc::Application::onStarted() {
     _desktop.onStarted();
 }
 
-void hc::Application::onConsoleLoaded() {
+void hc::Application::onCoreLoaded() {
     // Perf has to unregister all counters when a core is unloaded so we
     // register this here.
     _runPerf.ident = "hc::retro_run";
     _perf->register_(&_runPerf);
 
-    _desktop.onConsoleLoaded();
+    _desktop.onCoreLoaded();
 }
 
 void hc::Application::onGameLoaded() {
