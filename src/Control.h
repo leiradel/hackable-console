@@ -35,6 +35,8 @@ namespace hc {
         virtual int push(lua_State* const L) override;
 
     protected:
+        void callConsoleMethod(char const* const name);
+
         // Control will also be responsible for exposing LifeCycle and Frontend
         // methods to Lua
         static int l_addConsole(lua_State* const L);

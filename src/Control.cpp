@@ -52,22 +52,29 @@ char const* hc::Control::getTitle() {
 
 void hc::Control::onStarted() {}
 
-void hc::Control::onCoreLoaded() {}
-
-void hc::Control::onGameLoaded() {
-    auto const& cb = _consoles[_opened];
-    lua_rawgeti(cb.L, LUA_REGISTRYINDEX, cb.ref);
-    protectedCallField(cb.L, -1, "onGameLoaded", 0, 0, _logger);
-    lua_pop(cb.L, 1);
+void hc::Control::onCoreLoaded() {
+    callConsoleMethod("onCoreLoaded");
 }
 
-void hc::Control::onGamePaused() {}
+void hc::Control::onGameLoaded() {
+    callConsoleMethod("onGameLoaded");
+}
 
-void hc::Control::onGameResumed() {}
+void hc::Control::onGamePaused() {
+    callConsoleMethod("onGamePaused");
+}
 
-void hc::Control::onGameReset() {}
+void hc::Control::onGameResumed() {
+    callConsoleMethod("onGameResumed");
+}
 
-void hc::Control::onFrame() {}
+void hc::Control::onGameReset() {
+    callConsoleMethod("onGameReset");
+}
+
+void hc::Control::onFrame() {
+    callConsoleMethod("onFrame");
+}
 
 void hc::Control::onDraw() {
     static auto const getter = [](void* const data, int idx, char const** const text) -> bool {
@@ -165,14 +172,20 @@ void hc::Control::onDraw() {
     }
 }
 
-void hc::Control::onGameUnloaded() {}
+void hc::Control::onGameUnloaded() {
+    callConsoleMethod("onGameUnloaded");
+}
 
 void hc::Control::onConsoleUnloaded() {
+    callConsoleMethod("onConsoleUnloaded");
+
     _extensions.clear();
     _opened = -1;
 }
 
 void hc::Control::onQuit() {
+    callConsoleMethod("onQuit");
+
     for (auto const& cb : _consoles) {
         luaL_unref(cb.L, LUA_REGISTRYINDEX, cb.ref);
     }
@@ -200,6 +213,13 @@ void hc::Control::setSystemInfo(retro_system_info const* info) {
             ext++;
         }
     }
+}
+
+void hc::Control::callConsoleMethod(char const* const name) {
+    auto const& cb = _consoles[_opened];
+    lua_rawgeti(cb.L, LUA_REGISTRYINDEX, cb.ref);
+    protectedCallField(cb.L, -1, name, 0, 0, _logger);
+    lua_pop(cb.L, 1);
 }
 
 int hc::Control::push(lua_State* const L) {
