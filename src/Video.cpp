@@ -171,8 +171,9 @@ bool hc::Video::setHwSharedContext() {
 }
 
 bool hc::Video::getTargetRefreshRate(float* rate) {
-    *rate = static_cast<float>(_desktop->currentFps());
-    _logger->info(TAG "Returning %f for target refresh rate", *rate);
+    *rate = 60.0f;
+    _logger->warn(TAG "Returning 60 for target refresh rate");
+    _logger->warn(TAG "Real monitor refresh rate is %f", _desktop->currentFps());
     return true;
 }
 
