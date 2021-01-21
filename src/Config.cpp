@@ -11,6 +11,29 @@ extern "C" {
 
 #define TAG "[CFG] "
 
+static void getFlags(char flags[7], uint64_t const mcflags) {
+    flags[0] = 'M';
+    flags[2] = 'A';
+    flags[6] = 0;
+
+    switch (mcflags & (RETRO_MEMDESC_MINSIZE_2 | RETRO_MEMDESC_MINSIZE_4 | RETRO_MEMDESC_MINSIZE_8)) {
+        case RETRO_MEMDESC_MINSIZE_2: flags[1] = '2'; break;
+        case RETRO_MEMDESC_MINSIZE_4: flags[1] = '4'; break;
+        case RETRO_MEMDESC_MINSIZE_8: flags[1] = '8'; break;
+        default: flags[1] = '1'; break;
+    }
+
+    switch (mcflags & (RETRO_MEMDESC_ALIGN_2 | RETRO_MEMDESC_ALIGN_4 | RETRO_MEMDESC_ALIGN_8)) {
+        case RETRO_MEMDESC_ALIGN_2: flags[3] = '2'; break;
+        case RETRO_MEMDESC_ALIGN_4: flags[3] = '4'; break;
+        case RETRO_MEMDESC_ALIGN_8: flags[3] = '8'; break;
+        default: flags[3] = '1'; break;
+    }
+
+    flags[4] = (mcflags & RETRO_MEMDESC_BIGENDIAN) != 0 ? 'B' : 'b';
+    flags[5] = (mcflags & RETRO_MEMDESC_CONST) != 0 ? 'C' : 'c';
+}
+
 hc::Config::Config(Desktop* desktop)
     : View(desktop)
     , _logger(nullptr)
@@ -297,26 +320,7 @@ bool hc::Config::setMemoryMaps(retro_memory_map const* map) {
         retro_memory_descriptor const* const descriptor = descriptors + i;
 
         char flags[7];
-        flags[0] = 'M';
-        flags[2] = 'A';
-        flags[6] = 0;
-
-        switch (descriptor->flags & (RETRO_MEMDESC_MINSIZE_2 | RETRO_MEMDESC_MINSIZE_4 | RETRO_MEMDESC_MINSIZE_8)) {
-            case RETRO_MEMDESC_MINSIZE_2: flags[1] = '2'; break;
-            case RETRO_MEMDESC_MINSIZE_4: flags[1] = '4'; break;
-            case RETRO_MEMDESC_MINSIZE_8: flags[1] = '8'; break;
-            default: flags[1] = '1'; break;
-        }
-
-        switch (descriptor->flags & (RETRO_MEMDESC_ALIGN_2 | RETRO_MEMDESC_ALIGN_4 | RETRO_MEMDESC_ALIGN_8)) {
-            case RETRO_MEMDESC_ALIGN_2: flags[3] = '2'; break;
-            case RETRO_MEMDESC_ALIGN_4: flags[3] = '4'; break;
-            case RETRO_MEMDESC_ALIGN_8: flags[3] = '8'; break;
-            default: flags[3] = '1'; break;
-        }
-
-        flags[4] = (descriptor->flags & RETRO_MEMDESC_BIGENDIAN) != 0 ? 'B' : 'b';
-        flags[5] = (descriptor->flags & RETRO_MEMDESC_CONST) != 0 ? 'C' : 'c';
+        getFlags(flags, descriptor->flags);
 
         _logger->info(
             TAG "    %3u %s 0x%016" PRIxPTR " %08X %08X %08X %08X %08X %s",
@@ -451,6 +455,7 @@ int hc::Config::push(lua_State* const L) {
             {"getCoresPath", l_getCoresPath},
             {"getCoreOption", l_getCoreOption},
             {"setCoreOption", l_setCoreOption},
+            {"getMemoryMap", l_getMemoryMap},
             {nullptr, nullptr}
         };
 
@@ -587,4 +592,47 @@ int hc::Config::l_setCoreOption(lua_State* const L) {
 
         return luaL_error(L, "invalid value for core option: \"%s\", \"%s\"", val, key);
     }
+}
+
+int hc::Config::l_getMemoryMap(lua_State* const L) {
+    auto const self = check(L, 1);
+
+    size_t const count = self->_memoryMap.size();
+    lua_createtable(L, count, 0);
+
+    for (size_t i = 0; i < count; i++) {
+        auto const& desc = self->_memoryMap[i];
+        lua_createtable(L, 0, 8);
+
+        char flags[7];
+        getFlags(flags, desc.flags);
+
+        lua_pushstring(L, flags);
+        lua_setfield(L, -2, "flags");
+
+        lua_pushlightuserdata(L, desc.pointer);
+        lua_setfield(L, -2, "pointer");
+
+        lua_pushinteger(L, desc.offset);
+        lua_setfield(L, -2, "offset");
+
+        lua_pushinteger(L, desc.start);
+        lua_setfield(L, -2, "start");
+
+        lua_pushinteger(L, desc.select);
+        lua_setfield(L, -2, "select");
+
+        lua_pushinteger(L, desc.disconnect);
+        lua_setfield(L, -2, "disconnect");
+
+        lua_pushinteger(L, desc.length);
+        lua_setfield(L, -2, "length");
+
+        lua_pushlstring(L, desc.addressSpace.c_str(), desc.addressSpace.size());
+        lua_setfield(L, -2, "addressSpace");
+
+        lua_rawseti(L, -2, i + 1);
+    }
+
+    return 1;
 }

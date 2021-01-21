@@ -21,8 +21,8 @@ namespace hc {
 
         bool init(Logger* const logger);
         bool getSupportNoGame() const;
-        const std::string& getRootPath() const;
-        const std::string& getAutorunPath() const;
+        std::string const& getRootPath() const;
+        std::string const& getAutorunPath() const;
 
         static Config* check(lua_State* const L, int const index);
 
@@ -73,6 +73,7 @@ namespace hc {
         static int l_getCoresPath(lua_State* const L);
         static int l_getCoreOption(lua_State* const L);
         static int l_setCoreOption(lua_State* const L);
+        static int l_getMemoryMap(lua_State* const L);
 
         struct SubsystemInfo {
             struct Rom {
