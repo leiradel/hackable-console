@@ -184,8 +184,6 @@ void hc::Control::onConsoleUnloaded() {
 }
 
 void hc::Control::onQuit() {
-    callConsoleMethod("onQuit");
-
     for (auto const& cb : _consoles) {
         luaL_unref(cb.L, LUA_REGISTRYINDEX, cb.ref);
     }
