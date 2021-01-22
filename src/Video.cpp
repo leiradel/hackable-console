@@ -15,10 +15,15 @@ void hc::Video::init(Logger* const logger) {
 
     _rotation = 0;
     _pixelFormat = RETRO_PIXEL_FORMAT_UNKNOWN;
+    _coreFps = 0.0;
 
     _texture = 0;
     _textureWidth = _textureHeight = 0;
     _width = _height = 0;
+}
+
+double hc::Video::getCoreFps() const {
+    return _coreFps;
 }
 
 char const* hc::Video::getTitle() {
@@ -123,6 +128,8 @@ bool hc::Video::setFrameTimeCallback(retro_frame_time_callback const* callback) 
 }
 
 bool hc::Video::setSystemAvInfo(retro_system_av_info const* info) {
+    _coreFps = info->timing.fps;
+
     _logger->info(TAG "Setting timing");
 
     _logger->info(TAG "    fps         = %f", info->timing.fps);
@@ -173,7 +180,7 @@ bool hc::Video::setHwSharedContext() {
 bool hc::Video::getTargetRefreshRate(float* rate) {
     *rate = 60.0f;
     _logger->warn(TAG "Returning 60 for target refresh rate");
-    _logger->warn(TAG "Real monitor refresh rate is %f", _desktop->currentFps());
+    _logger->warn(TAG "Real monitor refresh rate is %f", _desktop->drawFps());
     return true;
 }
 

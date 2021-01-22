@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Timer.h"
+
 #include <lrcpp/Frontend.h>
 
 #include <string.h>
@@ -44,7 +46,8 @@ namespace hc {
 
         void init(Logger* const logger);
         void add(View* const view, bool const top, bool const free, char const* const id);
-        double currentFps();
+        double drawFps();
+        double frameFps();
 
         // hc::View
         virtual char const* getTitle() override;
@@ -79,8 +82,10 @@ namespace hc {
         
         std::map<std::string, ViewProperties> _views;
 
+        uint64_t _drawCount;
+        Timer _drawTimer;
+
         uint64_t _frameCount;
-        int64_t _timeStarted;
-        double _fps;
+        Timer _frameTimer;
     };
 }

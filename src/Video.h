@@ -16,6 +16,7 @@ namespace hc {
         virtual ~Video() {}
 
         void init(Logger* const logger);
+        double getCoreFps() const;
 
         static Video* check(lua_State* const L, int const index);
 
@@ -64,6 +65,7 @@ namespace hc {
 
         unsigned _rotation;
         retro_pixel_format _pixelFormat;
+        double _coreFps;
 
         GLuint _texture;
         unsigned _textureWidth;

@@ -78,6 +78,9 @@ namespace hc {
         Memory* _memory;
 
         Desktop _desktop;
+        Timer _runningTime;
+        uint64_t _nextFrameTime;
+        uint64_t _coreUsPerFrame;
 
         retro_perf_counter _runPerf;
 

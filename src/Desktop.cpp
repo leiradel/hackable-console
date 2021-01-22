@@ -15,9 +15,8 @@ hc::Desktop::Desktop() : View(nullptr), _logger(nullptr) {}
 void hc::Desktop::init(Logger* const logger) {
     _logger = logger;
 
+    _drawCount = 0;
     _frameCount = 0;
-    _timeStarted = 0;
-    _fps = -1.0f;
 }
 
 void hc::Desktop::add(View* const view, bool const top, bool const free, char const* const id) {
@@ -25,8 +24,12 @@ void hc::Desktop::add(View* const view, bool const top, bool const free, char co
     _views.emplace(id != nullptr ? id : view->getTitle(), props);
 }
 
-double hc::Desktop::currentFps() {
-    return _fps;
+double hc::Desktop::drawFps() {
+    return static_cast<double>(_drawCount) * 1000000.0f / static_cast<double>(_drawTimer.getTimeUs());
+}
+
+double hc::Desktop::frameFps() {
+    return static_cast<double>(_frameCount) * 1000000.0f / static_cast<double>(_frameTimer.getTimeUs());
 }
 
 char const* hc::Desktop::getTitle() {
@@ -34,13 +37,14 @@ char const* hc::Desktop::getTitle() {
 }
 
 void hc::Desktop::onStarted() {
-    _timeStarted = Perf::getTimeUs();
-
     for (auto const& pair : _views) {
         View* const view = pair.second.view;
         _logger->debug(TAG "onStarted %s", view->getTitle());
         view->onStarted();
     }
+
+    _drawTimer.start();
+    _drawCount = 0;
 }
 
 void hc::Desktop::onCoreLoaded() {
@@ -65,6 +69,8 @@ void hc::Desktop::onGamePaused() {
         _logger->debug(TAG "onGamePaused %s", view->getTitle());
         view->onGamePaused();
     }
+
+    _frameTimer.pause();
 }
 
 void hc::Desktop::onGameResumed() {
@@ -73,6 +79,13 @@ void hc::Desktop::onGameResumed() {
         _logger->debug(TAG "onGameResumed %s", view->getTitle());
         view->onGameResumed();
     }
+
+    if (!_frameTimer.started()) {
+        _frameTimer.start();
+        _frameCount = 0;
+    }
+
+    _frameTimer.resume();
 }
 
 void hc::Desktop::onGameReset() {
@@ -84,6 +97,8 @@ void hc::Desktop::onGameReset() {
 }
 
 void hc::Desktop::onFrame() {
+    _frameCount++;
+
     for (auto const& pair : _views) {
         View* const view = pair.second.view;
         // Don't log stuff per frame
@@ -92,13 +107,12 @@ void hc::Desktop::onFrame() {
 }
 
 void hc::Desktop::onDraw() {
-    _frameCount++;
-
-    int64_t const t1 = Perf::getTimeUs();
-    int64_t const delta = t1 - _timeStarted;
-    _fps = static_cast<double>(_frameCount) * 1000000.0f / static_cast<double>(delta);
+    _drawCount++;
 
     if (ImGui::Begin(ICON_FA_PLUG " Views")) {
+        ImGui::Text("draw fps  %4.6f", drawFps());
+        ImGui::Text("frame fps %4.6f", frameFps());
+
         ImGui::Columns(2);
 
         for (auto& pair : _views) {
@@ -148,6 +162,8 @@ void hc::Desktop::onGameUnloaded() {
         _logger->debug(TAG "onGameUnloaded %s", view->getTitle());
         view->onGameUnloaded();
     }
+
+    _frameTimer.stop();
 }
 
 void hc::Desktop::onConsoleUnloaded() {
@@ -171,6 +187,7 @@ void hc::Desktop::onQuit() {
     }
 
     _views.clear();
+    _drawTimer.stop();
 }
 
 int hc::Desktop::push(lua_State* const L) {

@@ -171,7 +171,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         undo.add([this]() { SDL_GL_DeleteContext(_glContext); });
 
         SDL_GL_MakeCurrent(_window, _glContext);
-        SDL_GL_SetSwapInterval(1);
+        SDL_GL_SetSwapInterval(0);
 
         // Init audio
         SDL_AudioSpec want;
@@ -433,18 +433,25 @@ void hc::Application::run() {
         }
 
         if (_fsm.currentState() == LifeCycle::State::GameRunning) {
-            _perf->start(&_runPerf);
-            frontend.run();
-            _perf->stop(&_runPerf);
-            onFrame();
+            if (_runningTime.getTimeUs() >= _nextFrameTime) {
+                _nextFrameTime += _coreUsPerFrame;
+                _audio->flush();
+
+                _perf->start(&_runPerf);
+                frontend.run();
+                _perf->stop(&_runPerf);
+
+                onFrame();
+            }
         }
 
         ImGui_ImplOpenGL2_NewFrame();
         ImGui_ImplSDL2_NewFrame(_window);
         ImGui::NewFrame();
 
+        ImGui::End();
+
         draw();
-        _audio->flush();
 
         ImGui::Render();
 
@@ -609,14 +616,23 @@ void hc::Application::onCoreLoaded() {
 
 void hc::Application::onGameLoaded() {
     _desktop.onGameLoaded();
+    _coreUsPerFrame = 1000000.0 / _video->getCoreFps();
 }
 
 void hc::Application::onGamePaused() {
     _desktop.onGamePaused();
+    _runningTime.pause();
 }
 
 void hc::Application::onGameResumed() {
     _desktop.onGameResumed();
+
+    if (!_runningTime.started()) {
+        _runningTime.start();
+    }
+
+    _runningTime.resume();
+    _nextFrameTime = _runningTime.getTimeUs() + _coreUsPerFrame;
 }
 
 void hc::Application::onGameReset() {
@@ -629,6 +645,7 @@ void hc::Application::onFrame() {
 
 void hc::Application::onGameUnloaded() {
     _desktop.onGameUnloaded();
+    _runningTime.stop();
 }
 
 void hc::Application::onConsoleUnloaded() {
