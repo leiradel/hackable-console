@@ -2,6 +2,8 @@
 
 #include <IconsFontAwesome4.h>
 
+#include <float.h>
+
 extern "C" {
     #include "lauxlib.h"
 }
@@ -14,8 +16,8 @@ hc::Audio::Audio(Desktop* desktop)
     , _sampleRate(0.0)
     , _fifo(nullptr)
     , _mutex(nullptr)
-    , _min(0.0)
-    , _max(0.0)
+    , _min(FLT_MAX)
+    , _max(-FLT_MAX)
     , _mute(false)
     , _wasMuted(false)
     , _rateControlDelta(0.0)
@@ -97,6 +99,9 @@ void hc::Audio::onStarted() {
 void hc::Audio::onCoreLoaded() {}
 
 void hc::Audio::onGameLoaded() {
+    _min = FLT_MAX;
+    _max = -FLT_MAX;
+
     // setSystemAvInfo has been called by now
     _currentRatio = _originalRatio = _sampleRate / _timing.sample_rate;
     _rateControlDelta = 0.005;
