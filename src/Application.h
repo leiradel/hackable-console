@@ -40,6 +40,7 @@ namespace hc {
         bool quit();
         bool resetGame();
         bool resumeGame();
+        bool startGame();
         bool step();
         bool unloadCore();
         bool unloadGame();
@@ -47,10 +48,12 @@ namespace hc {
         void onStarted();
         void onCoreLoaded();
         void onGameLoaded();
+        void onGameStarted();
         void onGamePaused();
         void onGameResumed();
         void onGameReset();
         void onFrame();
+        void onStep();
         void onGameUnloaded();
         void onConsoleUnloaded();
         void onQuit();
@@ -81,6 +84,7 @@ namespace hc {
         Timer _runningTime;
         uint64_t _nextFrameTime;
         uint64_t _coreUsPerFrame;
+        bool _syncExact;
 
         retro_perf_counter _runPerf;
 

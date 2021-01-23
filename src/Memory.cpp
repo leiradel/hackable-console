@@ -32,20 +32,6 @@ char const* hc::Memory::getTitle() {
     return ICON_FA_MICROCHIP " Memory";
 }
 
-void hc::Memory::onStarted() {}
-
-void hc::Memory::onCoreLoaded() {}
-
-void hc::Memory::onGameLoaded() {}
-
-void hc::Memory::onGamePaused() {}
-
-void hc::Memory::onGameResumed() {}
-
-void hc::Memory::onGameReset() {}
-
-void hc::Memory::onFrame() {}
-
 void hc::Memory::onDraw() {
     static auto const getter = [](void* const data, int const idx, char const** const text) -> bool {
         auto const regions = (std::vector<Region>*)data;
@@ -79,10 +65,6 @@ void hc::Memory::onGameUnloaded() {
     _viewCount = 0;
     _regions.clear();
 }
-
-void hc::Memory::onConsoleUnloaded() {}
-
-void hc::Memory::onQuit() {}
 
 int hc::Memory::push(lua_State* const L) {
     auto const self = static_cast<Memory**>(lua_newuserdata(L, sizeof(Memory*)));
@@ -155,18 +137,6 @@ void hc::MemoryWatch::init(Logger* const logger, char const* title, Memory* cons
 char const* hc::MemoryWatch::getTitle() {
     return _title.c_str();
 }
-
-void hc::MemoryWatch::onStarted() {}
-
-void hc::MemoryWatch::onCoreLoaded() {}
-
-void hc::MemoryWatch::onGameLoaded() {}
-
-void hc::MemoryWatch::onGamePaused() {}
-
-void hc::MemoryWatch::onGameResumed() {}
-
-void hc::MemoryWatch::onGameReset() {}
 
 void hc::MemoryWatch::onFrame() {
     static uint8_t sizes[ImGuiDataType_COUNT] = {1, 1, 2, 2, 4, 4, 8, 8, 4, 8};
@@ -248,53 +218,6 @@ void hc::MemoryWatch::onDraw() {
     }
 }
 
-void hc::MemoryWatch::onGameUnloaded() {}
-
-void hc::MemoryWatch::onConsoleUnloaded() {}
-
-void hc::MemoryWatch::onQuit() {}
-
 int hc::MemoryWatch::push(lua_State* const L) {
     return 0;
 }
-
-#if 0
-void hc::Sparkline::init(char const* title, Memory* const memory, Memory::Handle const handle, uint64_t const address) {
-    _title = title;
-    _memory = memory;
-    _handle = handle;
-    _address = address;
-    _sparkline.setLimits(0, 255);
-}
-
-char const* hc::Sparkline::getTitle() {
-    return _title.c_str();
-}
-
-void hc::Sparkline::onStarted() {}
-
-void hc::Sparkline::onCoreLoaded() {}
-
-void hc::Sparkline::onGameLoaded() {}
-
-void hc::Sparkline::onGamePaused() {}
-
-void hc::Sparkline::onGameResumed() {}
-
-void hc::Sparkline::onGameReset() {}
-
-void hc::Sparkline::onFrame() {}
-
-void hc::Sparkline::onDraw() {
-}
-
-void hc::Sparkline::onGameUnloaded() {}
-
-void hc::Sparkline::onConsoleUnloaded() {}
-
-void hc::Sparkline::onQuit() {}
-
-int hc::Sparkline::push(lua_State* const L) {
-    return 0;
-}
-#endif

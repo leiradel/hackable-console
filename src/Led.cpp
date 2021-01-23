@@ -18,16 +18,6 @@ char const* hc::Led::getTitle() {
     return ICON_FA_LIGHTBULB_O " Leds";
 }
 
-void hc::Led::onStarted() {}
-
-void hc::Led::onCoreLoaded() {}
-
-void hc::Led::onGameLoaded() {}
-
-void hc::Led::onGamePaused() {}
-
-void hc::Led::onGameResumed() {}
-
 void hc::Led::onGameReset() {
     size_t const count = _states.size();
 
@@ -35,8 +25,6 @@ void hc::Led::onGameReset() {
         _states[i] = 0;
     }
 }
-
-void hc::Led::onFrame() {}
 
 void hc::Led::onDraw() {
     static ImColor const on = ImColor(IM_COL32(255, 0, 0, 255));
@@ -55,10 +43,6 @@ void hc::Led::onDraw() {
 void hc::Led::onGameUnloaded() {
     _states.clear();
 }
-
-void hc::Led::onConsoleUnloaded() {}
-
-void hc::Led::onQuit() {}
 
 void hc::Led::setState(int led, int state) {
     _logger->info(TAG "Set LED %d to %s", led, state ? "on" : "off");

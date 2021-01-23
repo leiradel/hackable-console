@@ -29,20 +29,6 @@ char const* hc::Perf::getTitle() {
     return ICON_FA_TASKS " Perf";
 }
 
-void hc::Perf::onStarted() {}
-
-void hc::Perf::onCoreLoaded() {}
-
-void hc::Perf::onGameLoaded() {}
-
-void hc::Perf::onGamePaused() {}
-
-void hc::Perf::onGameResumed() {}
-
-void hc::Perf::onGameReset() {}
-
-void hc::Perf::onFrame() {}
-
 void hc::Perf::onDraw() {
     ImGui::Text("       %7.3f (fps) application", _desktop->drawFps());
     ImGui::Text("       %7.3f (fps) game", _desktop->frameFps());
@@ -59,8 +45,6 @@ void hc::Perf::onDraw() {
     }
 }
 
-void hc::Perf::onGameUnloaded() {}
-
 void hc::Perf::onConsoleUnloaded() {
     for (auto const& pair : _counters) {
         Counter const& cnt = pair.second;
@@ -73,8 +57,6 @@ void hc::Perf::onConsoleUnloaded() {
 
     _counters.clear();
 }
-
-void hc::Perf::onQuit() {}
 
 retro_time_t hc::Perf::getTimeUsec() {
     return static_cast<retro_time_t>(getTimeUs());

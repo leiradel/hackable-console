@@ -85,8 +85,6 @@ char const* hc::Input::getTitle() {
     return ICON_FA_GAMEPAD " Input";
 }
 
-void hc::Input::onStarted() {}
-
 void hc::Input::onCoreLoaded() {
     for (size_t port = 0; port < MaxPorts; port++) {
         // All ports start disconnected
@@ -106,17 +104,16 @@ void hc::Input::onCoreLoaded() {
     // TODO auto-assign controllers to ports here? Do it in the Lua console script?
 }
 
-void hc::Input::onGameLoaded() {}
-void hc::Input::onGamePaused() {}
-void hc::Input::onGameResumed() {}
-void hc::Input::onGameReset() {}
-
 void hc::Input::onFrame() {
     for (unsigned i = 0; i < RETROK_LAST; i++) {
         if (_keyState[i] > 0) {
             _keyState[i]--;
         }
     }
+}
+
+void hc::Input::onStep() {
+    onFrame();
 }
 
 void hc::Input::onDraw() {
@@ -182,8 +179,6 @@ void hc::Input::onDraw() {
     }
 }
 
-void hc::Input::onGameUnloaded() {}
-
 void hc::Input::onConsoleUnloaded() {
     for (size_t port = 0; port < MaxPorts; port++) {
         // Disconnect all ports
@@ -196,8 +191,6 @@ void hc::Input::onConsoleUnloaded() {
         _controllerTypes[port].clear();
     }
 }
-
-void hc::Input::onQuit() {}
 
 bool hc::Input::setInputDescriptors(retro_input_descriptor const* descriptors) {
     // We just log the descriptors, the information is currently discarded

@@ -87,10 +87,6 @@ char const* hc::Audio::getTitle() {
     return ICON_FA_VOLUME_UP " Audio";
 }
 
-void hc::Audio::onStarted() {}
-
-void hc::Audio::onCoreLoaded() {}
-
 void hc::Audio::onGameLoaded() {
     _min = FLT_MAX;
     _max = -FLT_MAX;
@@ -126,8 +122,6 @@ void hc::Audio::onGameReset() {
     _drawSamples.clear();
     _mutex.unlock();
 }
-
-void hc::Audio::onFrame() {}
 
 void hc::Audio::onDraw() {
     ImGui::Checkbox("Mute", &_mute);
@@ -182,10 +176,6 @@ void hc::Audio::onGameUnloaded() {
     _drawSamples.clear();
     _mutex.unlock();
 }
-
-void hc::Audio::onConsoleUnloaded() {}
-
-void hc::Audio::onQuit() {}
 
 bool hc::Audio::setSystemAvInfo(retro_system_av_info const* info) {
     _timing = info->timing;

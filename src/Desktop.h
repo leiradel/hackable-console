@@ -21,17 +21,19 @@ namespace hc {
         virtual ~View() {}
 
         virtual char const* getTitle() = 0;
-        virtual void onStarted() = 0;
-        virtual void onCoreLoaded() = 0;
-        virtual void onGameLoaded() = 0;
-        virtual void onGamePaused() = 0;
-        virtual void onGameResumed() = 0;
-        virtual void onGameReset() = 0;
-        virtual void onFrame() = 0;
-        virtual void onDraw() = 0;
-        virtual void onGameUnloaded() = 0;
-        virtual void onConsoleUnloaded() = 0;
-        virtual void onQuit() = 0;
+        virtual void onStarted() {}
+        virtual void onCoreLoaded() {}
+        virtual void onGameLoaded() {}
+        virtual void onGameStarted() {}
+        virtual void onGamePaused() {}
+        virtual void onGameResumed() {}
+        virtual void onGameReset() {}
+        virtual void onFrame() {}
+        virtual void onStep() {}
+        virtual void onDraw() {}
+        virtual void onGameUnloaded() {}
+        virtual void onConsoleUnloaded() {}
+        virtual void onQuit() {}
 
         virtual int push(lua_State* const L) = 0;
 
@@ -47,17 +49,21 @@ namespace hc {
         void init(Logger* const logger);
         void add(View* const view, bool const top, bool const free, char const* const id);
         double drawFps();
+        void resetDrawFps();
         double frameFps();
+        void resetFrameFps();
 
         // hc::View
         virtual char const* getTitle() override;
         virtual void onStarted() override;
         virtual void onCoreLoaded() override;
         virtual void onGameLoaded() override;
+        virtual void onGameStarted() override;
         virtual void onGamePaused() override;
         virtual void onGameResumed() override;
         virtual void onGameReset() override;
         virtual void onFrame() override;
+        virtual void onStep() override;
         virtual void onDraw() override;
         virtual void onGameUnloaded() override;
         virtual void onConsoleUnloaded() override;

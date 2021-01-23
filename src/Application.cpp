@@ -400,6 +400,22 @@ void hc::Application::destroy() {
 }
 
 void hc::Application::draw() {
+    bool on = false;
+
+    if (_config->vsync(&on)) {
+        _desktop.resetDrawFps();
+        _desktop.resetFrameFps();
+        SDL_GL_SetSwapInterval(on ? 1 : 0);
+    }
+
+    if (_config->syncExact(&_syncExact)) {
+        _desktop.resetFrameFps();
+
+        if (_syncExact) {
+            _nextFrameTime = _runningTime.getTimeUs();
+        }
+    }
+
     ImGui::DockSpaceOverViewport();
     _desktop.onDraw();
 }
@@ -433,7 +449,7 @@ void hc::Application::run() {
         }
 
         if (_fsm.currentState() == LifeCycle::State::GameRunning) {
-            if (_runningTime.getTimeUs() >= _nextFrameTime) {
+            if (!_syncExact || _runningTime.getTimeUs() >= _nextFrameTime) {
                 _nextFrameTime += _coreUsPerFrame;
 
                 _perf->start(&_runPerf);
@@ -572,13 +588,18 @@ bool hc::Application::resumeGame() {
     return true;
 }
 
-bool hc::Application::step() {
-    onFrame();
+bool hc::Application::startGame() {
+    onGameStarted();
+    return true;
+}
 
+bool hc::Application::step() {
     _perf->start(&_runPerf);
     bool const ok = lrcpp::Frontend::getInstance().run();
     _perf->stop(&_runPerf);
 
+    _desktop.resetFrameFps();
+    onFrame();
     return ok;
 }
 
@@ -619,6 +640,11 @@ void hc::Application::onGameLoaded() {
     _coreUsPerFrame = 1000000.0 / _video->getCoreFps();
 }
 
+void hc::Application::onGameStarted() {
+    _desktop.onGameStarted();
+    _runningTime.start();
+}
+
 void hc::Application::onGamePaused() {
     _desktop.onGamePaused();
     _runningTime.pause();
@@ -626,10 +652,6 @@ void hc::Application::onGamePaused() {
 
 void hc::Application::onGameResumed() {
     _desktop.onGameResumed();
-
-    if (!_runningTime.started()) {
-        _runningTime.start();
-    }
 
     _runningTime.resume();
     _nextFrameTime = _runningTime.getTimeUs() + _coreUsPerFrame;
@@ -641,6 +663,10 @@ void hc::Application::onGameReset() {
 
 void hc::Application::onFrame() {
     _desktop.onFrame();
+}
+
+void hc::Application::onStep() {
+    _desktop.onStep();
 }
 
 void hc::Application::onGameUnloaded() {

@@ -42,6 +42,10 @@ hc::Config::Config(Desktop* desktop)
     , _supportAchievements(false)
     , _serializationQuirks(0)
     , _optionsUpdated(false)
+    , _vsync(true)
+    , _vsyncChanged(true)
+    , _syncExact(false)
+    , _syncExactChanged(true)
 {
     memset(&_getCoreProc, 0, sizeof(_getCoreProc));
 }
@@ -111,29 +115,55 @@ const std::string& hc::Config::getAutorunPath() const {
     return _autorunPath;
 }
 
+bool hc::Config::vsync(bool* const on) {
+    *on = _vsync;
+    bool const changed = _vsyncChanged;
+    _vsyncChanged = false;
+    return changed;
+}
+
+bool hc::Config::syncExact(bool* const on) {
+    *on = _syncExact;
+    bool const changed = _syncExactChanged;
+    _syncExactChanged = false;
+    return changed;
+}
+
 char const* hc::Config::getTitle() {
     return ICON_FA_WRENCH " Configuration";
 }
-
-void hc::Config::onStarted() {}
-
-void hc::Config::onCoreLoaded() {}
 
 void hc::Config::onGameLoaded() {
     _optionsUpdated = false;
 }
 
-void hc::Config::onGamePaused() {}
-
-void hc::Config::onGameResumed() {}
-
-void hc::Config::onGameReset() {
-    _optionsUpdated = false;
-}
-
-void hc::Config::onFrame() {}
-
 void hc::Config::onDraw() {
+    bool checked = _vsync;
+    ImGui::Checkbox("Vsync", &checked);
+
+    if (checked != _vsync) {
+        _vsync = checked;
+        _vsyncChanged = true;
+
+        if (_syncExact) {
+            _syncExact = false;
+            _syncExactChanged = true;
+        }
+    }
+
+    checked = _syncExact;
+    ImGui::Checkbox("Sync to exact content framerate", &checked);
+
+    if (checked != _syncExact) {
+        _syncExact = checked;
+        _syncExactChanged = true;
+
+        if (_vsync) {
+            _vsync = false;
+            _vsyncChanged = true;
+        }
+    }
+
     for (auto& option : _coreOptions) {
         if (!option.visible) {
             continue;
@@ -162,8 +192,6 @@ void hc::Config::onDraw() {
         }
     }
 }
-
-void hc::Config::onGameUnloaded() {}
 
 void hc::Config::onConsoleUnloaded() {
     _performanceLevel = 0;

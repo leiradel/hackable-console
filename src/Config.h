@@ -23,20 +23,15 @@ namespace hc {
         bool getSupportNoGame() const;
         std::string const& getRootPath() const;
         std::string const& getAutorunPath() const;
+        bool vsync(bool* const on);
+        bool syncExact(bool* const on);
 
         static Config* check(lua_State* const L, int const index);
 
         // hc::View
         virtual char const* getTitle() override;
-        virtual void onStarted() override;
-        virtual void onCoreLoaded() override;
         virtual void onGameLoaded() override;
-        virtual void onGamePaused() override;
-        virtual void onGameResumed() override;
-        virtual void onGameReset() override;
-        virtual void onFrame() override;
         virtual void onDraw() override;
-        virtual void onGameUnloaded() override;
         virtual void onConsoleUnloaded() override;
         virtual void onQuit() override;
 
@@ -143,5 +138,10 @@ namespace hc {
         std::vector<CoreOption> _coreOptions;
         std::unordered_map<std::string, size_t> _coreMap;
         bool _optionsUpdated;
+
+        bool _vsync;
+        bool _vsyncChanged;
+        bool _syncExact;
+        bool _syncExactChanged;
     };
 }

@@ -12,6 +12,7 @@ namespace hc {
         void stop();
         void pause();
         void resume();
+        void reset();
 
         uint64_t getTimeUs() const;
 

@@ -39,17 +39,8 @@ namespace hc {
 
         // hc::View
         virtual char const* getTitle() override;
-        virtual void onStarted() override;
-        virtual void onCoreLoaded() override;
-        virtual void onGameLoaded() override;
-        virtual void onGamePaused() override;
-        virtual void onGameResumed() override;
-        virtual void onGameReset() override;
-        virtual void onFrame() override;
         virtual void onDraw() override;
         virtual void onGameUnloaded() override;
-        virtual void onConsoleUnloaded() override;
-        virtual void onQuit() override;
 
         virtual int push(lua_State* const L) override;
 
@@ -73,17 +64,8 @@ namespace hc {
 
         // hc::View
         virtual char const* getTitle() override;
-        virtual void onStarted() override;
-        virtual void onCoreLoaded() override;
-        virtual void onGameLoaded() override;
-        virtual void onGamePaused() override;
-        virtual void onGameResumed() override;
-        virtual void onGameReset() override;
         virtual void onFrame() override;
         virtual void onDraw() override;
-        virtual void onGameUnloaded() override;
-        virtual void onConsoleUnloaded() override;
-        virtual void onQuit() override;
 
         virtual int push(lua_State* const L) override;
 
@@ -104,41 +86,4 @@ namespace hc {
         int _lastEndianess;
         ImGuiDataType _lastType;
     };
-
-#if 0
-    class Sparkline : public View {
-    public:
-        Sparkline(Desktop* desktop) : View(desktop), _memory(nullptr), _handle(0) {}
-        virtual ~Sparkline() {}
-
-        void init(char const* title, Memory* const memory, Memory::Handle const handle, uint64_t const address);
-
-        void add(uint8_t const value) {
-            _sparkline.add(value);
-        }
-
-        // hc::View
-        virtual char const* getTitle() override;
-        virtual void onStarted() override;
-        virtual void onCoreLoaded() override;
-        virtual void onGameLoaded() override;
-        virtual void onGamePaused() override;
-        virtual void onGameResumed() override;
-        virtual void onGameReset() override;
-        virtual void onFrame() override;
-        virtual void onDraw() override;
-        virtual void onGameUnloaded() override;
-        virtual void onConsoleUnloaded() override;
-        virtual void onQuit() override;
-
-        virtual int push(lua_State* const L) override;
-
-    protected:
-        std::string _title;
-        Memory* _memory;
-        Memory::Handle _handle;
-        uint64_t _address;
-        ImGuiAl::Sparkline<uint8_t, 600> _sparkline;
-    };
-#endif
 }

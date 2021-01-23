@@ -7,6 +7,7 @@
 #include <IconsFontAwesome4.h>
 
 #include <stdlib.h>
+#include <math.h>
 
 #define TAG "[DSK] "
 
@@ -25,11 +26,23 @@ void hc::Desktop::add(View* const view, bool const top, bool const free, char co
 }
 
 double hc::Desktop::drawFps() {
-    return static_cast<double>(_drawCount) * 1000000.0f / static_cast<double>(_drawTimer.getTimeUs());
+    double const fps = static_cast<double>(_drawCount) * 1000000.0f / static_cast<double>(_drawTimer.getTimeUs());
+    return isnan(fps) || isinf(fps) ? 0.0 : fps;
+}
+
+void hc::Desktop::resetDrawFps() {
+    _drawCount = 0;
+    _drawTimer.reset();
 }
 
 double hc::Desktop::frameFps() {
-    return static_cast<double>(_frameCount) * 1000000.0f / static_cast<double>(_frameTimer.getTimeUs());
+    double const fps = static_cast<double>(_frameCount) * 1000000.0f / static_cast<double>(_frameTimer.getTimeUs());
+    return isnan(fps) || isinf(fps) ? 0.0 : fps;
+}
+
+void hc::Desktop::resetFrameFps() {
+    _frameCount = 0;
+    _frameTimer.stop();
 }
 
 char const* hc::Desktop::getTitle() {
@@ -60,6 +73,14 @@ void hc::Desktop::onGameLoaded() {
         View* const view = pair.second.view;
         _logger->debug(TAG "onGameLoaded %s", view->getTitle());
         view->onGameLoaded();
+    }
+}
+
+void hc::Desktop::onGameStarted() {
+    for (auto const& pair : _views) {
+        View* const view = pair.second.view;
+        _logger->debug(TAG "onGameStarted %s", view->getTitle());
+        view->onGameStarted();
     }
 }
 
@@ -103,6 +124,14 @@ void hc::Desktop::onFrame() {
         View* const view = pair.second.view;
         // Don't log stuff per frame
         view->onFrame();
+    }
+}
+
+void hc::Desktop::onStep() {
+    for (auto const& pair : _views) {
+        View* const view = pair.second.view;
+        // Don't log stuff per frame
+        view->onStep();
     }
 }
 

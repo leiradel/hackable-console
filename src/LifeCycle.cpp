@@ -7,10 +7,67 @@
     #include "Application.h"
 
 
+bool LifeCycle::canTransitionTo(const State state) const {
+    switch (__state) {
+        case State::ConsoleLoaded:
+            switch (state) {
+                case State::GameLoaded:
+                case State::Quit:
+                case State::Start:
+                    return true;
+                default: break;
+            }
+            break;
+        case State::GameLoaded:
+            switch (state) {
+                case State::ConsoleLoaded:
+                case State::GameRunning:
+                case State::Quit:
+                    return true;
+                default: break;
+            }
+            break;
+        case State::GamePaused:
+            switch (state) {
+                case State::ConsoleLoaded:
+                case State::GamePaused:
+                case State::GameRunning:
+                case State::Quit:
+                    return true;
+                default: break;
+            }
+            break;
+        case State::GameRunning:
+            switch (state) {
+                case State::ConsoleLoaded:
+                case State::GamePaused:
+                case State::GameRunning:
+                case State::Quit:
+                    return true;
+                default: break;
+            }
+            break;
+        case State::Quit:
+            break;
+        case State::Start:
+            switch (state) {
+                case State::ConsoleLoaded:
+                case State::Quit:
+                    return true;
+                default: break;
+            }
+            break;
+        default: break;
+    }
+
+    return false;
+}
+
 #ifdef DEBUG_FSM
 const char* LifeCycle::stateName(State state) const {
     switch (state) {
         case State::ConsoleLoaded: return "ConsoleLoaded";
+        case State::GameLoaded: return "GameLoaded";
         case State::GamePaused: return "GamePaused";
         case State::GameRunning: return "GameRunning";
         case State::Quit: return "Quit";
@@ -110,7 +167,7 @@ bool LifeCycle::loadGame(const_cstr path) {
 #ifdef DEBUG_FSM
                 printf(
                     "FSM %s:%u Failed global precondition while switching to %s",
-                    __FUNCTION__, __LINE__, stateName(State::GamePaused)
+                    __FUNCTION__, __LINE__, stateName(State::GameLoaded)
                 );
 #endif
 
@@ -121,7 +178,7 @@ bool LifeCycle::loadGame(const_cstr path) {
 #ifdef DEBUG_FSM
                 printf(
                     "FSM %s:%u Failed state precondition while switching to %s",
-                    __FUNCTION__, __LINE__, stateName(State::GamePaused)
+                    __FUNCTION__, __LINE__, stateName(State::GameLoaded)
                 );
 #endif
 
@@ -134,14 +191,14 @@ bool LifeCycle::loadGame(const_cstr path) {
                 return false;
             }
         
-            __state = State::GamePaused;
+            __state = State::GameLoaded;
             after(__state);
             after();
 
 #ifdef DEBUG_FSM
             printf(
                 "FSM %s:%u Switched to %s",
-                __FUNCTION__, __LINE__, stateName(State::GamePaused)
+                __FUNCTION__, __LINE__, stateName(State::GameLoaded)
             );
 #endif
             return true;
@@ -179,7 +236,7 @@ bool LifeCycle::pauseGame() {
                 return false;
             }
 
-//#line 70 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+//#line 86 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
             if (!ctx.pauseGame()) {
                 return false;
@@ -231,6 +288,50 @@ bool LifeCycle::quit() {
             }
 
             bool __ok = unloadCore() &&
+                        quit();
+
+            if (__ok) {
+                after(__state);
+                after();
+
+            }
+            else {
+#ifdef DEBUG_FSM
+                printf(
+                    "FSM %s:%u Failed to switch to %s",
+                    __FUNCTION__, __LINE__, stateName(State::Quit)
+                );
+#endif
+            }
+
+            return __ok;
+        }
+        break;
+
+        case State::GameLoaded: {
+            if (!before()) {
+#ifdef DEBUG_FSM
+                printf(
+                    "FSM %s:%u Failed global precondition while switching to %s",
+                    __FUNCTION__, __LINE__, stateName(State::Quit)
+                );
+#endif
+
+                return false;
+            }
+
+            if (!before(__state)) {
+#ifdef DEBUG_FSM
+                printf(
+                    "FSM %s:%u Failed state precondition while switching to %s",
+                    __FUNCTION__, __LINE__, stateName(State::Quit)
+                );
+#endif
+
+                return false;
+            }
+
+            bool __ok = unloadGame() &&
                         quit();
 
             if (__ok) {
@@ -407,7 +508,7 @@ bool LifeCycle::resetGame() {
                 return false;
             }
 
-//#line 50 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+//#line 66 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
             if (!ctx.resetGame()) {
                 return false;
@@ -450,7 +551,7 @@ bool LifeCycle::resetGame() {
                 return false;
             }
 
-//#line 76 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+//#line 92 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
             ctx.resetGame();
         
@@ -477,6 +578,57 @@ bool LifeCycle::resetGame() {
 bool LifeCycle::resumeGame() {
     switch (__state) {
         case State::GamePaused: {
+            if (!before()) {
+#ifdef DEBUG_FSM
+                printf(
+                    "FSM %s:%u Failed global precondition while switching to %s",
+                    __FUNCTION__, __LINE__, stateName(State::GameRunning)
+                );
+#endif
+
+                return false;
+            }
+
+            if (!before(__state)) {
+#ifdef DEBUG_FSM
+                printf(
+                    "FSM %s:%u Failed state precondition while switching to %s",
+                    __FUNCTION__, __LINE__, stateName(State::GameRunning)
+                );
+#endif
+
+                return false;
+            }
+
+//#line 60 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+
+            if (!ctx.resumeGame()) {
+                return false;
+            }
+        
+            __state = State::GameRunning;
+            after(__state);
+            after();
+
+#ifdef DEBUG_FSM
+            printf(
+                "FSM %s:%u Switched to %s",
+                __FUNCTION__, __LINE__, stateName(State::GameRunning)
+            );
+#endif
+            return true;
+        }
+        break;
+
+        default: break;
+    }
+
+    return false;
+}
+
+bool LifeCycle::startGame() {
+    switch (__state) {
+        case State::GameLoaded: {
             if (!before()) {
 #ifdef DEBUG_FSM
                 printf(
@@ -550,7 +702,7 @@ bool LifeCycle::step() {
                 return false;
             }
 
-//#line 56 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+//#line 72 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
             ctx.step();
         
@@ -625,6 +777,49 @@ bool LifeCycle::unloadCore() {
 
 bool LifeCycle::unloadGame() {
     switch (__state) {
+        case State::GameLoaded: {
+            if (!before()) {
+#ifdef DEBUG_FSM
+                printf(
+                    "FSM %s:%u Failed global precondition while switching to %s",
+                    __FUNCTION__, __LINE__, stateName(State::ConsoleLoaded)
+                );
+#endif
+
+                return false;
+            }
+
+            if (!before(__state)) {
+#ifdef DEBUG_FSM
+                printf(
+                    "FSM %s:%u Failed state precondition while switching to %s",
+                    __FUNCTION__, __LINE__, stateName(State::ConsoleLoaded)
+                );
+#endif
+
+                return false;
+            }
+
+//#line 50 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+
+            if (!ctx.unloadGame()) {
+                return false;
+            }
+        
+            __state = State::ConsoleLoaded;
+            after(__state);
+            after();
+
+#ifdef DEBUG_FSM
+            printf(
+                "FSM %s:%u Switched to %s",
+                __FUNCTION__, __LINE__, stateName(State::ConsoleLoaded)
+            );
+#endif
+            return true;
+        }
+        break;
+
         case State::GamePaused: {
             if (!before()) {
 #ifdef DEBUG_FSM
@@ -648,7 +843,7 @@ bool LifeCycle::unloadGame() {
                 return false;
             }
 
-//#line 60 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+//#line 76 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
             if (!ctx.unloadGame()) {
                 return false;
@@ -691,7 +886,7 @@ bool LifeCycle::unloadGame() {
                 return false;
             }
 
-//#line 80 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+//#line 96 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
             if (!ctx.unloadGame()) {
                 return false;

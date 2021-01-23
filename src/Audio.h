@@ -24,17 +24,12 @@ namespace hc {
 
         // hc::View
         virtual char const* getTitle() override;
-        virtual void onStarted() override;
-        virtual void onCoreLoaded() override;
         virtual void onGameLoaded() override;
         virtual void onGamePaused() override;
         virtual void onGameResumed() override;
         virtual void onGameReset() override;
-        virtual void onFrame() override;
         virtual void onDraw() override;
         virtual void onGameUnloaded() override;
-        virtual void onConsoleUnloaded() override;
-        virtual void onQuit() override;
 
         virtual int push(lua_State* const L) override;
 

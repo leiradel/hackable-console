@@ -31,13 +31,29 @@ fsm LifeCycle {
             ctx.unloadCore();
         }
 
-        loadGame(const_cstr path) => GamePaused {
+        loadGame(const_cstr path) => GameLoaded {
             if (!ctx.loadGame(path)) {
                 forbid;
             }
         }
 
         quit() => unloadCore() => quit();
+    }
+
+    GameLoaded {
+        startGame() => GameRunning {
+            if (!ctx.resumeGame()) {
+                forbid;
+            }
+        }
+
+        unloadGame() => ConsoleLoaded {
+            if (!ctx.unloadGame()) {
+                forbid;
+            }
+        }
+
+        quit() => unloadGame() => quit();
     }
 
     GamePaused {

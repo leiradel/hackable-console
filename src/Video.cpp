@@ -30,20 +30,6 @@ char const* hc::Video::getTitle() {
     return ICON_FA_DESKTOP " Video";
 }
 
-void hc::Video::onStarted() {}
-
-void hc::Video::onCoreLoaded() {}
-
-void hc::Video::onGameLoaded() {}
-
-void hc::Video::onGamePaused() {}
-
-void hc::Video::onGameResumed() {}
-
-void hc::Video::onGameReset() {}
-
-void hc::Video::onFrame() {}
-
 void hc::Video::onDraw() {
     if (_texture != 0) {
         ImVec2 const min = ImGui::GetWindowContentRegionMin();
@@ -75,8 +61,6 @@ void hc::Video::onGameUnloaded() {
 void hc::Video::onConsoleUnloaded() {
     _pixelFormat = RETRO_PIXEL_FORMAT_UNKNOWN;
 }
-
-void hc::Video::onQuit() {}
 
 bool hc::Video::setRotation(unsigned rotation) {
     _rotation = rotation;

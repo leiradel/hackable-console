@@ -40,6 +40,11 @@ void hc::Timer::resume() {
     }
 }
 
+void hc::Timer::reset() {
+    stop();
+    start();
+}
+
 uint64_t hc::Timer::getTimeUs() const {
     if (_started) {
         if (_paused) {

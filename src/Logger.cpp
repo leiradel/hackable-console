@@ -36,20 +36,6 @@ char const* hc::Logger::getTitle() {
     return ICON_FA_COMMENT " Log";
 }
 
-void hc::Logger::onStarted() {}
-
-void hc::Logger::onCoreLoaded() {}
-
-void hc::Logger::onGameLoaded() {}
-
-void hc::Logger::onGamePaused() {}
-
-void hc::Logger::onGameResumed() {}
-
-void hc::Logger::onGameReset() {}
-
-void hc::Logger::onFrame() {}
-
 void hc::Logger::onDraw() {
     _mutex.lock();
     int const button = _logger.draw();
@@ -84,13 +70,9 @@ void hc::Logger::onDraw() {
     }
 }
 
-void hc::Logger::onGameUnloaded() {}
-
 void hc::Logger::onConsoleUnloaded() {
     _logger.clear();
 }
-
-void hc::Logger::onQuit() {}
 
 void hc::Logger::vprintf(enum retro_log_level level, const char* format, va_list args) {
     if (level > RETRO_LOG_DEBUG) {

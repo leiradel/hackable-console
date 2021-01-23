@@ -50,14 +50,16 @@ char const* hc::Control::getTitle() {
     return ICON_FA_COG " Control";
 }
 
-void hc::Control::onStarted() {}
-
 void hc::Control::onCoreLoaded() {
     callConsoleMethod("onCoreLoaded");
 }
 
 void hc::Control::onGameLoaded() {
     callConsoleMethod("onGameLoaded");
+}
+
+void hc::Control::onGameStarted() {
+    callConsoleMethod("onGameStarted");
 }
 
 void hc::Control::onGamePaused() {
@@ -74,6 +76,10 @@ void hc::Control::onGameReset() {
 
 void hc::Control::onFrame() {
     callConsoleMethod("onFrame");
+}
+
+void hc::Control::onStep() {
+    callConsoleMethod("onStep");
 }
 
 void hc::Control::onDraw() {

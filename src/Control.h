@@ -20,13 +20,14 @@ namespace hc {
 
         // hc::View
         virtual char const* getTitle() override;
-        virtual void onStarted() override;
         virtual void onCoreLoaded() override;
         virtual void onGameLoaded() override;
+        virtual void onGameStarted() override;
         virtual void onGamePaused() override;
         virtual void onGameResumed() override;
         virtual void onGameReset() override;
         virtual void onFrame() override;
+        virtual void onStep() override;
         virtual void onDraw() override;
         virtual void onGameUnloaded() override;
         virtual void onConsoleUnloaded() override;
