@@ -100,10 +100,10 @@ void hc::Audio::onGameLoaded() {
 
     if (_resampler == nullptr) {
         _logger->error(TAG "speex_resampler_init: %s", speex_resampler_strerror(error));
-        return;
     }
-
-    _logger->info(TAG "Resampler initialized to convert from %f to %f", _timing.sample_rate, _sampleRate);
+    else {
+        _logger->info(TAG "Resampler initialized to convert from %f to %f", _timing.sample_rate, _sampleRate);
+    }
 }
 
 void hc::Audio::onGamePaused() {
@@ -167,8 +167,10 @@ void hc::Audio::onDraw() {
 }
 
 void hc::Audio::onGameUnloaded() {
-    speex_resampler_destroy(_resampler);
-    _resampler = nullptr;
+    if (_resampler != nullptr) {
+        speex_resampler_destroy(_resampler);
+        _resampler = nullptr;
+    }
 
     _mutex.lock();
     _samples.clear();
