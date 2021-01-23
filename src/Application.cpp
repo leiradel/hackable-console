@@ -683,7 +683,7 @@ void hc::Application::onQuit() {
 
 void hc::Application::vprintf(void* ud, char const* fmt, va_list args) {
     auto const self = static_cast<Application*>(ud);
-    self->_logger->debug(fmt, args);
+    self->_logger->vprintf(RETRO_LOG_DEBUG, fmt, args);
 }
 
 void hc::Application::audioCallback(void* const udata, Uint8* const stream, int const len) {
