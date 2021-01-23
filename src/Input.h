@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Desktop.h"
-#include "Logger.h"
 
 #include <lrcpp/Components.h>
 #include <lrcpp/Frontend.h>
@@ -19,7 +18,7 @@ namespace hc {
         Input(Desktop* desktop);
         virtual ~Input() {}
 
-        void init(Logger* const logger, lrcpp::Frontend* const frontend);
+        void init(lrcpp::Frontend* const frontend);
         void processEvent(SDL_Event const* event);
 
         // hc::View

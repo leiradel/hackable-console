@@ -1,4 +1,5 @@
 #include "Control.h"
+#include "Logger.h"
 
 #include "LuaUtil.h"
 
@@ -41,8 +42,8 @@ static int str2id(char const* const str) {
 
 hc::Control::Control(Desktop* desktop) : View(desktop), _logger(nullptr), _selected(0), _opened(-1) {}
 
-void hc::Control::init(Logger* const logger, LifeCycle* const fsm) {
-    _logger = logger;
+void hc::Control::init(LifeCycle* const fsm) {
+    _logger = _desktop->getLogger();
     _fsm = fsm;
 }
 

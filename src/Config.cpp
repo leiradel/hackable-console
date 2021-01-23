@@ -1,4 +1,5 @@
 #include "Config.h"
+#include "Logger.h"
 
 #include <fnkdat.h>
 #include <IconsFontAwesome4.h>
@@ -50,8 +51,8 @@ hc::Config::Config(Desktop* desktop)
     memset(&_getCoreProc, 0, sizeof(_getCoreProc));
 }
 
-bool hc::Config::init(Logger* const logger) {
-    _logger = logger;
+bool hc::Config::init() {
+    _logger = _desktop->getLogger();
 
     if (fnkdat(NULL, 0, 0, FNKDAT_INIT) != 0) {
         _logger->error(TAG "Error initializing fnkdat");

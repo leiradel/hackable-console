@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Desktop.h"
-#include "Logger.h"
 #include "Scriptable.h"
 
 #include <lrcpp/Components.h>
@@ -20,7 +19,7 @@ namespace hc {
         Config(Desktop* desktop);
         virtual ~Config() {}
 
-        bool init(Logger* const logger);
+        bool init();
         bool getSupportNoGame() const;
         std::string const& getRootPath() const;
         std::string const& getAutorunPath() const;

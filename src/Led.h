@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Desktop.h"
-#include "Logger.h"
 #include "Scriptable.h"
 
 #include <lrcpp/Components.h>
@@ -14,7 +13,7 @@ namespace hc {
         Led(Desktop* desktop);
         virtual ~Led() {}
 
-        void init(hc::Logger* const logger);
+        void init();
 
         static Led* check(lua_State* const L, int const index);
 

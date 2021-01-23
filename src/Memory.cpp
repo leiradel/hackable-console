@@ -1,4 +1,5 @@
 #include "Memory.h"
+#include "Logger.h"
 
 #include <imguial_button.h>
 #include <IconsFontAwesome4.h>
@@ -16,8 +17,8 @@ hc::Memory::Region::Region(std::string&& name, void* data, size_t offset, size_t
     , readOnly(readOnly)
 {}
 
-void hc::Memory::init(Logger* const logger) {
-    _logger = logger;
+void hc::Memory::init() {
+    _logger = _desktop->getLogger();
 }
 
 hc::Memory::Region* hc::Memory::lock(Handle const handle) {

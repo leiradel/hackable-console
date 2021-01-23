@@ -1,4 +1,5 @@
 #include "Audio.h"
+#include "Logger.h"
 
 #include <IconsFontAwesome4.h>
 
@@ -27,8 +28,8 @@ hc::Audio::Audio(Desktop* desktop)
     memset(&_timing, 0, sizeof(_timing));
 }
 
-void hc::Audio::init(Logger* const logger, double const sampleRate, Fifo* const fifo) {
-    _logger = logger;
+void hc::Audio::init(double const sampleRate, Fifo* const fifo) {
+    _logger = _desktop->getLogger();
     _sampleRate = sampleRate;
     _fifo = fifo;
 }

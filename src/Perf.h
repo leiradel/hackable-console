@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Desktop.h"
-#include "Logger.h"
 #include "Scriptable.h"
 
 #include <lrcpp/Components.h>
@@ -17,7 +16,7 @@ namespace hc
         Perf(Desktop* desktop) : View(desktop), _logger(nullptr) {}
         virtual ~Perf() {}
 
-        void init(Logger* const logger);
+        void init();
 
         static uint64_t getTimeUs();
         static uint64_t getTimeNs();

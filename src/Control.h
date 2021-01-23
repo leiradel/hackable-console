@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Desktop.h"
-#include "Logger.h"
 #include "LifeCycle.h"
 #include "Scriptable.h"
 
@@ -13,7 +12,7 @@ namespace hc {
     public:
         Control(Desktop* desktop);
 
-        void init(Logger* const logger, LifeCycle* const fsm);
+        void init(LifeCycle* const fsm);
 
         void setSystemInfo(retro_system_info const* info);
 

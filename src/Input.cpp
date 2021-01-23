@@ -1,4 +1,5 @@
 #include "Input.h"
+#include "Logger.h"
 
 #include <IconsFontAwesome4.h>
 
@@ -12,8 +13,8 @@ extern "C" {
 
 hc::Input::Input(Desktop* desktop) : View(desktop), _logger(nullptr), _frontend(nullptr) {}
 
-void hc::Input::init(Logger* const logger, lrcpp::Frontend* const frontend) {
-    _logger = logger;
+void hc::Input::init(lrcpp::Frontend* const frontend) {
+    _logger = _desktop->getLogger();
     _frontend = frontend;
 
     // Add the none controller

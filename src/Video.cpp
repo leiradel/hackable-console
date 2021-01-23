@@ -1,4 +1,5 @@
 #include "Video.h"
+#include "Logger.h"
 
 #include <IconsFontAwesome4.h>
 
@@ -10,8 +11,8 @@ extern "C" {
 
 hc::Video::Video(Desktop* desktop) : View(desktop), _logger(nullptr) {}
 
-void hc::Video::init(Logger* const logger) {
-    _logger = logger;
+void hc::Video::init() {
+    _logger = _desktop->getLogger();
 
     _rotation = 0;
     _pixelFormat = RETRO_PIXEL_FORMAT_UNKNOWN;

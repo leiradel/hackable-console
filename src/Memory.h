@@ -1,9 +1,9 @@
 #pragma once
 
 #include "Desktop.h"
-#include "Logger.h"
 #include "Scriptable.h"
 
+#include <imgui.h>
 #include <imgui_memory_editor.h>
 #include <imguial_sparkline.h>
 
@@ -33,7 +33,7 @@ namespace hc {
         Memory(Desktop* desktop) : View(desktop), _logger(nullptr), _selected(0), _viewCount(0) {}
         virtual ~Memory() {}
 
-        void init(Logger* const logger);
+        void init();
         Region* lock(Handle const handle);
 
         static Memory* check(lua_State* const L, int const index);

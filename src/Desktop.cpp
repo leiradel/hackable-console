@@ -27,9 +27,7 @@ hc::Desktop::Desktop()
     , _perf(nullptr)
 {}
 
-void hc::Desktop::init(Logger* const logger) {
-    _logger = logger;
-
+void hc::Desktop::init() {
     _drawCount = 0;
     _frameCount = 0;
 }

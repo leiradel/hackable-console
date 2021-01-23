@@ -1,4 +1,5 @@
 #include "Perf.h"
+#include "Logger.h"
 
 #include <IconsFontAwesome4.h>
 
@@ -11,8 +12,8 @@ extern "C" {
 
 #define TAG "[PRF] "
 
-void hc::Perf::init(Logger* const logger) {
-    _logger = logger;
+void hc::Perf::init() {
+    _logger = _desktop->getLogger();
 }
 
 uint64_t hc::Perf::getTimeUs() {

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Desktop.h"
-#include "Logger.h"
 
 #include <lrcpp/Components.h>
 #include <Fifo.h>
@@ -17,7 +16,7 @@ namespace hc {
         Audio(Desktop* desktop);
         virtual ~Audio() {}
 
-        void init(Logger* const logger, double const sampleRate, Fifo* const fifo);
+        void init(double const sampleRate, Fifo* const fifo);
         void flush();
 
         // hc::View

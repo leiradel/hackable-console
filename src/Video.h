@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Desktop.h"
-#include "Logger.h"
 
 #include <lrcpp/Components.h>
 
@@ -15,7 +14,7 @@ namespace hc {
         Video(Desktop* desktop);
         virtual ~Video() {}
 
-        void init(Logger* const logger);
+        void init();
         double getCoreFps() const;
 
         // hc::View

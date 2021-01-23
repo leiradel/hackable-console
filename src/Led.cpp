@@ -1,4 +1,5 @@
 #include "Led.h"
+#include "Logger.h"
 
 #include <IconsFontAwesome4.h>
 
@@ -10,8 +11,8 @@ extern "C" {
 
 hc::Led::Led(Desktop* desktop) : View(desktop), _logger(nullptr) {}
 
-void hc::Led::init(hc::Logger* const logger) {
-    _logger = logger;
+void hc::Led::init() {
+    _logger = _desktop->getLogger();
 }
 
 char const* hc::Led::getTitle() {

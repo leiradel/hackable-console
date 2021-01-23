@@ -51,7 +51,7 @@ namespace hc {
         Desktop();
         virtual ~Desktop() {}
 
-        void init(Logger* const logger);
+        void init();
         void add(View* const view, bool const top, bool const free, char const* const id);
         double drawFps();
         void resetDrawFps();
