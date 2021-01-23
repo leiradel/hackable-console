@@ -14,6 +14,12 @@ extern "C" {
 
 namespace hc {
     class Logger;
+    class Config;
+    class Video;
+    class Led;
+    class Audio;
+    class Input;
+    class Perf;
     class Desktop;
 
     class View {
@@ -52,6 +58,14 @@ namespace hc {
         double frameFps();
         void resetFrameFps();
 
+        Logger* getLogger() const;
+        Config* getConfig() const;
+        Video* getVideo() const;
+        Led* getLed() const;
+        Audio* getAudio() const;
+        Input* getInput() const;
+        Perf* getPerf() const;
+
         // hc::View
         virtual char const* getTitle() override;
         virtual void onStarted() override;
@@ -85,6 +99,12 @@ namespace hc {
         };
 
         Logger* _logger;
+        Config* _config;
+        Video* _video;
+        Led* _led;
+        Audio* _audio;
+        Input* _input;
+        Perf* _perf;
         
         std::map<std::string, ViewProperties> _views;
 

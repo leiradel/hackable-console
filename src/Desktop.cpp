@@ -1,6 +1,11 @@
 #include "Desktop.h"
 
 #include "Logger.h"
+#include "Config.h"
+#include "Video.h"
+#include "Led.h"
+#include "Audio.h"
+#include "Input.h"
 #include "Perf.h"
 
 #include <imguial_button.h>
@@ -23,6 +28,28 @@ void hc::Desktop::init(Logger* const logger) {
 void hc::Desktop::add(View* const view, bool const top, bool const free, char const* const id) {
     ViewProperties props = {view, top, free, id, true};
     _views.emplace(id != nullptr ? id : view->getTitle(), props);
+
+    if (dynamic_cast<Logger*>(view) != nullptr) {
+        _logger = dynamic_cast<Logger*>(view);
+    }
+    else if (dynamic_cast<Config*>(view) != nullptr) {
+        _config = dynamic_cast<Config*>(view);
+    }
+    else if (dynamic_cast<Video*>(view) != nullptr) {
+        _video = dynamic_cast<Video*>(view);
+    }
+    else if (dynamic_cast<Led*>(view) != nullptr) {
+        _led = dynamic_cast<Led*>(view);
+    }
+    else if (dynamic_cast<Audio*>(view) != nullptr) {
+        _audio = dynamic_cast<Audio*>(view);
+    }
+    else if (dynamic_cast<Input*>(view) != nullptr) {
+        _input = dynamic_cast<Input*>(view);
+    }
+    else if (dynamic_cast<Perf*>(view) != nullptr) {
+        _perf = dynamic_cast<Perf*>(view);
+    }
 }
 
 double hc::Desktop::drawFps() {
@@ -47,6 +74,34 @@ void hc::Desktop::resetFrameFps() {
         _frameCount = 0;
         _frameTimer.reset();
     }
+}
+
+hc::Logger* hc::Desktop::getLogger() const {
+    return _logger;
+}
+
+hc::Config* hc::Desktop::getConfig() const {
+    return _config;
+}
+
+hc::Video* hc::Desktop::getVideo() const {
+    return _video;
+}
+
+hc::Led* hc::Desktop::getLed() const {
+    return _led;
+}
+
+hc::Audio* hc::Desktop::getAudio() const {
+    return _audio;
+}
+
+hc::Input* hc::Desktop::getInput() const {
+    return _input;
+}
+
+hc::Perf* hc::Desktop::getPerf() const {
+    return _perf;
 }
 
 char const* hc::Desktop::getTitle() {
