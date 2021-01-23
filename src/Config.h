@@ -2,6 +2,7 @@
 
 #include "Desktop.h"
 #include "Logger.h"
+#include "Scriptable.h"
 
 #include <lrcpp/Components.h>
 
@@ -14,7 +15,7 @@ extern "C" {
 #include <unordered_map>
 
 namespace hc {
-    class Config: public View, public lrcpp::Config {
+    class Config: public View, public Scriptable, public lrcpp::Config {
     public:
         Config(Desktop* desktop);
         virtual ~Config() {}

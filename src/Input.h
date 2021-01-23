@@ -22,8 +22,6 @@ namespace hc {
         void init(Logger* const logger, lrcpp::Frontend* const frontend);
         void processEvent(SDL_Event const* event);
 
-        static Input* check(lua_State* const L, int const index);
-
         // hc::View
         virtual char const* getTitle() override;
         virtual void onCoreLoaded() override;
@@ -31,9 +29,6 @@ namespace hc {
         virtual void onStep() override;
         virtual void onDraw() override;
         virtual void onConsoleUnloaded() override;
-
-        // hc::Scriptable
-        virtual int push(lua_State* const L) override;
 
         // lrcpp::Input
         virtual bool setInputDescriptors(retro_input_descriptor const* descriptors) override;

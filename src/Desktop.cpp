@@ -226,8 +226,13 @@ int hc::Desktop::push(lua_State* const L) {
     for (auto const& pair : _views) {
         ViewProperties const& props = pair.second;
         View* const view = props.view;
-        view->push(L);
-        lua_setfield(L, -2, props.id);
+
+        auto const scriptable = dynamic_cast<Scriptable*>(view);
+
+        if (scriptable != nullptr) {
+            scriptable->push(L);
+            lua_setfield(L, -2, props.id);
+        }
     }
 
     static struct {char const* const name; char const* const value;} const stringConsts[] = {

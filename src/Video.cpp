@@ -257,24 +257,3 @@ void hc::Video::setupTexture(unsigned const width, unsigned const height) {
     glBindTexture(GL_TEXTURE_2D, previous_texture);
     _logger->info(TAG "Texture set to %u x %u", width, height);
 }
-
-int hc::Video::push(lua_State* const L) {
-    auto const self = static_cast<Video**>(lua_newuserdata(L, sizeof(Video*)));
-    *self = this;
-
-    if (luaL_newmetatable(L, "hc::Video")) {
-        static luaL_Reg const methods[] = {
-            {nullptr, nullptr}
-        };
-
-        luaL_newlib(L, methods);
-        lua_setfield(L, -2, "__index");
-    }
-
-    lua_setmetatable(L, -2);
-    return 1;
-}
-
-hc::Video* hc::Video::check(lua_State* const L, int const index) {
-    return *static_cast<Video**>(luaL_checkudata(L, index, "hc::Video"));
-}

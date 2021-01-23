@@ -2,6 +2,7 @@
 
 #include "Desktop.h"
 #include "Logger.h"
+#include "Scriptable.h"
 
 #include <lrcpp/Components.h>
 
@@ -11,7 +12,7 @@
 
 namespace hc
 {
-    class Perf : public View, public lrcpp::Perf {
+    class Perf : public View, public Scriptable, public lrcpp::Perf {
     public:
         Perf(Desktop* desktop) : View(desktop), _logger(nullptr) {}
         virtual ~Perf() {}

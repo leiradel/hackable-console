@@ -18,16 +18,11 @@ namespace hc {
         void init(Logger* const logger);
         double getCoreFps() const;
 
-        static Video* check(lua_State* const L, int const index);
-
         // hc::View
         virtual char const* getTitle() override;
         virtual void onDraw() override;
         virtual void onGameUnloaded() override;
         virtual void onConsoleUnloaded() override;
-
-        // hc::Scriptable
-        virtual int push(lua_State* const L) override;
 
         // lrcpp::Video
         virtual bool setRotation(unsigned rotation) override;

@@ -717,24 +717,3 @@ void hc::Input::joystickAdded(SDL_Event const* event) {
         SDL_free((void*)mapping);
     }
 }
-
-int hc::Input::push(lua_State* const L) {
-    auto const self = static_cast<Input**>(lua_newuserdata(L, sizeof(Input*)));
-    *self = this;
-
-    if (luaL_newmetatable(L, "hc::Input")) {
-        static luaL_Reg const methods[] = {
-            {nullptr, nullptr}
-        };
-
-        luaL_newlib(L, methods);
-        lua_setfield(L, -2, "__index");
-    }
-
-    lua_setmetatable(L, -2);
-    return 1;
-}
-
-hc::Input* hc::Input::check(lua_State* const L, int const index) {
-    return *static_cast<Input**>(luaL_checkudata(L, index, "hc::Input"));
-}

@@ -2,13 +2,14 @@
 
 #include "Desktop.h"
 #include "Logger.h"
+#include "Scriptable.h"
 
 #include <lrcpp/Components.h>
 
 #include <vector>
 
 namespace hc {
-    class Led : public View, public lrcpp::Led {
+    class Led : public View, public Scriptable, public lrcpp::Led {
     public:
         Led(Desktop* desktop);
         virtual ~Led() {}

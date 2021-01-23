@@ -20,8 +20,6 @@ namespace hc {
         void init(Logger* const logger, double const sampleRate, Fifo* const fifo);
         void flush();
 
-        static Audio* check(lua_State* const L, int const index);
-
         // hc::View
         virtual char const* getTitle() override;
         virtual void onGameLoaded() override;
@@ -30,9 +28,6 @@ namespace hc {
         virtual void onGameReset() override;
         virtual void onDraw() override;
         virtual void onGameUnloaded() override;
-
-        // hc::Scriptable
-        virtual int push(lua_State* const L) override;
 
         // lrcpp::Audio
         virtual bool setSystemAvInfo(retro_system_av_info const* info) override;

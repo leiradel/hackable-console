@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Desktop.h"
+#include "Scriptable.h"
 
 #include <lrcpp/Components.h>
 #include <imguial_term.h>
@@ -12,7 +13,7 @@ extern "C" {
 }
 
 namespace hc {
-    class Logger: public View, public lrcpp::Logger {
+    class Logger: public View, public Scriptable, public lrcpp::Logger {
     public:
         Logger(Desktop* desktop);
         virtual ~Logger() {}

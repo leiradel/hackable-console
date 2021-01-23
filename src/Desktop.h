@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Timer.h"
 #include "Scriptable.h"
+#include "Timer.h"
 
 #include <lrcpp/Frontend.h>
 
@@ -16,7 +16,7 @@ namespace hc {
     class Logger;
     class Desktop;
 
-    class View : public Scriptable {
+    class View {
     public:
         View(Desktop* desktop) : _desktop(desktop) {}
         virtual ~View() {}
@@ -36,14 +36,11 @@ namespace hc {
         virtual void onConsoleUnloaded() {}
         virtual void onQuit() {}
 
-        // hc::Scriptable
-        virtual int push(lua_State* const L) = 0;
-
     protected:
         Desktop* _desktop;
     };
 
-    class Desktop : public View {
+    class Desktop : public View, public Scriptable {
     public:
         Desktop();
         virtual ~Desktop() {}

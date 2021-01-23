@@ -209,24 +209,3 @@ void hc::Audio::sample(int16_t left, int16_t right) {
     int16_t frame[2] = {left, right};
     sampleBatch(frame, 1);
 }
-
-int hc::Audio::push(lua_State* const L) {
-    auto const self = static_cast<Audio**>(lua_newuserdata(L, sizeof(Audio*)));
-    *self = this;
-
-    if (luaL_newmetatable(L, "hc::Audio")) {
-        static luaL_Reg const methods[] = {
-            {nullptr, nullptr}
-        };
-
-        luaL_newlib(L, methods);
-        lua_setfield(L, -2, "__index");
-    }
-
-    lua_setmetatable(L, -2);
-    return 1;
-}
-
-hc::Audio* hc::Audio::check(lua_State* const L, int const index) {
-    return *static_cast<Audio**>(luaL_checkudata(L, index, "hc::Audio"));
-}

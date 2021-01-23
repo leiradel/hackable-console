@@ -2,6 +2,7 @@
 
 #include "Desktop.h"
 #include "Logger.h"
+#include "Scriptable.h"
 
 #include <imgui_memory_editor.h>
 #include <imguial_sparkline.h>
@@ -14,7 +15,7 @@ extern "C" {
 }
 
 namespace hc {
-    class Memory : public View {
+    class Memory : public View, public Scriptable {
     public:
         struct Region {
             Region(std::string&& name, void* data, size_t offset, size_t size, size_t base, bool readOnly);
@@ -67,9 +68,6 @@ namespace hc {
         virtual char const* getTitle() override;
         virtual void onFrame() override;
         virtual void onDraw() override;
-
-        // hc::Scriptable
-        virtual int push(lua_State* const L) override;
 
     protected:
         enum {

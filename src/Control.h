@@ -3,12 +3,13 @@
 #include "Desktop.h"
 #include "Logger.h"
 #include "LifeCycle.h"
+#include "Scriptable.h"
 
 #include <string>
 #include <vector>
 
 namespace hc {
-    class Control : public View {
+    class Control : public View, public Scriptable {
     public:
         Control(Desktop* desktop);
 

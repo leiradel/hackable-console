@@ -223,7 +223,3 @@ void hc::MemoryWatch::onDraw() {
         _editor.DrawContents(data, region->size, region->base, custom, this, ImGui::GetTextLineHeight() * 5.0f);
     }
 }
-
-int hc::MemoryWatch::push(lua_State* const L) {
-    return 0;
-}
