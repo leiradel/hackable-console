@@ -130,6 +130,7 @@ void hc::MemoryWatch::init(Logger* const logger, char const* title, Memory* cons
     _editor.OptShowDataPreview = true;
     _editor.ReadOnly = memory->lock(handle)->readOnly;
 
+    _lastPreviewAddress = (size_t)-1;
     _lastEndianess = -1;
     _lastType = ImGuiDataType_COUNT;
 }
@@ -144,8 +145,13 @@ void hc::MemoryWatch::onFrame() {
     Memory::Region* const region = _memory->lock(_handle);
 
     if (region != nullptr && _editor.DataPreviewAddr != (size_t)-1) {
-        if (_lastEndianess != _editor.PreviewEndianess || _lastType != _editor.PreviewDataType) {
+        bool const clearSparline = _lastPreviewAddress != _editor.DataPreviewAddr ||
+                                   _lastEndianess != _editor.PreviewEndianess ||
+                                   _lastType != _editor.PreviewDataType;
+
+        if (clearSparline) {
             _sparkline.clear();
+            _lastPreviewAddress = _editor.DataPreviewAddr;
             _lastEndianess = _editor.PreviewEndianess;
             _lastType = _editor.PreviewDataType;
         }

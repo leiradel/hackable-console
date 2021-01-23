@@ -83,6 +83,7 @@ namespace hc {
         MemoryEditor _editor;
 
         ImGuiAl::BufferedSparkline<SparklineCount> _sparkline;
+        size_t _lastPreviewAddress;
         int _lastEndianess;
         ImGuiDataType _lastType;
     };
