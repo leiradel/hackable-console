@@ -28,6 +28,7 @@ namespace hc
         virtual void onDraw() override;
         virtual void onConsoleUnloaded() override;
 
+        // hc::Scriptable
         virtual int push(lua_State* const L) override;
 
         // lrcpp::Perf

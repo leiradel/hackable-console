@@ -42,6 +42,7 @@ namespace hc {
         virtual void onDraw() override;
         virtual void onGameUnloaded() override;
 
+        // hc::Scriptable
         virtual int push(lua_State* const L) override;
 
     protected:
@@ -67,6 +68,7 @@ namespace hc {
         virtual void onFrame() override;
         virtual void onDraw() override;
 
+        // hc::Scriptable
         virtual int push(lua_State* const L) override;
 
     protected:

@@ -35,6 +35,7 @@ namespace hc {
         virtual void onConsoleUnloaded() override;
         virtual void onQuit() override;
 
+        // hc::Scriptable
         virtual int push(lua_State* const L) override;
 
         // lrcpp::Config
