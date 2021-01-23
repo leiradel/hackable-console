@@ -39,13 +39,13 @@ void hc::Audio::flush() {
         return;
     }
 
-    std::vector<int16_t> samples;
     SDL_LockMutex(_mutex);
-    samples.swap(_samples);
+    _previousSamples.swap(_samples);
     SDL_UnlockMutex(_mutex);
+    _samples.clear();
 
-    int16_t const* const data = samples.data();
-    size_t const frames = samples.size() / 2;
+    int16_t const* const data = _previousSamples.data();
+    size_t const frames = _previousSamples.size() / 2;
 
     size_t const avail = _fifo->free();
 
@@ -141,7 +141,7 @@ void hc::Audio::onDraw() {
     static auto const left = [](void* const data, int const idx) -> float {
         auto const self = static_cast<Audio*>(data);
 
-        float sample = self->_samples[idx * 2];
+        float sample = self->_drawSamples[idx * 2];
         self->_min = std::min(self->_min, sample);
         self->_max = std::max(self->_max, sample);
 
@@ -151,7 +151,7 @@ void hc::Audio::onDraw() {
     static auto const right = [](void* data, int idx) -> float {
         auto const self = static_cast<Audio*>(data);
 
-        float sample = self->_samples[idx * 2 + 1];
+        float sample = self->_drawSamples[idx * 2 + 1];
         self->_min = std::min(self->_min, sample);
         self->_max = std::max(self->_max, sample);
 
@@ -163,11 +163,17 @@ void hc::Audio::onDraw() {
     if (max.y > 0.0f) {
         max.x /= 2;
 
-        size_t const size = _samples.size() / 2;
+        SDL_LockMutex(_mutex);
+        _drawSamples = _previousSamples;
+        SDL_UnlockMutex(_mutex);
+
+        size_t const size = _drawSamples.size() / 2;
 
         ImGui::PlotLines("", left, this, size, 0, nullptr, _min, _max, max);
         ImGui::SameLine(0.0f, 0.0f);
         ImGui::PlotLines("", right, this, size, 0, nullptr, _min, _max, max);
+
+        _drawSamples.clear();
     }
 }
 

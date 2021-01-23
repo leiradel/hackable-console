@@ -435,12 +435,12 @@ void hc::Application::run() {
         if (_fsm.currentState() == LifeCycle::State::GameRunning) {
             if (_runningTime.getTimeUs() >= _nextFrameTime) {
                 _nextFrameTime += _coreUsPerFrame;
-                _audio->flush();
 
                 _perf->start(&_runPerf);
                 frontend.run();
                 _perf->stop(&_runPerf);
 
+                _audio->flush();
                 onFrame();
             }
         }

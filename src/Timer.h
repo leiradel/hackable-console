@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 namespace hc {
+    // https://lazyfoo.net/tutorials/SDL/24_calculating_frame_rate/index.php
     class Timer {
     public:
         Timer();

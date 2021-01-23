@@ -63,5 +63,8 @@ namespace hc {
         double _currentRatio;
         double _originalRatio;
         SpeexResamplerState* _resampler;
+
+        std::vector<int16_t> _previousSamples;
+        std::vector<int16_t> _drawSamples;
     };
 }
