@@ -16,7 +16,16 @@
 
 #define TAG "[DSK] "
 
-hc::Desktop::Desktop() : View(nullptr), _logger(nullptr) {}
+hc::Desktop::Desktop()
+    : View(nullptr)
+    , _logger(nullptr)
+    , _config(nullptr)
+    , _video(nullptr)
+    , _led(nullptr)
+    , _audio(nullptr)
+    , _input(nullptr)
+    , _perf(nullptr)
+{}
 
 void hc::Desktop::init(Logger* const logger) {
     _logger = logger;
