@@ -9,6 +9,7 @@
 #include <speex_resampler.h>
 
 #include <vector>
+#include <mutex>
 
 namespace hc {
     class Audio: public View, public lrcpp::Audio {
@@ -50,7 +51,7 @@ namespace hc {
         Fifo* _fifo;
 
         std::vector<int16_t> _samples;
-        SDL_mutex* _mutex;
+        std::mutex _mutex;
 
         float _min;
         float _max;

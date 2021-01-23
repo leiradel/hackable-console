@@ -1,7 +1,7 @@
 #pragma once
 
-#include <SDL.h>
 #include <stddef.h>
+#include <mutex>
 
 namespace hc {
     class Fifo final {
@@ -19,7 +19,7 @@ namespace hc {
         size_t free();
 
     protected:
-        SDL_mutex* _mutex;
+        std::mutex _mutex;
         uint8_t* _buffer;
         size_t _size;
         size_t _avail;

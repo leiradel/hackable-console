@@ -15,7 +15,6 @@ hc::Audio::Audio(Desktop* desktop)
     , _logger(nullptr)
     , _sampleRate(0.0)
     , _fifo(nullptr)
-    , _mutex(nullptr)
     , _min(FLT_MAX)
     , _max(-FLT_MAX)
     , _mute(false)
@@ -39,9 +38,9 @@ void hc::Audio::flush() {
         return;
     }
 
-    SDL_LockMutex(_mutex);
+    _mutex.lock();
     _previousSamples.swap(_samples);
-    SDL_UnlockMutex(_mutex);
+    _mutex.unlock();
     _samples.clear();
 
     int16_t const* const data = _previousSamples.data();
@@ -88,13 +87,7 @@ char const* hc::Audio::getTitle() {
     return ICON_FA_VOLUME_UP " Audio";
 }
 
-void hc::Audio::onStarted() {
-    _mutex = SDL_CreateMutex();
-
-    if (_mutex == nullptr) {
-        _logger->error(TAG "SDL_CreateMutex: %s", SDL_GetError());
-    }
-}
+void hc::Audio::onStarted() {}
 
 void hc::Audio::onCoreLoaded() {}
 
@@ -127,9 +120,11 @@ void hc::Audio::onGameResumed() {
 }
 
 void hc::Audio::onGameReset() {
-    SDL_LockMutex(_mutex);
+    _mutex.lock();
     _samples.clear();
-    SDL_UnlockMutex(_mutex);
+    _previousSamples.clear();
+    _drawSamples.clear();
+    _mutex.unlock();
 }
 
 void hc::Audio::onFrame() {}
@@ -163,9 +158,9 @@ void hc::Audio::onDraw() {
     if (max.y > 0.0f) {
         max.x /= 2;
 
-        SDL_LockMutex(_mutex);
+        _mutex.lock();
         _drawSamples = _previousSamples;
-        SDL_UnlockMutex(_mutex);
+        _mutex.unlock();
 
         size_t const size = _drawSamples.size() / 2;
 
@@ -181,17 +176,16 @@ void hc::Audio::onGameUnloaded() {
     speex_resampler_destroy(_resampler);
     _resampler = nullptr;
 
-    SDL_LockMutex(_mutex);
+    _mutex.lock();
     _samples.clear();
-    SDL_UnlockMutex(_mutex);
+    _previousSamples.clear();
+    _drawSamples.clear();
+    _mutex.unlock();
 }
 
 void hc::Audio::onConsoleUnloaded() {}
 
-void hc::Audio::onQuit() {
-    SDL_DestroyMutex(_mutex);
-    _mutex = nullptr;
-}
+void hc::Audio::onQuit() {}
 
 bool hc::Audio::setSystemAvInfo(retro_system_av_info const* info) {
     _timing = info->timing;
@@ -210,13 +204,12 @@ bool hc::Audio::setAudioCallback(retro_audio_callback const* callback) {
 }
 
 size_t hc::Audio::sampleBatch(int16_t const* data, size_t frames) {
-    SDL_LockMutex(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
 
     size_t const size = _samples.size();
     _samples.resize(size + frames * 2);
     memcpy(_samples.data() + size, data, frames * 4);
 
-    SDL_UnlockMutex(_mutex);
     return frames;
 }
 
