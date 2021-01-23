@@ -653,7 +653,7 @@ bool LifeCycle::startGame() {
 
 //#line 44 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
-            if (!ctx.resumeGame()) {
+            if (!ctx.startGame()) {
                 return false;
             }
         

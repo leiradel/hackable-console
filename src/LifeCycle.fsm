@@ -42,7 +42,7 @@ fsm LifeCycle {
 
     GameLoaded {
         startGame() => GameRunning {
-            if (!ctx.resumeGame()) {
+            if (!ctx.startGame()) {
                 forbid;
             }
         }
