@@ -95,7 +95,9 @@ void hc::Control::onDraw() {
     ImGui::Combo("##Consoles", &_selected, getter, &_consoles, count);
     ImGui::SameLine();
 
-    if (ImGuiAl::Button(ICON_FA_FOLDER_OPEN " Load Console", _fsm->currentState() == LifeCycle::State::Start && _selected < count, size)) {
+    bool const loadConsoleEnabled = _fsm->currentState() == LifeCycle::State::Start && _selected < count;
+
+    if (ImGuiAl::Button(ICON_FA_FOLDER_OPEN " Load Console", loadConsoleEnabled, size)) {
         _opened = _selected;
         Console const& cb = _consoles[_selected];
 
@@ -106,7 +108,7 @@ void hc::Control::onDraw() {
 
     bool loadGamePressed = false;
 
-    if (ImGuiAl::Button(ICON_FA_ROCKET " Load Game", _fsm->currentState() == LifeCycle::State::ConsoleLoaded, size)) {
+    if (ImGuiAl::Button(ICON_FA_ROCKET " Load Game", _fsm->canTransitionTo(LifeCycle::State::GameLoaded), size)) {
         loadGamePressed = true;
     }
 
@@ -146,9 +148,14 @@ void hc::Control::onDraw() {
             _fsm->pauseGame();
         }
     }
-    else {
-        if (ImGuiAl::Button(ICON_FA_PLAY " Run", _fsm->currentState() == LifeCycle::State::GamePaused, size)) {
+    else if (_fsm->currentState() == LifeCycle::State::GamePaused) {
+        if (ImGuiAl::Button(ICON_FA_PLAY " Resume", true, size)) {
             _fsm->resumeGame();
+        }
+    }
+    else {
+        if (ImGuiAl::Button(ICON_FA_PLAY " Start", _fsm->canTransitionTo(LifeCycle::State::GameRunning), size)) {
+            _fsm->startGame();
         }
     }
 
@@ -158,7 +165,8 @@ void hc::Control::onDraw() {
         _fsm->step();
     }
 
-    bool const gameLoaded = _fsm->currentState() == LifeCycle::State::GameRunning ||
+    bool const gameLoaded = _fsm->currentState() == LifeCycle::State::GameLoaded ||
+                            _fsm->currentState() == LifeCycle::State::GameRunning ||
                             _fsm->currentState() == LifeCycle::State::GamePaused;
 
     if (ImGuiAl::Button(ICON_FA_REFRESH " Reset Game", gameLoaded, size)) {
@@ -173,7 +181,7 @@ void hc::Control::onDraw() {
 
     ImGui::SameLine();
 
-    if (ImGuiAl::Button(ICON_FA_POWER_OFF " Unload Console", _fsm->currentState() == LifeCycle::State::ConsoleLoaded, size)) {
+    if (ImGuiAl::Button(ICON_FA_POWER_OFF " Unload Console", _fsm->canTransitionTo(LifeCycle::State::Start), size)) {
         _fsm->unloadCore();
     }
 }
