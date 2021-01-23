@@ -598,7 +598,6 @@ bool hc::Application::step() {
     bool const ok = lrcpp::Frontend::getInstance().run();
     _perf->stop(&_runPerf);
 
-    _desktop.resetFrameFps();
     onFrame();
     return ok;
 }

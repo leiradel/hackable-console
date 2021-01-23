@@ -31,8 +31,10 @@ double hc::Desktop::drawFps() {
 }
 
 void hc::Desktop::resetDrawFps() {
-    _drawCount = 0;
-    _drawTimer.reset();
+    if (_drawTimer.started()) {
+        _drawCount = 0;
+        _drawTimer.reset();
+    }
 }
 
 double hc::Desktop::frameFps() {
@@ -41,8 +43,10 @@ double hc::Desktop::frameFps() {
 }
 
 void hc::Desktop::resetFrameFps() {
-    _frameCount = 0;
-    _frameTimer.stop();
+    if (_frameTimer.started()) {
+        _frameCount = 0;
+        _frameTimer.reset();
+    }
 }
 
 char const* hc::Desktop::getTitle() {
@@ -82,6 +86,9 @@ void hc::Desktop::onGameStarted() {
         _logger->debug(TAG "onGameStarted %s", view->getTitle());
         view->onGameStarted();
     }
+
+    _frameTimer.start();
+    _frameCount = 0;
 }
 
 void hc::Desktop::onGamePaused() {
@@ -101,11 +108,6 @@ void hc::Desktop::onGameResumed() {
         view->onGameResumed();
     }
 
-    if (!_frameTimer.started()) {
-        _frameTimer.start();
-        _frameCount = 0;
-    }
-
     _frameTimer.resume();
 }
 
@@ -118,7 +120,9 @@ void hc::Desktop::onGameReset() {
 }
 
 void hc::Desktop::onFrame() {
-    _frameCount++;
+    if (!_frameTimer.paused()) {
+        _frameCount++;
+    }
 
     for (auto const& pair : _views) {
         View* const view = pair.second.view;
