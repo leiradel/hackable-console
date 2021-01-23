@@ -44,6 +44,9 @@ void hc::Perf::onGameReset() {}
 void hc::Perf::onFrame() {}
 
 void hc::Perf::onDraw() {
+    ImGui::Text("       %7.3f (fps) application", _desktop->drawFps());
+    ImGui::Text("       %7.3f (fps) game", _desktop->frameFps());
+
     for (const auto& pair : _counters) {
         Counter const& cnt = pair.second;
 
@@ -52,7 +55,7 @@ void hc::Perf::onDraw() {
         unsigned const ms = usPerCall / 1000;
         unsigned const us = usPerCall - ms * 1000;
 
-        ImGui::Text("%6" PRIu64 " %2u.%03u %s", cnt.counter->call_cnt, ms, us, cnt.counter->ident);
+        ImGui::Text("%6" PRIu64 " %3u.%03u (ms)  %s", cnt.counter->call_cnt, ms, us, cnt.counter->ident);
     }
 }
 

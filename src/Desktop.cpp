@@ -110,9 +110,6 @@ void hc::Desktop::onDraw() {
     _drawCount++;
 
     if (ImGui::Begin(ICON_FA_PLUG " Views")) {
-        ImGui::Text("draw fps  %4.6f", drawFps());
-        ImGui::Text("frame fps %4.6f", frameFps());
-
         ImGui::Columns(2);
 
         for (auto& pair : _views) {
