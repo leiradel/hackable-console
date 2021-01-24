@@ -92,10 +92,6 @@ namespace hc {
             bool free;
             char const* id;
             bool opened;
-
-            bool operator<(ViewProperties const& other) const {
-                return strcmp(id, other.id) < 0;
-            }
         };
 
         Logger* _logger;
