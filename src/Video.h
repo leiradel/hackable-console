@@ -4,6 +4,7 @@
 
 #include <lrcpp/Components.h>
 
+#include <imgui.h>
 #include <SDL_opengl.h>
 
 #include <stdint.h>
@@ -16,6 +17,7 @@ namespace hc {
 
         void init();
         double getCoreFps() const;
+        bool getMousePos(int* const x, int* const y) const;
 
         // hc::View
         virtual char const* getTitle() override;
@@ -58,5 +60,9 @@ namespace hc {
         float _aspectRatio;
         unsigned _width;
         unsigned _height;
+
+        ImVec2 _texturePos;
+        ImVec2 _mousePos;
+        bool _mouseOnTexture;
     };
 }

@@ -9,7 +9,7 @@ extern "C" {
 
 #define TAG "[VID] "
 
-hc::Video::Video(Desktop* desktop) : View(desktop) {}
+hc::Video::Video(Desktop* desktop) : View(desktop), _mouseOnTexture(false) {}
 
 void hc::Video::init() {
     _rotation = 0;
@@ -25,12 +25,20 @@ double hc::Video::getCoreFps() const {
     return _coreFps;
 }
 
+bool hc::Video::getMousePos(int* const x, int* const y) const {
+    *x = _mousePos.x;
+    *y = _mousePos.y;
+    return _mouseOnTexture;
+}
+
 char const* hc::Video::getTitle() {
     return ICON_FA_DESKTOP " Video";
 }
 
 void hc::Video::onDraw() {
     if (_texture != 0) {
+        _texturePos = ImGui::GetCursorScreenPos();
+
         ImVec2 const min = ImGui::GetWindowContentRegionMin();
         ImVec2 const max = ImGui::GetWindowContentRegionMax();
 
@@ -47,6 +55,13 @@ void hc::Video::onDraw() {
         ImVec2 const uv1 = ImVec2((float)_width / _textureWidth, (float)_height / _textureHeight);
 
         ImGui::Image((ImTextureID)(uintptr_t)_texture, size, uv0, uv1);
+
+        _mouseOnTexture = ImGui::IsMouseHoveringRect(_texturePos, ImVec2(_texturePos.x + size.x, _texturePos.y + size.y));
+
+        if (_mouseOnTexture) {
+            ImVec2 const mouse = ImGui::GetMousePos();
+            _mousePos = ImVec2((mouse.x - _texturePos.x) * _width / size.x, (mouse.y - _texturePos.y) * _height / size.y);
+        }
     }
 }
 
