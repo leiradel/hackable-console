@@ -62,7 +62,18 @@ static void const* readAll(hc::Logger* logger, char const* const path, size_t* c
     return data;
 }
 
-hc::Application::Application() : _fsm(*this, lifeCycleVprintf, this) {}
+hc::Application::Application()
+    : _fsm(*this, lifeCycleVprintf, this)
+    , _logger(this)
+    , _config(this)
+    , _video(this)
+    , _led(this)
+    , _audio(this)
+    , _input(this)
+    , _perf(this)
+    , _control(this)
+    , _memory(this)
+{}
 
 bool hc::Application::init(std::string const& title, int const width, int const height) {
     class Undo {
@@ -88,11 +99,9 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
     Desktop::init();
 
-    _logger = new Logger(this);
-    addView(_logger, true, false, "logger");
+    addView(&_logger, true, false, "logger");
 
-    if (!_logger->init()) {
-        delete _logger;
+    if (!_logger.init()) {
         return false;
     }
 
@@ -263,56 +272,36 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         // Initialize components (logger has already been initialized)
         lrcpp::Frontend& frontend = lrcpp::Frontend::getInstance();
 
-        _config = new Config(this);
-        addView(_config, true, false, "config");
-        _video = new Video(this);
-        addView(_video, true, false, "video");
-        _led = new Led(this);
-        addView(_led, true, false, "led");
-        _audio = new Audio(this);
-        addView(_audio, true, false, "audio");
-        _input = new Input(this);
-        addView(_input, true, false, "input");
-        _perf = new Perf(this);
-        addView(_perf, true, false, "perf");
+        addView(&_config, true, false, "config");
+        addView(&_video, true, false, "video");
+        addView(&_led, true, false, "led");
+        addView(&_audio, true, false, "audio");
+        addView(&_input, true, false, "input");
+        addView(&_perf, true, false, "perf");
 
-        _control = new Control(this);
-        addView(_control, true, false, "control");
-        _memory = new Memory(this);
-        addView(_memory, true, false, "memory");
+        addView(&_control, true, false, "control");
+        addView(&_memory, true, false, "memory");
 
-        undo.add([this]() {
-            delete _memory;
-            delete _control;
-
-            delete _perf;
-            delete _input;
-            delete _audio;
-            delete _led;
-            delete _video;
-            delete _config;
-        });
-
-        if (!_config->init()) {
+        if (!_config.init()) {
             return false;
         }
 
-        _video->init();
-        _led->init();
-        _audio->init(_audioSpec.freq, &_fifo);
-        _input->init(&frontend);
-        _perf->init();
+        _video.init();
+        _led.init();
+        _audio.init(_audioSpec.freq, &_fifo);
+        _input.init(&frontend);
+        _perf.init();
 
-        _control->init(&_fsm);
-        _memory->init();
+        _control.init(&_fsm);
+        _memory.init();
 
-        frontend.setLogger(_logger);
-        frontend.setConfig(_config);
-        frontend.setVideo(_video);
-        frontend.setLed(_led);
-        frontend.setAudio(_audio);
-        frontend.setInput(_input);
-        frontend.setPerf(_perf);
+        frontend.setLogger(&_logger);
+        frontend.setConfig(&_config);
+        frontend.setVideo(&_video);
+        frontend.setLed(&_led);
+        frontend.setAudio(&_audio);
+        frontend.setInput(&_input);
+        frontend.setPerf(&_perf);
     }
 
     {
@@ -340,14 +329,14 @@ bool hc::Application::init(std::string const& title, int const width, int const 
             return 0;
         };
 
-        std::string const& autorun = _config->getAutorunPath();
+        std::string const& autorun = _config.getAutorunPath();
 
         lua_pushcfunction(_L, main);
         lua_pushlstring(_L, autorun.c_str(), autorun.length());
         
         info(TAG "Running \"%s\"", autorun.c_str());
 
-        if (!protectedCall(_L, 1, 0, _logger)) {
+        if (!protectedCall(_L, 1, 0, &_logger)) {
             return false;
         }
     }
@@ -371,8 +360,6 @@ void hc::Application::destroy() {
     SDL_GL_DeleteContext(_glContext);
     SDL_DestroyWindow(_window);
     SDL_Quit();
-
-    delete _logger;
 }
 
 void hc::Application::run() {
@@ -398,7 +385,7 @@ void hc::Application::run() {
                 case SDL_KEYUP:
                 case SDL_KEYDOWN:
                 case SDL_JOYDEVICEADDED:
-                    _input->processEvent(&event);
+                    _input.processEvent(&event);
                     break;
             }
         }
@@ -407,11 +394,11 @@ void hc::Application::run() {
             if (!_syncExact || _runningTime.getTimeUs() >= _nextFrameTime) {
                 _nextFrameTime += _coreUsPerFrame;
 
-                _perf->start(&_runPerf);
+                _perf.start(&_runPerf);
                 frontend.run();
-                _perf->stop(&_runPerf);
+                _perf.stop(&_runPerf);
 
-                _audio->flush();
+                _audio.flush();
                 onFrame();
             }
         }
@@ -450,7 +437,7 @@ bool hc::Application::loadCore(char const* path) {
     retro_system_info sysinfo;
 
     if (frontend.getSystemInfo(&sysinfo)) {
-        _control->setSystemInfo(&sysinfo);
+        _control.setSystemInfo(&sysinfo);
     }
 
     info(TAG "System Info");
@@ -481,7 +468,7 @@ bool hc::Application::loadGame(char const* path) {
     }
     else {
         size_t size = 0;
-        void const* data = readAll(_logger, path, &size);
+        void const* data = readAll(&_logger, path, &size);
 
         if (data == nullptr) {
             return false;
@@ -549,9 +536,9 @@ bool hc::Application::startGame() {
 }
 
 bool hc::Application::step() {
-    _perf->start(&_runPerf);
+    _perf.start(&_runPerf);
     bool const ok = lrcpp::Frontend::getInstance().run();
-    _perf->stop(&_runPerf);
+    _perf.stop(&_runPerf);
 
     onFrame();
     return ok;
@@ -584,14 +571,14 @@ void hc::Application::onCoreLoaded() {
     // Perf has to unregister all counters when a core is unloaded so we
     // register this here.
     _runPerf.ident = "hc::retro_run";
-    _perf->register_(&_runPerf);
+    _perf.register_(&_runPerf);
 
     Desktop::onCoreLoaded();
 }
 
 void hc::Application::onGameLoaded() {
     Desktop::onGameLoaded();
-    _coreUsPerFrame = 1000000.0 / _video->getCoreFps();
+    _coreUsPerFrame = 1000000.0 / _video.getCoreFps();
 }
 
 void hc::Application::onGameStarted() {
@@ -614,13 +601,13 @@ void hc::Application::onGameResumed() {
 void hc::Application::onDraw() {
     bool on = false;
 
-    if (_config->vsync(&on)) {
+    if (_config.vsync(&on)) {
         resetDrawFps();
         resetFrameFps();
         SDL_GL_SetSwapInterval(on ? 1 : 0);
     }
 
-    if (_config->syncExact(&_syncExact)) {
+    if (_config.syncExact(&_syncExact)) {
         resetFrameFps();
 
         if (_syncExact) {

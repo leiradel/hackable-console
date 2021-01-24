@@ -74,16 +74,16 @@ namespace hc {
 
         LifeCycle _fsm;
 
-        Logger* _logger;
-        Config* _config;
-        Video* _video;
-        Led* _led;
-        Audio* _audio;
-        Input* _input;
-        Perf* _perf;
+        Logger _logger;
+        Config _config;
+        Video _video;
+        Led _led;
+        Audio _audio;
+        Input _input;
+        Perf _perf;
         
-        Control* _control;
-        Memory* _memory;
+        Control _control;
+        Memory _memory;
 
         Timer _runningTime;
         uint64_t _nextFrameTime;
