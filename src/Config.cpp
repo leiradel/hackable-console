@@ -194,7 +194,7 @@ void hc::Config::onDraw() {
     }
 }
 
-void hc::Config::onConsoleUnloaded() {
+void hc::Config::onCoreUnloaded() {
     _performanceLevel = 0;
     _supportsNoGame = false;
     _supportAchievements = false;

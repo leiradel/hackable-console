@@ -180,7 +180,7 @@ void hc::Input::onDraw() {
     }
 }
 
-void hc::Input::onConsoleUnloaded() {
+void hc::Input::onCoreUnloaded() {
     for (size_t port = 0; port < MaxPorts; port++) {
         // Disconnect all ports
         _ports[port].selectedType = 0;

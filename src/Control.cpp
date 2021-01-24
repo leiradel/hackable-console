@@ -191,8 +191,8 @@ void hc::Control::onGameUnloaded() {
     callConsoleMethod("onGameUnloaded");
 }
 
-void hc::Control::onConsoleUnloaded() {
-    callConsoleMethod("onConsoleUnloaded");
+void hc::Control::onCoreUnloaded() {
+    callConsoleMethod("onCoreUnloaded");
 
     _extensions.clear();
     _opened = -1;

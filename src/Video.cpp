@@ -59,7 +59,7 @@ void hc::Video::onGameUnloaded() {
     _width = _height = 0;
 }
 
-void hc::Video::onConsoleUnloaded() {
+void hc::Video::onCoreUnloaded() {
     _pixelFormat = RETRO_PIXEL_FORMAT_UNKNOWN;
 }
 

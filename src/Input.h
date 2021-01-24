@@ -27,7 +27,7 @@ namespace hc {
         virtual void onFrame() override;
         virtual void onStep() override;
         virtual void onDraw() override;
-        virtual void onConsoleUnloaded() override;
+        virtual void onCoreUnloaded() override;
 
         // lrcpp::Input
         virtual bool setInputDescriptors(retro_input_descriptor const* descriptors) override;

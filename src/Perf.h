@@ -26,7 +26,7 @@ namespace hc
         // hc::View
         virtual char const* getTitle() override;
         virtual void onDraw() override;
-        virtual void onConsoleUnloaded() override;
+        virtual void onCoreUnloaded() override;
 
         // hc::Scriptable
         virtual int push(lua_State* const L) override;

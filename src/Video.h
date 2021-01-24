@@ -21,7 +21,7 @@ namespace hc {
         virtual char const* getTitle() override;
         virtual void onDraw() override;
         virtual void onGameUnloaded() override;
-        virtual void onConsoleUnloaded() override;
+        virtual void onCoreUnloaded() override;
 
         // lrcpp::Video
         virtual bool setRotation(unsigned rotation) override;

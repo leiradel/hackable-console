@@ -39,7 +39,7 @@ namespace hc {
         virtual void onStep() {}
         virtual void onDraw() {}
         virtual void onGameUnloaded() {}
-        virtual void onConsoleUnloaded() {}
+        virtual void onCoreUnloaded() {}
         virtual void onQuit() {}
 
     protected:
@@ -79,7 +79,7 @@ namespace hc {
         virtual void onStep() override;
         virtual void onDraw() override;
         virtual void onGameUnloaded() override;
-        virtual void onConsoleUnloaded() override;
+        virtual void onCoreUnloaded() override;
         virtual void onQuit() override;
 
         // hc::Scriptable

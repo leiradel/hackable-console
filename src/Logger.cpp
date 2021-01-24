@@ -70,7 +70,7 @@ void hc::Logger::onDraw() {
     }
 }
 
-void hc::Logger::onConsoleUnloaded() {
+void hc::Logger::onCoreUnloaded() {
     _logger.clear();
 }
 

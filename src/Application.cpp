@@ -609,7 +609,7 @@ bool hc::Application::step() {
 
 bool hc::Application::unloadCore() {
     if (lrcpp::Frontend::getInstance().unload()) {
-        onConsoleUnloaded();
+        onCoreUnloaded();
         return true;
     }
 
@@ -678,8 +678,8 @@ void hc::Application::onGameUnloaded() {
     _runningTime.stop();
 }
 
-void hc::Application::onConsoleUnloaded() {
-    _desktop.onConsoleUnloaded();
+void hc::Application::onCoreUnloaded() {
+    _desktop.onCoreUnloaded();
 }
 
 void hc::Application::onQuit() {

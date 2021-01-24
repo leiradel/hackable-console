@@ -55,7 +55,7 @@ namespace hc {
         void onFrame();
         void onStep();
         void onGameUnloaded();
-        void onConsoleUnloaded();
+        void onCoreUnloaded();
         void onQuit();
 
     protected:

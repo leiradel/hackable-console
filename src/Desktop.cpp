@@ -258,11 +258,11 @@ void hc::Desktop::onGameUnloaded() {
     _frameTimer.stop();
 }
 
-void hc::Desktop::onConsoleUnloaded() {
+void hc::Desktop::onCoreUnloaded() {
     for (auto const& pair : _views) {
         View* const view = pair.second.view;
-        _logger->debug(TAG "onConsoleUnloaded %s", view->getTitle());
-        view->onConsoleUnloaded();
+        _logger->debug(TAG "onCoreUnloaded %s", view->getTitle());
+        view->onCoreUnloaded();
     }
 }
 

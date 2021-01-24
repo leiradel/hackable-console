@@ -32,7 +32,7 @@ namespace hc {
         virtual char const* getTitle() override;
         virtual void onGameLoaded() override;
         virtual void onDraw() override;
-        virtual void onConsoleUnloaded() override;
+        virtual void onCoreUnloaded() override;
         virtual void onQuit() override;
 
         // hc::Scriptable

@@ -46,7 +46,7 @@ void hc::Perf::onDraw() {
     }
 }
 
-void hc::Perf::onConsoleUnloaded() {
+void hc::Perf::onCoreUnloaded() {
     for (auto const& pair : _counters) {
         Counter const& cnt = pair.second;
 

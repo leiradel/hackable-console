@@ -30,7 +30,7 @@ namespace hc {
         virtual void onStep() override;
         virtual void onDraw() override;
         virtual void onGameUnloaded() override;
-        virtual void onConsoleUnloaded() override;
+        virtual void onCoreUnloaded() override;
         virtual void onQuit() override;
 
         // hc::Scriptable
