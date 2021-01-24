@@ -18,7 +18,7 @@ hc::Memory::Region::Region(std::string&& name, void* data, size_t offset, size_t
 {}
 
 void hc::Memory::init() {
-    _logger = _desktop->getLogger();
+    _logger = _desktop->getView<Logger>();
 }
 
 hc::Memory::Region* hc::Memory::lock(Handle const handle) {

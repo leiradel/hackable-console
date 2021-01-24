@@ -29,7 +29,7 @@ hc::Audio::Audio(Desktop* desktop)
 }
 
 void hc::Audio::init(double const sampleRate, Fifo* const fifo) {
-    _logger = _desktop->getLogger();
+    _logger = _desktop->getView<Logger>();
     _sampleRate = sampleRate;
     _fifo = fifo;
 }

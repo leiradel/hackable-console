@@ -52,7 +52,7 @@ hc::Config::Config(Desktop* desktop)
 }
 
 bool hc::Config::init() {
-    _logger = _desktop->getLogger();
+    _logger = _desktop->getView<Logger>();
 
     if (fnkdat(NULL, 0, 0, FNKDAT_INIT) != 0) {
         _logger->error(TAG "Error initializing fnkdat");

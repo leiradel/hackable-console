@@ -13,7 +13,7 @@ extern "C" {
 #define TAG "[PRF] "
 
 void hc::Perf::init() {
-    _logger = _desktop->getLogger();
+    _logger = _desktop->getView<Logger>();
 }
 
 uint64_t hc::Perf::getTimeUs() {

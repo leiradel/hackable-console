@@ -12,7 +12,7 @@ extern "C" {
 hc::Led::Led(Desktop* desktop) : View(desktop), _logger(nullptr) {}
 
 void hc::Led::init() {
-    _logger = _desktop->getLogger();
+    _logger = _desktop->getView<Logger>();
 }
 
 char const* hc::Led::getTitle() {

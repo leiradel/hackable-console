@@ -16,16 +16,7 @@
 
 #define TAG "[DSK] "
 
-hc::Desktop::Desktop()
-    : View(nullptr)
-    , _logger(nullptr)
-    , _config(nullptr)
-    , _video(nullptr)
-    , _led(nullptr)
-    , _audio(nullptr)
-    , _input(nullptr)
-    , _perf(nullptr)
-{}
+hc::Desktop::Desktop() : View(nullptr), _logger(nullptr) {}
 
 void hc::Desktop::init() {
     _drawCount = 0;
@@ -35,28 +26,6 @@ void hc::Desktop::init() {
 void hc::Desktop::addView(View* const view, bool const top, bool const free, char const* const id) {
     ViewProperties props = {view, top, free, id, true};
     _views.emplace(id != nullptr ? id : view->getTitle(), props);
-
-    if (dynamic_cast<Logger*>(view) != nullptr) {
-        _logger = dynamic_cast<Logger*>(view);
-    }
-    else if (dynamic_cast<Config*>(view) != nullptr) {
-        _config = dynamic_cast<Config*>(view);
-    }
-    else if (dynamic_cast<Video*>(view) != nullptr) {
-        _video = dynamic_cast<Video*>(view);
-    }
-    else if (dynamic_cast<Led*>(view) != nullptr) {
-        _led = dynamic_cast<Led*>(view);
-    }
-    else if (dynamic_cast<Audio*>(view) != nullptr) {
-        _audio = dynamic_cast<Audio*>(view);
-    }
-    else if (dynamic_cast<Input*>(view) != nullptr) {
-        _input = dynamic_cast<Input*>(view);
-    }
-    else if (dynamic_cast<Perf*>(view) != nullptr) {
-        _perf = dynamic_cast<Perf*>(view);
-    }
 }
 
 double hc::Desktop::drawFps() {
@@ -83,38 +52,10 @@ void hc::Desktop::resetFrameFps() {
     }
 }
 
-hc::Logger* hc::Desktop::getLogger() const {
-    return _logger;
-}
-
-hc::Config* hc::Desktop::getConfig() const {
-    return _config;
-}
-
-hc::Video* hc::Desktop::getVideo() const {
-    return _video;
-}
-
-hc::Led* hc::Desktop::getLed() const {
-    return _led;
-}
-
-hc::Audio* hc::Desktop::getAudio() const {
-    return _audio;
-}
-
-hc::Input* hc::Desktop::getInput() const {
-    return _input;
-}
-
-hc::Perf* hc::Desktop::getPerf() const {
-    return _perf;
-}
-
 void hc::Desktop::onStarted() {
     for (auto const& pair : _views) {
         View* const view = pair.second.view;
-        _logger->debug(TAG "onStarted %s", view->getTitle());
+        debug(TAG "onStarted %s", view->getTitle());
         view->onStarted();
     }
 
@@ -125,7 +66,7 @@ void hc::Desktop::onStarted() {
 void hc::Desktop::onCoreLoaded() {
     for (auto const& pair : _views) {
         View* const view = pair.second.view;
-        _logger->debug(TAG "onCoreLoaded %s", view->getTitle());
+        debug(TAG "onCoreLoaded %s", view->getTitle());
         view->onCoreLoaded();
     }
 }
@@ -133,7 +74,7 @@ void hc::Desktop::onCoreLoaded() {
 void hc::Desktop::onGameLoaded() {
     for (auto const& pair : _views) {
         View* const view = pair.second.view;
-        _logger->debug(TAG "onGameLoaded %s", view->getTitle());
+        debug(TAG "onGameLoaded %s", view->getTitle());
         view->onGameLoaded();
     }
 }
@@ -141,7 +82,7 @@ void hc::Desktop::onGameLoaded() {
 void hc::Desktop::onGameStarted() {
     for (auto const& pair : _views) {
         View* const view = pair.second.view;
-        _logger->debug(TAG "onGameStarted %s", view->getTitle());
+        debug(TAG "onGameStarted %s", view->getTitle());
         view->onGameStarted();
     }
 
@@ -152,7 +93,7 @@ void hc::Desktop::onGameStarted() {
 void hc::Desktop::onGamePaused() {
     for (auto const& pair : _views) {
         View* const view = pair.second.view;
-        _logger->debug(TAG "onGamePaused %s", view->getTitle());
+        debug(TAG "onGamePaused %s", view->getTitle());
         view->onGamePaused();
     }
 
@@ -162,7 +103,7 @@ void hc::Desktop::onGamePaused() {
 void hc::Desktop::onGameResumed() {
     for (auto const& pair : _views) {
         View* const view = pair.second.view;
-        _logger->debug(TAG "onGameResumed %s", view->getTitle());
+        debug(TAG "onGameResumed %s", view->getTitle());
         view->onGameResumed();
     }
 
@@ -172,7 +113,7 @@ void hc::Desktop::onGameResumed() {
 void hc::Desktop::onGameReset() {
     for (auto const& pair : _views) {
         View* const view = pair.second.view;
-        _logger->debug(TAG "onGameReset %s", view->getTitle());
+        debug(TAG "onGameReset %s", view->getTitle());
         view->onGameReset();
     }
 }
@@ -247,7 +188,7 @@ void hc::Desktop::onDraw() {
 void hc::Desktop::onGameUnloaded() {
     for (auto const& pair : _views) {
         View* const view = pair.second.view;
-        _logger->debug(TAG "onGameUnloaded %s", view->getTitle());
+        debug(TAG "onGameUnloaded %s", view->getTitle());
         view->onGameUnloaded();
     }
 
@@ -257,7 +198,7 @@ void hc::Desktop::onGameUnloaded() {
 void hc::Desktop::onCoreUnloaded() {
     for (auto const& pair : _views) {
         View* const view = pair.second.view;
-        _logger->debug(TAG "onCoreUnloaded %s", view->getTitle());
+        debug(TAG "onCoreUnloaded %s", view->getTitle());
         view->onCoreUnloaded();
     }
 }
@@ -266,7 +207,7 @@ void hc::Desktop::onQuit() {
     for (auto const& pair : _views) {
         ViewProperties const& props = pair.second;
         View* const view = props.view;
-        _logger->debug(TAG "onQuit plugin %s", view->getTitle());
+        debug(TAG "onQuit plugin %s", view->getTitle());
         view->onQuit();
 
         if (view != this && props.free) {
@@ -276,4 +217,42 @@ void hc::Desktop::onQuit() {
 
     _views.clear();
     _drawTimer.stop();
+}
+
+void hc::Desktop::vprintf(retro_log_level level, char const* format, va_list args) {
+    if (_logger == nullptr) {
+        _logger = getView<Logger>();
+    }
+
+    if (_logger != nullptr) {
+        _logger->vprintf(level, format, args);
+    }
+}
+
+void hc::Desktop::debug(char const* format, ...) {
+    va_list args;
+    va_start(args, format);
+    vprintf(RETRO_LOG_DEBUG, format, args);
+    va_end(args);
+}
+
+void hc::Desktop::info(char const* format, ...) {
+    va_list args;
+    va_start(args, format);
+    vprintf(RETRO_LOG_INFO, format, args);
+    va_end(args);
+}
+
+void hc::Desktop::warn(char const* format, ...) {
+    va_list args;
+    va_start(args, format);
+    vprintf(RETRO_LOG_WARN, format, args);
+    va_end(args);
+}
+
+void hc::Desktop::error(char const* format, ...) {
+    va_list args;
+    va_start(args, format);
+    vprintf(RETRO_LOG_ERROR, format, args);
+    va_end(args);
 }

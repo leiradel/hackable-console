@@ -98,12 +98,12 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
     {
         // Redirect SDL logs
-        SDL_LogSetOutputFunction(sdlPrint, _logger);
+        SDL_LogSetOutputFunction(sdlPrint, this);
         SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
 
         // Setup SDL
         if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
-            _logger->error(TAG "Error in SDL_Init: %s", SDL_GetError());
+            error(TAG "Error in SDL_Init: %s", SDL_GetError());
             return false;
         }
 
@@ -126,7 +126,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         );
 
         if (_window == nullptr) {
-            _logger->error(TAG "Error in SDL_CreateWindow: %s", SDL_GetError());
+            error(TAG "Error in SDL_CreateWindow: %s", SDL_GetError());
             return false;
         }
 
@@ -135,7 +135,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         _glContext = SDL_GL_CreateContext(_window);
 
         if (_glContext == nullptr) {
-            _logger->error(TAG "Error in SDL_GL_CreateContext: %s", SDL_GetError());
+            error(TAG "Error in SDL_GL_CreateContext: %s", SDL_GetError());
             return false;
         }
 
@@ -162,14 +162,14 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         );
 
         if (_audioDev == 0) {
-            _logger->error(TAG "Error in SDL_OpenAudioDevice: %s", SDL_GetError());
+            error(TAG "Error in SDL_OpenAudioDevice: %s", SDL_GetError());
             return false;
         }
 
         undo.add([this]() { SDL_CloseAudioDevice(_audioDev); });
 
         if (!_fifo.init(_audioSpec.size * 2)) {
-            _logger->error(TAG "Error in audio FIFO init");
+            error(TAG "Error in audio FIFO init");
             return false;
         }
 
@@ -184,7 +184,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         );
 
         if (SDL_GameControllerAddMappingsFromRW(ctrldb, 1) < 0) {
-            _logger->error(TAG "Error in SDL_GameControllerAddMappingsFromRW: %s", SDL_GetError());
+            error(TAG "Error in SDL_GameControllerAddMappingsFromRW: %s", SDL_GetError());
             return false;
         }
     }
@@ -194,7 +194,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         IMGUI_CHECKVERSION();
 
         if (ImGui::CreateContext() == nullptr) {
-            _logger->error(TAG "Error creating ImGui context");
+            error(TAG "Error creating ImGui context");
             return false;
         }
 
@@ -213,14 +213,14 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         ImGui::StyleColorsDark();
 
         if (!ImGui_ImplSDL2_InitForOpenGL(_window, _glContext)) {
-            _logger->error(TAG "Error initializing ImGui for OpenGL");
+            error(TAG "Error initializing ImGui for OpenGL");
             return false;
         }
 
         undo.add([]() { ImGui_ImplSDL2_Shutdown(); });
 
         if (!ImGui_ImplOpenGL2_Init()) {
-            _logger->error(TAG "Error initializing ImGui OpenGL implementation");
+            error(TAG "Error initializing ImGui OpenGL implementation");
             return false;
         }
 
@@ -236,7 +236,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         );
 
         if (proggyTiny == nullptr) {
-            _logger->error(TAG "Error adding Proggy Tiny font");
+            error(TAG "Error adding Proggy Tiny font");
             return false;
         }
 
@@ -254,7 +254,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         );
 
         if (fontAwesome == nullptr) {
-            _logger->error(TAG "Error adding Font Awesome 4 font");
+            error(TAG "Error adding Font Awesome 4 font");
             return false;
         }
     }
@@ -345,7 +345,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         lua_pushcfunction(_L, main);
         lua_pushlstring(_L, autorun.c_str(), autorun.length());
         
-        _logger->info(TAG "Running \"%s\"", autorun.c_str());
+        info(TAG "Running \"%s\"", autorun.c_str());
 
         if (!protectedCall(_L, 1, 0, _logger)) {
             return false;
@@ -439,7 +439,7 @@ void hc::Application::run() {
 }
 
 bool hc::Application::loadCore(char const* path) {
-    _logger->info(TAG "Loading core \"%s\"", path);
+    info(TAG "Loading core \"%s\"", path);
 
     lrcpp::Frontend& frontend = lrcpp::Frontend::getInstance();
 
@@ -447,36 +447,36 @@ bool hc::Application::loadCore(char const* path) {
         return false;
     }
 
-    retro_system_info info;
+    retro_system_info sysinfo;
 
-    if (frontend.getSystemInfo(&info)) {
-        _control->setSystemInfo(&info);
+    if (frontend.getSystemInfo(&sysinfo)) {
+        _control->setSystemInfo(&sysinfo);
     }
 
-    _logger->info(TAG "System Info");
-    _logger->info(TAG "    library_name     = %s", info.library_name);
-    _logger->info(TAG "    library_version  = %s", info.library_version);
-    _logger->info(TAG "    valid_extensions = %s", info.valid_extensions);
-    _logger->info(TAG "    need_fullpath    = %s", info.need_fullpath ? "true" : "false");
-    _logger->info(TAG "    block_extract    = %s", info.block_extract ? "true" : "false");
+    info(TAG "System Info");
+    info(TAG "    library_name     = %s", sysinfo.library_name);
+    info(TAG "    library_version  = %s", sysinfo.library_version);
+    info(TAG "    valid_extensions = %s", sysinfo.valid_extensions);
+    info(TAG "    need_fullpath    = %s", sysinfo.need_fullpath ? "true" : "false");
+    info(TAG "    block_extract    = %s", sysinfo.block_extract ? "true" : "false");
 
     onCoreLoaded();
     return true;
 }
 
 bool hc::Application::loadGame(char const* path) {
-    _logger->info(TAG "Loading game from \"%s\"", path);
+    info(TAG "Loading game from \"%s\"", path);
 
     lrcpp::Frontend& frontend = lrcpp::Frontend::getInstance();
-    retro_system_info info;
+    retro_system_info sysinfo;
 
-    if (!frontend.getSystemInfo(&info)) {
+    if (!frontend.getSystemInfo(&sysinfo)) {
         return false;
     }
 
     bool ok = false;
 
-    if (info.need_fullpath) {
+    if (sysinfo.need_fullpath) {
         ok = frontend.loadGame(path);
     }
     else {
@@ -502,7 +502,7 @@ bool hc::Application::loadGame(char const* path) {
         {"vram", RETRO_MEMORY_VIDEO_RAM}
     };
 
-    _logger->info(TAG "Core memory");
+    info(TAG "Core memory");
     bool any = false;
 
     for (size_t i = 0; i < sizeof(memory) / sizeof(memory[0]); i++) {
@@ -510,13 +510,13 @@ bool hc::Application::loadGame(char const* path) {
         size_t size = 0;
 
         if (frontend.getMemoryData(memory[i].id, &data) && frontend.getMemorySize(memory[i].id, &size) && size != 0) {
-            _logger->info(TAG "    %-4s %p %zu bytes", memory[i].name, data, size);
+            info(TAG "    %-4s %p %zu bytes", memory[i].name, data, size);
             any = true;
         }
     }
 
     if (!any) {
-        _logger->info(TAG "    No core memory exposed via the get_memory interface");
+        info(TAG "    No core memory exposed via the get_memory interface");
     }
 
     onGameLoaded();
@@ -680,7 +680,7 @@ int hc::Application::push(lua_State* const L) {
 }
 
 void hc::Application::sdlPrint(void* userdata, int category, SDL_LogPriority priority, char const* message) {
-    auto const logger = static_cast<Logger*>(userdata);
+    auto const self = static_cast<Application*>(userdata);
 
     char const* categoryStr = "?";
 
@@ -699,18 +699,18 @@ void hc::Application::sdlPrint(void* userdata, int category, SDL_LogPriority pri
 
     switch (priority) {
         case SDL_LOG_PRIORITY_VERBOSE:
-        case SDL_LOG_PRIORITY_DEBUG: logger->debug("[SDL] (%s): %s", categoryStr, message); break;
-        case SDL_LOG_PRIORITY_INFO: logger->info("[SDL] (%s): %s", categoryStr, message); break;
-        case SDL_LOG_PRIORITY_WARN: logger->warn("[SDL] (%s): %s", categoryStr, message); break;
+        case SDL_LOG_PRIORITY_DEBUG: self->debug("[SDL] (%s): %s", categoryStr, message); break;
+        case SDL_LOG_PRIORITY_INFO: self->info("[SDL] (%s): %s", categoryStr, message); break;
+        case SDL_LOG_PRIORITY_WARN: self->warn("[SDL] (%s): %s", categoryStr, message); break;
         case SDL_LOG_PRIORITY_ERROR:
-        case SDL_LOG_PRIORITY_CRITICAL: logger->error("[SDL] (%s): %s", categoryStr, message); break;
-        case SDL_NUM_LOG_PRIORITIES: logger->error("[SDL] (%s): Invalid priority %d", categoryStr, priority); break;
+        case SDL_LOG_PRIORITY_CRITICAL: self->error("[SDL] (%s): %s", categoryStr, message); break;
+        case SDL_NUM_LOG_PRIORITIES: self->error("[SDL] (%s): Invalid priority %d", categoryStr, priority); break;
     }
 }
 
 void hc::Application::lifeCycleVprintf(void* ud, char const* fmt, va_list args) {
     auto const self = static_cast<Application*>(ud);
-    self->_logger->vprintf(RETRO_LOG_DEBUG, fmt, args);
+    self->vprintf(RETRO_LOG_DEBUG, fmt, args);
 }
 
 void hc::Application::audioCallback(void* const udata, Uint8* const stream, int const len) {

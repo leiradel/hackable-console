@@ -58,13 +58,24 @@ namespace hc {
         double frameFps();
         void resetFrameFps();
 
-        Logger* getLogger() const;
-        Config* getConfig() const;
-        Video* getVideo() const;
-        Led* getLed() const;
-        Audio* getAudio() const;
-        Input* getInput() const;
-        Perf* getPerf() const;
+        template<typename T>
+        T* getView() const {
+            for (auto const& pair : _views) {
+                View* const view = pair.second.view;
+
+                if (dynamic_cast<T*>(view) != nullptr) {
+                    return dynamic_cast<T*>(view);
+                }
+            }
+
+            return nullptr;
+        }
+
+        void vprintf(retro_log_level level, char const* format, va_list args);
+        void debug(char const* format, ...);
+        void info(char const* format, ...);
+        void warn(char const* format, ...);
+        void error(char const* format, ...);
 
         // hc::View
         virtual void onStarted() override;
@@ -91,13 +102,7 @@ namespace hc {
         };
 
         Logger* _logger;
-        Config* _config;
-        Video* _video;
-        Led* _led;
-        Audio* _audio;
-        Input* _input;
-        Perf* _perf;
-        
+
         std::map<std::string, ViewProperties> _views;
 
         uint64_t _drawCount;

@@ -14,7 +14,7 @@ extern "C" {
 hc::Input::Input(Desktop* desktop) : View(desktop), _logger(nullptr), _frontend(nullptr) {}
 
 void hc::Input::init(lrcpp::Frontend* const frontend) {
-    _logger = _desktop->getLogger();
+    _logger = _desktop->getView<Logger>();
     _frontend = frontend;
 
     // Add the none controller

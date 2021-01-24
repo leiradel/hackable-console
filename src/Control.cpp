@@ -43,7 +43,7 @@ static int str2id(char const* const str) {
 hc::Control::Control(Desktop* desktop) : View(desktop), _logger(nullptr), _selected(0), _opened(-1) {}
 
 void hc::Control::init(LifeCycle* const fsm) {
-    _logger = _desktop->getLogger();
+    _logger = _desktop->getView<Logger>();
     _fsm = fsm;
 }
 
