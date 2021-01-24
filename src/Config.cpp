@@ -448,22 +448,17 @@ bool hc::Config::setCoreOptionsIntl(retro_core_options_intl const* intl) {
 }
 
 bool hc::Config::setCoreOptionsDisplay(retro_core_option_display const* display) {
-    _desktop->info(TAG "Setting core options display");
+    _desktop->info(TAG "Setting \"%s\" to %s", display->key, display->visible ? "visible" : "invisible");
 
-    for (; display->key != nullptr; display++) {
-        _desktop->info(TAG "    \"%s\" is %s", display->key, display->visible ? "visible" : "invisible");
+    auto found = _coreMap.find(display->key);
 
-        auto found = _coreMap.find(display->key);
-
-        if (found != _coreMap.end()) {
-            auto& option = _coreOptions[found->second];
-            option.visible = display->visible;
-        }
-        else {
-            _desktop->warn(TAG "        key not found in core options");
-        }
+    if (found == _coreMap.end()) {
+        _desktop->warn(TAG "        key not found in core options");
+        return false;
     }
 
+    auto& option = _coreOptions[found->second];
+    option.visible = display->visible;
     return true;
 }
 
