@@ -200,7 +200,7 @@ void hc::Desktop::onStep() {
 void hc::Desktop::onDraw() {
     _drawCount++;
 
-    if (ImGui::Begin(ICON_FA_PLUG " Views")) {
+    if (ImGui::Begin(getTitle())) {
         ImGui::Columns(2);
 
         for (auto& pair : _views) {
