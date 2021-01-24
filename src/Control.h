@@ -72,7 +72,6 @@ namespace hc {
         };
 
         LifeCycle* _fsm;
-        Logger* _logger;
 
         std::vector<Console> _consoles;
         int _selected;

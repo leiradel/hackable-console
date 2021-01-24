@@ -30,7 +30,7 @@ namespace hc {
 
         typedef size_t Handle;
 
-        Memory(Desktop* desktop) : View(desktop), _logger(nullptr), _selected(0), _viewCount(0) {}
+        Memory(Desktop* desktop) : View(desktop), _selected(0), _viewCount(0) {}
         virtual ~Memory() {}
 
         void init();
@@ -49,8 +49,6 @@ namespace hc {
     protected:
         static int l_addRegion(lua_State* const L);
 
-        Logger* _logger;
-
         std::vector<Region> _regions;
         int _selected;
 
@@ -59,10 +57,10 @@ namespace hc {
 
     class MemoryWatch : public View {
     public:
-        MemoryWatch(Desktop* desktop) : View(desktop), _logger(nullptr), _memory(nullptr), _handle(0) {}
+        MemoryWatch(Desktop* desktop) : View(desktop), _memory(nullptr), _handle(0) {}
         virtual ~MemoryWatch() {}
 
-        void init(Logger* const logger, char const* title, Memory* const memory, Memory::Handle const handle);
+        void init(char const* title, Memory* const memory, Memory::Handle const handle);
 
         // hc::View
         virtual char const* getTitle() override;
@@ -73,8 +71,6 @@ namespace hc {
         enum {
             SparklineCount = 512
         };
-
-        Logger* _logger;
 
         std::string _title;
 

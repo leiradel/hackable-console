@@ -48,8 +48,6 @@ namespace hc {
     protected:
         void setupTexture(unsigned const width, unsigned const height);
 
-        Logger* _logger;
-
         unsigned _rotation;
         retro_pixel_format _pixelFormat;
         double _coreFps;

@@ -118,8 +118,6 @@ namespace hc {
             bool visible;
         };
 
-        Logger* _logger;
-
         std::string _rootPath;
         std::string _autorunPath;
         std::string _systemPath;

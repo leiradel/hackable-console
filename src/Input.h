@@ -84,7 +84,6 @@ namespace hc {
         void keyboard(SDL_Event const* event);
         void joystickAdded(SDL_Event const* event);
 
-        Logger* _logger;
         lrcpp::Frontend* _frontend;
 
         // Physical controllers attached

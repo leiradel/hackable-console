@@ -36,7 +36,6 @@ namespace hc {
         virtual void sample(int16_t left, int16_t right) override;
 
     protected:
-        Logger* _logger;
         double _sampleRate;
         Fifo* _fifo;
 

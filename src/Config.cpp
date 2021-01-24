@@ -37,7 +37,6 @@ static void getFlags(char flags[7], uint64_t const mcflags) {
 
 hc::Config::Config(Desktop* desktop)
     : View(desktop)
-    , _logger(nullptr)
     , _performanceLevel(0)
     , _supportsNoGame(false)
     , _supportAchievements(false)
@@ -52,54 +51,52 @@ hc::Config::Config(Desktop* desktop)
 }
 
 bool hc::Config::init() {
-    _logger = _desktop->getView<Logger>();
-
     if (fnkdat(NULL, 0, 0, FNKDAT_INIT) != 0) {
-        _logger->error(TAG "Error initializing fnkdat");
+        _desktop->error(TAG "Error initializing fnkdat");
         return false;
     }
 
     char path[1024];
 
     if (fnkdat("autorun.lua", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
-        _logger->error(TAG "Error getting the autorun.lua file path");
+        _desktop->error(TAG "Error getting the autorun.lua file path");
         return false;
     }
 
     _autorunPath = path;
-    _logger->info(TAG "The autorun.lua file path is \"%s\"", path);
+    _desktop->info(TAG "The autorun.lua file path is \"%s\"", path);
 
     if (fnkdat("system/", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
-        _logger->error(TAG "Error getting the system path");
+        _desktop->error(TAG "Error getting the system path");
         return false;
     }
 
     _systemPath = path;
-    _logger->info(TAG "The system path is \"%s\"", path);
+    _desktop->info(TAG "The system path is \"%s\"", path);
 
     if (fnkdat("assets/", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
-        _logger->error(TAG "Error getting the core assets path");
+        _desktop->error(TAG "Error getting the core assets path");
         return false;
     }
 
     _coreAssetsPath = path;
-    _logger->info(TAG "The core assets path is \"%s\"", path);
+    _desktop->info(TAG "The core assets path is \"%s\"", path);
 
     if (fnkdat("saves/", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
-        _logger->error(TAG "Error getting the saves path");
+        _desktop->error(TAG "Error getting the saves path");
         return false;
     }
 
     _savePath = path;
-    _logger->info(TAG "The save path is \"%s\"", path);
+    _desktop->info(TAG "The save path is \"%s\"", path);
 
     if (fnkdat("cores/", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
-        _logger->error(TAG "Error getting the cores path");
+        _desktop->error(TAG "Error getting the cores path");
         return false;
     }
 
     _coresPath = path;
-    _logger->info(TAG "The cores path is \"%s\"", path);
+    _desktop->info(TAG "The cores path is \"%s\"", path);
 
     return true;
 }
@@ -189,7 +186,7 @@ void hc::Config::onDraw() {
         if (old != selected) {
             option.selected = static_cast<unsigned>(selected);
             _optionsUpdated = true;
-            _logger->info(TAG "Variable \"%s\" changed to \"%s\"", option.key.c_str(), option.values[selected].value.c_str());
+            _desktop->info(TAG "Variable \"%s\" changed to \"%s\"", option.key.c_str(), option.values[selected].value.c_str());
         }
     }
 }
@@ -215,13 +212,13 @@ void hc::Config::onQuit() {
 
 bool hc::Config::setPerformanceLevel(unsigned level) {
     _performanceLevel = level;
-    _logger->info(TAG "Set performance level to %u", level);
+    _desktop->info(TAG "Set performance level to %u", level);
     return true;
 }
 
 bool hc::Config::getSystemDirectory(char const** directory) {
     *directory = _systemPath.c_str();
-    _logger->info(TAG "Returning \"%s\" for system directory", *directory);
+    _desktop->info(TAG "Returning \"%s\" for system directory", *directory);
     return true;
 }
 
@@ -231,12 +228,12 @@ bool hc::Config::getVariable(retro_variable* variable) {
     if (found != _coreMap.end()) {
         auto const& option = _coreOptions[found->second];
         variable->value = option.values[option.selected].value.c_str();
-        _logger->info(TAG "Found value \"%s\" for variable \"%s\"", variable->value, variable->key);
+        _desktop->info(TAG "Found value \"%s\" for variable \"%s\"", variable->value, variable->key);
         return true;
     }
 
     variable->value = nullptr;
-    _logger->error(TAG "Variable \"%s\" not found", variable->key);
+    _desktop->error(TAG "Variable \"%s\" not found", variable->key);
     return false;
 }
 
@@ -248,41 +245,41 @@ bool hc::Config::getVariableUpdate(bool* const updated) {
 
 bool hc::Config::setSupportNoGame(bool const supports) {
     _supportsNoGame = supports;
-    _logger->info(TAG "Set supports no game to %s", supports ? "true" : "false");
+    _desktop->info(TAG "Set supports no game to %s", supports ? "true" : "false");
     return true;
 }
 
 bool hc::Config::getLibretroPath(char const** path) {
     *path = _coresPath.c_str();
-    _logger->info(TAG "Returning \"%s\" for libretro path", *path);
+    _desktop->info(TAG "Returning \"%s\" for libretro path", *path);
     return true;
 }
 
 bool hc::Config::getCoreAssetsDirectory(char const** directory) {
     *directory = _coreAssetsPath.c_str();
-    _logger->info(TAG "Returning \"%s\" for core assets directory", *directory);
+    _desktop->info(TAG "Returning \"%s\" for core assets directory", *directory);
     return true;
 }
 
 bool hc::Config::getSaveDirectory(char const** directory) {
     *directory = _savePath.c_str();
-    _logger->info(TAG "Returning \"%s\" for save directory", *directory);
+    _desktop->info(TAG "Returning \"%s\" for save directory", *directory);
     return true;
 }
 
 bool hc::Config::setProcAddressCallback(retro_get_proc_address_interface const* callback) {
     _getCoreProc = callback->get_proc_address;
-    _logger->info(TAG "Set get procedure address to %p", callback->get_proc_address);
+    _desktop->info(TAG "Set get procedure address to %p", callback->get_proc_address);
     return true;
 }
 
 bool hc::Config::setSubsystemInfo(retro_subsystem_info const* info) {
-    _logger->info(TAG "Setting subsystem information");
+    _desktop->info(TAG "Setting subsystem information");
 
     for (; info->desc != nullptr; info++) {
-        _logger->info(TAG "    desc  = %s", info->desc);
-        _logger->info(TAG "    ident = %s", info->ident);
-        _logger->info(TAG "    id    = %u", info->id);
+        _desktop->info(TAG "    desc  = %s", info->desc);
+        _desktop->info(TAG "    ident = %s", info->ident);
+        _desktop->info(TAG "    id    = %u", info->id);
 
         SubsystemInfo tempinfo;
         tempinfo.description = info->desc;
@@ -292,11 +289,11 @@ bool hc::Config::setSubsystemInfo(retro_subsystem_info const* info) {
         for (unsigned i = 0; i < info->num_roms; i++) {
             retro_subsystem_rom_info const* const rom = info->roms + i;
 
-            _logger->info(TAG "        roms[%u].desc             = %s", i, rom->desc);
-            _logger->info(TAG "        roms[%u].valid_extensions = %s", i, rom->valid_extensions);
-            _logger->info(TAG "        roms[%u].need_fullpath    = %d", i, rom->need_fullpath);
-            _logger->info(TAG "        roms[%u].block_extract    = %d", i, rom->block_extract);
-            _logger->info(TAG "        roms[%u].required         = %d", i, rom->required);
+            _desktop->info(TAG "        roms[%u].desc             = %s", i, rom->desc);
+            _desktop->info(TAG "        roms[%u].valid_extensions = %s", i, rom->valid_extensions);
+            _desktop->info(TAG "        roms[%u].need_fullpath    = %d", i, rom->need_fullpath);
+            _desktop->info(TAG "        roms[%u].block_extract    = %d", i, rom->block_extract);
+            _desktop->info(TAG "        roms[%u].required         = %d", i, rom->required);
 
             SubsystemInfo::Rom temprom;
             temprom.description = rom->desc;
@@ -308,8 +305,8 @@ bool hc::Config::setSubsystemInfo(retro_subsystem_info const* info) {
             for (unsigned j = 0; j < info->roms[i].num_memory; j++) {
                 retro_subsystem_memory_info const* const memory = rom->memory + j;
 
-                _logger->info(TAG "            memory[%u].type         = %u", j, memory->type);
-                _logger->info(TAG "            memory[%u].extension    = %s", j, memory->extension);
+                _desktop->info(TAG "            memory[%u].type         = %u", j, memory->type);
+                _desktop->info(TAG "            memory[%u].extension    = %s", j, memory->extension);
 
                 SubsystemInfo::Rom::Memory tempmem;
                 tempmem.extension = memory->extension;
@@ -328,22 +325,22 @@ bool hc::Config::setSubsystemInfo(retro_subsystem_info const* info) {
 }
 
 bool hc::Config::setMemoryMaps(retro_memory_map const* map) {
-    _logger->info(TAG "Setting memory maps");
+    _desktop->info(TAG "Setting memory maps");
 
     auto const descriptors = static_cast<retro_memory_descriptor*>(malloc(map->num_descriptors * sizeof(retro_memory_descriptor)));
 
     if (descriptors == nullptr) {
-        _logger->error(TAG "Out of memory setting memory descriptors");
+        _desktop->error(TAG "Out of memory setting memory descriptors");
         return false;
     }
 
     memcpy(descriptors, map->descriptors, sizeof(retro_memory_descriptor) * map->num_descriptors);
     
     if (!preprocessMemoryDescriptors(descriptors, map->num_descriptors)) {
-        _logger->warn(TAG "Error processing memory descriptors, but will continue");
+        _desktop->warn(TAG "Error processing memory descriptors, but will continue");
     }
 
-    _logger->info(TAG "    ndx flags  ptr                offset   start    select   disconn  len      addrspace");
+    _desktop->info(TAG "    ndx flags  ptr                offset   start    select   disconn  len      addrspace");
 
     for (unsigned i = 0; i < map->num_descriptors; i++) {
         retro_memory_descriptor const* const descriptor = descriptors + i;
@@ -351,7 +348,7 @@ bool hc::Config::setMemoryMaps(retro_memory_map const* map) {
         char flags[7];
         getFlags(flags, descriptor->flags);
 
-        _logger->info(
+        _desktop->info(
             TAG "    %3u %s 0x%016" PRIxPTR " %08X %08X %08X %08X %08X %s",
             i, flags, (uintptr_t)descriptor->ptr, descriptor->offset, descriptor->start, descriptor->select,
             descriptor->disconnect, descriptor->len, descriptor->addrspace != nullptr ? descriptor->addrspace : ""
@@ -377,26 +374,26 @@ bool hc::Config::setMemoryMaps(retro_memory_map const* map) {
 bool hc::Config::getUsername(char const** username) {
     static char const* const value = "hackcon";
 
-    _logger->warn(TAG "Returning fixed username: %s", value);
+    _desktop->warn(TAG "Returning fixed username: %s", value);
     *username = value;
     return true;
 }
 
 bool hc::Config::getLanguage(unsigned* language) {
-    _logger->warn(TAG "Returning fixed language English");
+    _desktop->warn(TAG "Returning fixed language English");
     *language = RETRO_LANGUAGE_ENGLISH;
     return true;
 }
 
 bool hc::Config::setSupportAchievements(bool supports) {
     _supportAchievements = supports;
-    _logger->info(TAG "Set support achievement to %s", supports ? "true" : "false");
+    _desktop->info(TAG "Set support achievement to %s", supports ? "true" : "false");
     return true;
 }
 
 bool hc::Config::setSerializationQuirks(uint64_t quirks) {
     _serializationQuirks = quirks;
-    _logger->info(TAG "Set serialization quirks to %" PRIu64, quirks);
+    _desktop->info(TAG "Set serialization quirks to %" PRIu64, quirks);
     return true;
 }
 
@@ -410,13 +407,13 @@ bool hc::Config::getFastForwarding(bool* is) {
     return true;
 }
 bool hc::Config::setCoreOptions(retro_core_option_definition const* options) {
-    _logger->info(TAG "Setting core options");
+    _desktop->info(TAG "Setting core options");
 
     for (; options->key != nullptr; options++) {
-        _logger->info(TAG "    key     = %s", options->key);
-        _logger->info(TAG "    desc    = %s", options->desc);
-        _logger->info(TAG "    info    = %s", options->info);
-        _logger->info(TAG "    default = %s", options->default_value);
+        _desktop->info(TAG "    key     = %s", options->key);
+        _desktop->info(TAG "    desc    = %s", options->desc);
+        _desktop->info(TAG "    info    = %s", options->info);
+        _desktop->info(TAG "    default = %s", options->default_value);
 
         CoreOption tempopt;
         tempopt.key = options->key;
@@ -428,8 +425,8 @@ bool hc::Config::setCoreOptions(retro_core_option_definition const* options) {
         for (unsigned i = 0; options->values[i].value != nullptr; i++) {
             retro_core_option_value const* const value = options->values + i;
 
-            _logger->debug(TAG "        value = %s", value->value);
-            _logger->debug(TAG "        label = %s", value->label);
+            _desktop->debug(TAG "        value = %s", value->value);
+            _desktop->debug(TAG "        label = %s", value->label);
 
             CoreOption::Value tempval;
             tempval.value = value->value;
@@ -446,15 +443,15 @@ bool hc::Config::setCoreOptions(retro_core_option_definition const* options) {
 }
 
 bool hc::Config::setCoreOptionsIntl(retro_core_options_intl const* intl) {
-    _logger->warn(TAG "Using English for the core options");
+    _desktop->warn(TAG "Using English for the core options");
     return setCoreOptions(intl->us);
 }
 
 bool hc::Config::setCoreOptionsDisplay(retro_core_option_display const* display) {
-    _logger->info(TAG "Setting core options display");
+    _desktop->info(TAG "Setting core options display");
 
     for (; display->key != nullptr; display++) {
-        _logger->info(TAG "    \"%s\" is %s", display->key, display->visible ? "visible" : "invisible");
+        _desktop->info(TAG "    \"%s\" is %s", display->key, display->visible ? "visible" : "invisible");
 
         auto found = _coreMap.find(display->key);
 
@@ -463,7 +460,7 @@ bool hc::Config::setCoreOptionsDisplay(retro_core_option_display const* display)
             option.visible = display->visible;
         }
         else {
-            _logger->warn(TAG "        key not found in core options");
+            _desktop->warn(TAG "        key not found in core options");
         }
     }
 

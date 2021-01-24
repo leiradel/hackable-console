@@ -13,7 +13,6 @@ extern "C" {
 
 hc::Audio::Audio(Desktop* desktop)
     : View(desktop)
-    , _logger(nullptr)
     , _sampleRate(0.0)
     , _fifo(nullptr)
     , _min(FLT_MAX)
@@ -29,7 +28,6 @@ hc::Audio::Audio(Desktop* desktop)
 }
 
 void hc::Audio::init(double const sampleRate, Fifo* const fifo) {
-    _logger = _desktop->getView<Logger>();
     _sampleRate = sampleRate;
     _fifo = fifo;
 }
@@ -63,7 +61,7 @@ void hc::Audio::flush() {
     int16_t* const output = (int16_t*)alloca(outLen * 2);
 
     if (output == NULL) {
-        _logger->error(TAG "Error allocating temporary output buffer");
+        _desktop->error(TAG "Error allocating temporary output buffer");
         return;
     }
 
@@ -75,7 +73,7 @@ void hc::Audio::flush() {
 
         if (error != RESAMPLER_ERR_SUCCESS) {
             memset(output, 0, outLen * 2);
-            _logger->error(TAG "Error resampling: %s", speex_resampler_strerror(error));
+            _desktop->error(TAG "Error resampling: %s", speex_resampler_strerror(error));
         }
     }
 
@@ -100,10 +98,10 @@ void hc::Audio::onGameLoaded() {
     _resampler = speex_resampler_init(2, _timing.sample_rate, _sampleRate, SPEEX_RESAMPLER_QUALITY_DEFAULT, &error);
 
     if (_resampler == nullptr) {
-        _logger->error(TAG "speex_resampler_init: %s", speex_resampler_strerror(error));
+        _desktop->error(TAG "speex_resampler_init: %s", speex_resampler_strerror(error));
     }
     else {
-        _logger->info(TAG "Resampler initialized to convert from %f to %f", _timing.sample_rate, _sampleRate);
+        _desktop->info(TAG "Resampler initialized to convert from %f to %f", _timing.sample_rate, _sampleRate);
     }
 }
 
@@ -183,16 +181,16 @@ void hc::Audio::onGameUnloaded() {
 bool hc::Audio::setSystemAvInfo(retro_system_av_info const* info) {
     _timing = info->timing;
 
-    _logger->info(TAG "Setting timing");
+    _desktop->info(TAG "Setting timing");
 
-    _logger->info(TAG "    fps         = %f", _timing.fps);
-    _logger->info(TAG "    sample_rate = %f", _timing.sample_rate);
+    _desktop->info(TAG "    fps         = %f", _timing.fps);
+    _desktop->info(TAG "    sample_rate = %f", _timing.sample_rate);
 
     return true;
 }
 
 bool hc::Audio::setAudioCallback(retro_audio_callback const* callback) {
-    _logger->warn(TAG "TODO: RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK");
+    _desktop->warn(TAG "TODO: RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK");
     return false;
 }
 

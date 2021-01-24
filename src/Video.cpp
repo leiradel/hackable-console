@@ -9,11 +9,9 @@ extern "C" {
 
 #define TAG "[VID] "
 
-hc::Video::Video(Desktop* desktop) : View(desktop), _logger(nullptr) {}
+hc::Video::Video(Desktop* desktop) : View(desktop) {}
 
 void hc::Video::init() {
-    _logger = _desktop->getView<Logger>();
-
     _rotation = 0;
     _pixelFormat = RETRO_PIXEL_FORMAT_UNKNOWN;
     _coreFps = 0.0;
@@ -65,24 +63,24 @@ void hc::Video::onCoreUnloaded() {
 
 bool hc::Video::setRotation(unsigned rotation) {
     _rotation = rotation;
-    _logger->info(TAG "Set rotation to %u", rotation);
+    _desktop->info(TAG "Set rotation to %u", rotation);
     return true;
 }
 
 bool hc::Video::getOverscan(bool* overscan) {
     *overscan = true;
-    _logger->warn(TAG "Returning fixed true for overscan");
+    _desktop->warn(TAG "Returning fixed true for overscan");
     return true;
 }
 
 bool hc::Video::getCanDupe(bool* canDupe) {
     *canDupe = true;
-    _logger->warn(TAG "Returning fixed true for can dupe");
+    _desktop->warn(TAG "Returning fixed true for can dupe");
     return true;
 }
 
 bool hc::Video::showMessage(retro_message const* message) {
-    _logger->warn(TAG "showMessage not implemented: %s", message->msg);
+    _desktop->warn(TAG "showMessage not implemented: %s", message->msg);
     return true;
 }
 
@@ -90,12 +88,12 @@ bool hc::Video::setPixelFormat(retro_pixel_format format) {
     _pixelFormat = format;
 
     switch (format) {
-        case RETRO_PIXEL_FORMAT_0RGB1555: _logger->info(TAG "Set pixel format to RETRO_PIXEL_FORMAT_0RGB1555"); break;
-        case RETRO_PIXEL_FORMAT_XRGB8888: _logger->info(TAG "Set pixel format to RETRO_PIXEL_FORMAT_XRGB8888"); break;
-        case RETRO_PIXEL_FORMAT_RGB565:   _logger->info(TAG "Set pixel format to RETRO_PIXEL_FORMAT_RGB565"); break;
+        case RETRO_PIXEL_FORMAT_0RGB1555: _desktop->info(TAG "Set pixel format to RETRO_PIXEL_FORMAT_0RGB1555"); break;
+        case RETRO_PIXEL_FORMAT_XRGB8888: _desktop->info(TAG "Set pixel format to RETRO_PIXEL_FORMAT_XRGB8888"); break;
+        case RETRO_PIXEL_FORMAT_RGB565:   _desktop->info(TAG "Set pixel format to RETRO_PIXEL_FORMAT_RGB565"); break;
 
         default:
-            _logger->info(TAG "Invalid pixel format %d", format);
+            _desktop->info(TAG "Invalid pixel format %d", format);
             return false;
     }
 
@@ -103,22 +101,22 @@ bool hc::Video::setPixelFormat(retro_pixel_format format) {
 }
 
 bool hc::Video::setHwRender(retro_hw_render_callback* callback) {
-    _logger->warn(TAG "TODO: RETRO_ENVIRONMENT_SET_HW_RENDER");
+    _desktop->warn(TAG "TODO: RETRO_ENVIRONMENT_SET_HW_RENDER");
     return false;
 }
 
 bool hc::Video::setFrameTimeCallback(retro_frame_time_callback const* callback) {
-    _logger->warn(TAG "TODO: RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK");
+    _desktop->warn(TAG "TODO: RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK");
     return false;
 }
 
 bool hc::Video::setSystemAvInfo(retro_system_av_info const* info) {
     _coreFps = info->timing.fps;
 
-    _logger->info(TAG "Setting timing");
+    _desktop->info(TAG "Setting timing");
 
-    _logger->info(TAG "    fps         = %f", info->timing.fps);
-    _logger->info(TAG "    sample_rate = %f", info->timing.sample_rate);
+    _desktop->info(TAG "    fps         = %f", info->timing.fps);
+    _desktop->info(TAG "    sample_rate = %f", info->timing.sample_rate);
 
     return setGeometry(&info->geometry);
 }
@@ -130,48 +128,48 @@ bool hc::Video::setGeometry(retro_game_geometry const* geometry) {
         _aspectRatio = (float)geometry->base_width / (float)geometry->base_height;
     }
 
-    _logger->info(TAG "Setting geometry");
+    _desktop->info(TAG "Setting geometry");
 
-    _logger->info(TAG "    base_width   = %u", geometry->base_width);
-    _logger->info(TAG "    base_height  = %u", geometry->base_height);
-    _logger->info(TAG "    max_width    = %u", geometry->max_width);
-    _logger->info(TAG "    max_height   = %u", geometry->max_height);
-    _logger->info(TAG "    aspect_ratio = %f", geometry->aspect_ratio);
+    _desktop->info(TAG "    base_width   = %u", geometry->base_width);
+    _desktop->info(TAG "    base_height  = %u", geometry->base_height);
+    _desktop->info(TAG "    max_width    = %u", geometry->max_width);
+    _desktop->info(TAG "    max_height   = %u", geometry->max_height);
+    _desktop->info(TAG "    aspect_ratio = %f", geometry->aspect_ratio);
 
     setupTexture(geometry->max_width, geometry->max_height);
     return true;
 }
 
 bool hc::Video::getCurrentSoftwareFramebuffer(retro_framebuffer* framebuffer) {
-    _logger->warn(TAG "TODO: RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER");
+    _desktop->warn(TAG "TODO: RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER");
     return false;
 }
 
 bool hc::Video::getHwRenderInterface(retro_hw_render_interface const** interface) {
-    _logger->warn(TAG "TODO: RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE");
+    _desktop->warn(TAG "TODO: RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE");
     return false;
 }
 
 bool hc::Video::setHwRenderContextNegotiationInterface(retro_hw_render_context_negotiation_interface const* interface) {
-    _logger->warn(TAG "TODO: RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE");
+    _desktop->warn(TAG "TODO: RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE");
     return false;
 }
 
 bool hc::Video::setHwSharedContext() {
-    _logger->warn(TAG "TODO: RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT");
+    _desktop->warn(TAG "TODO: RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT");
     return false;
 }
 
 bool hc::Video::getTargetRefreshRate(float* rate) {
     *rate = 60.0f;
-    _logger->warn(TAG "Returning 60 for target refresh rate");
-    _logger->warn(TAG "Real monitor refresh rate is %f", _desktop->drawFps());
+    _desktop->warn(TAG "Returning 60 for target refresh rate");
+    _desktop->warn(TAG "Real monitor refresh rate is %f", _desktop->drawFps());
     return true;
 }
 
 bool hc::Video::getPreferredHwRender(unsigned* preferred) {
     *preferred = RETRO_HW_CONTEXT_NONE;
-    _logger->warn(TAG "Returning fixed RETRO_HW_CONTEXT_NONE for preferred hardware renderer");
+    _desktop->warn(TAG "Returning fixed RETRO_HW_CONTEXT_NONE for preferred hardware renderer");
     return true;
 }
 
@@ -256,5 +254,5 @@ void hc::Video::setupTexture(unsigned const width, unsigned const height) {
     }
 
     glBindTexture(GL_TEXTURE_2D, previous_texture);
-    _logger->info(TAG "Texture set to %u x %u", width, height);
+    _desktop->info(TAG "Texture set to %u x %u", width, height);
 }

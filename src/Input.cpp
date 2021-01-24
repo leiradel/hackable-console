@@ -11,10 +11,9 @@ extern "C" {
 #define KEYBOARD_ID -2
 #define TAG "[INP] "
 
-hc::Input::Input(Desktop* desktop) : View(desktop), _logger(nullptr), _frontend(nullptr) {}
+hc::Input::Input(Desktop* desktop) : View(desktop), _frontend(nullptr) {}
 
 void hc::Input::init(lrcpp::Frontend* const frontend) {
-    _logger = _desktop->getView<Logger>();
     _frontend = frontend;
 
     // Add the none controller
@@ -32,7 +31,7 @@ void hc::Input::init(lrcpp::Frontend* const frontend) {
     none.digital = false;
 
     _pads.emplace_back(none);
-    _logger->info(TAG "Controller %s (%s) created", none.controllerName.c_str(), none.joystickName.c_str());
+    _desktop->info(TAG "Controller %s (%s) created", none.controllerName.c_str(), none.joystickName.c_str());
 
     // Add the keyboard controller
     Pad virtualPad;
@@ -49,7 +48,7 @@ void hc::Input::init(lrcpp::Frontend* const frontend) {
     virtualPad.digital = false;
 
     _pads.emplace_back(virtualPad);
-    _logger->info(TAG "Controller %s (%s) created", virtualPad.controllerName.c_str(), virtualPad.joystickName.c_str());
+    _desktop->info(TAG "Controller %s (%s) created", virtualPad.controllerName.c_str(), virtualPad.joystickName.c_str());
 }
 
 void hc::Input::processEvent(SDL_Event const* event) {
@@ -195,8 +194,8 @@ void hc::Input::onCoreUnloaded() {
 
 bool hc::Input::setInputDescriptors(retro_input_descriptor const* descriptors) {
     // We just log the descriptors, the information is currently discarded
-    _logger->info(TAG "Setting input descriptors");
-    _logger->info(TAG "    port device index id description");
+    _desktop->info(TAG "Setting input descriptors");
+    _desktop->info(TAG "    port device index id description");
 
     for (size_t i = 0; descriptors[i].description != nullptr; i++) {
         /**
@@ -213,7 +212,7 @@ bool hc::Input::setInputDescriptors(retro_input_descriptor const* descriptors) {
         }
 
         retro_input_descriptor const* desc = descriptors + i;
-        _logger->info(TAG "    %4u %6u %5u %2u %s", desc->port, desc->device, desc->index, desc->id, desc->description);
+        _desktop->info(TAG "    %4u %6u %5u %2u %s", desc->port, desc->device, desc->index, desc->id, desc->description);
     }
 
     return true;
@@ -232,8 +231,8 @@ bool hc::Input::getInputDeviceCapabilities(uint64_t* capabilities) {
 bool hc::Input::setControllerInfo(retro_controller_info const* info) {
     static char const* const deviceNames[] = {"none", "joypad", "mouse", "keyboard", "lightgun", "analog", "pointer"};
 
-    _logger->info(TAG "Setting controller info");
-    _logger->info(TAG "    port id type     description");
+    _desktop->info(TAG "Setting controller info");
+    _desktop->info(TAG "    port id type     description");
 
     size_t portCount = 0;
 
@@ -251,13 +250,13 @@ bool hc::Input::setControllerInfo(retro_controller_info const* info) {
 
             unsigned const deviceType = type->id & RETRO_DEVICE_MASK;
             char const* deviceName = deviceType < sizeof(deviceNames) / sizeof(deviceNames[0]) ? deviceNames[deviceType] : "?";
-            _logger->info(TAG "    %4zu %2u %-8s %s", port + 1, type->id >> RETRO_DEVICE_TYPE_SHIFT, deviceName, type->desc);
+            _desktop->info(TAG "    %4zu %2u %-8s %s", port + 1, type->id >> RETRO_DEVICE_TYPE_SHIFT, deviceName, type->desc);
 
             if (type->id != RETRO_DEVICE_NONE) {
                 _controllerTypes[port].emplace_back(type->desc, type->id);
             }
             else {
-                _logger->warn(TAG "Not adding RETRO_DEVICE_NONE as it'll be added later");
+                _desktop->warn(TAG "Not adding RETRO_DEVICE_NONE as it'll be added later");
             }
         }
     }
@@ -319,7 +318,7 @@ void hc::Input::poll() {}
 
 void hc::Input::addController(int which) {
     if (!SDL_IsGameController(which)) {
-        _logger->error("SDL device %d is not a controller", which);
+        _desktop->error("SDL device %d is not a controller", which);
         return;
     }
 
@@ -327,14 +326,14 @@ void hc::Input::addController(int which) {
     pad.controller = SDL_GameControllerOpen(which);
 
     if (pad.controller == NULL) {
-        _logger->error(TAG "Error opening the controller: %s", SDL_GetError());
+        _desktop->error(TAG "Error opening the controller: %s", SDL_GetError());
         return;
     }
 
     pad.joystick = SDL_GameControllerGetJoystick(pad.controller);
 
     if (pad.joystick == NULL) {
-        _logger->error(TAG "Error getting the joystick: %s", SDL_GetError());
+        _desktop->error(TAG "Error getting the joystick: %s", SDL_GetError());
         SDL_GameControllerClose(pad.controller);
         return;
     }
@@ -351,7 +350,7 @@ void hc::Input::addController(int which) {
     memset(pad.analogs, 0, sizeof(pad.analogs));
 
     _pads.emplace_back(pad);
-    _logger->info(TAG "Controller %s (%s) added", pad.controllerName.c_str(), pad.joystickName.c_str());
+    _desktop->info(TAG "Controller %s (%s) added", pad.controllerName.c_str(), pad.joystickName.c_str());
 }
 
 void hc::Input::drawPad(Pad& pad) {
@@ -518,7 +517,7 @@ void hc::Input::removeController(const SDL_Event* event) {
         if (_pads[i].id == event->cdevice.which) {
             Pad const& pad = _pads[i];
 
-            _logger->info(TAG "Controller %s (%s) removed", pad.controllerName.c_str(), pad.joystickName.c_str());
+            _desktop->info(TAG "Controller %s (%s) removed", pad.controllerName.c_str(), pad.joystickName.c_str());
 
             for (size_t port = 0; port < MaxPorts; port++) {
                 if (_ports[port].type == RETRO_DEVICE_JOYPAD && _ports[port].padId == pad.id) {
@@ -712,7 +711,7 @@ void hc::Input::joystickAdded(SDL_Event const* event) {
     if (mapping == nullptr) {
         char guidStr[128];
         SDL_JoystickGetGUIDString(guid, guidStr, sizeof(guidStr));
-        _logger->error(TAG "No mapping for joystick \"%s\" (GUID %s), joystick unusable", name, guidStr);
+        _desktop->error(TAG "No mapping for joystick \"%s\" (GUID %s), joystick unusable", name, guidStr);
     }
     else {
         SDL_free((void*)mapping);

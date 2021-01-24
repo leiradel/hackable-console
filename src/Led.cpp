@@ -9,11 +9,9 @@ extern "C" {
 
 #define TAG "[LED] "
 
-hc::Led::Led(Desktop* desktop) : View(desktop), _logger(nullptr) {}
+hc::Led::Led(Desktop* desktop) : View(desktop) {}
 
-void hc::Led::init() {
-    _logger = _desktop->getView<Logger>();
-}
+void hc::Led::init() {}
 
 char const* hc::Led::getTitle() {
     return ICON_FA_LIGHTBULB_O " Leds";
@@ -46,7 +44,7 @@ void hc::Led::onGameUnloaded() {
 }
 
 void hc::Led::setState(int led, int state) {
-    _logger->info(TAG "Set LED %d to %s", led, state ? "on" : "off");
+    _desktop->info(TAG "Set LED %d to %s", led, state ? "on" : "off");
     _states.resize(led + 1);
     _states[led] = state;
 }

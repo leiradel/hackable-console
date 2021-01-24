@@ -17,9 +17,7 @@ hc::Memory::Region::Region(std::string&& name, void* data, size_t offset, size_t
     , readOnly(readOnly)
 {}
 
-void hc::Memory::init() {
-    _logger = _desktop->getView<Logger>();
-}
+void hc::Memory::init() {}
 
 hc::Memory::Region* hc::Memory::lock(Handle const handle) {
     if (handle != 0 && handle <= _regions.size()) {
@@ -56,7 +54,7 @@ void hc::Memory::onDraw() {
         snprintf(title, sizeof(title), ICON_FA_EYE" %s##%u", _regions[_selected].name.c_str(), _viewCount++);
 
         MemoryWatch* watch = new MemoryWatch(_desktop);
-        watch->init(_logger, title, this, _selected + 1);
+        watch->init(title, this, _selected + 1);
         _desktop->addView(watch, false, true, nullptr);
     }
 }
@@ -113,7 +111,7 @@ int hc::Memory::l_addRegion(lua_State* const L) {
 
     self->_regions.emplace_back(std::string(name, length), data, offset, size, base, readOnly);
 
-    self->_logger->info(
+    self->_desktop->info(
         TAG "Added memory region {\"%s\", 0x%016" PRIxPTR ", 0x%016" PRIxPTR", %zu, %zu, %s}",
         name, static_cast<uintptr_t>(base), reinterpret_cast<uintptr_t>(data), size, offset, readOnly ? "true" : "false"
     );
@@ -121,8 +119,7 @@ int hc::Memory::l_addRegion(lua_State* const L) {
     return 0;
 }
 
-void hc::MemoryWatch::init(Logger* const logger, char const* title, Memory* const memory, Memory::Handle const handle) {
-    _logger = logger;
+void hc::MemoryWatch::init(char const* title, Memory* const memory, Memory::Handle const handle) {
     _title = title;
     _memory = memory;
     _handle = handle;

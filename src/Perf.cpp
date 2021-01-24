@@ -12,9 +12,7 @@ extern "C" {
 
 #define TAG "[PRF] "
 
-void hc::Perf::init() {
-    _logger = _desktop->getView<Logger>();
-}
+void hc::Perf::init() {}
 
 uint64_t hc::Perf::getTimeUs() {
     auto const now_us = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::system_clock::now());
@@ -106,7 +104,7 @@ void hc::Perf::log() {
         unsigned const ms = usPerCall / 1000;
         unsigned const us = usPerCall - ms * 1000;
 
-        _logger->debug(TAG "%6" PRIu64 " %2u.%03u %s", cnt.counter->call_cnt, ms, us, cnt.counter->ident);
+        _desktop->info(TAG "%6" PRIu64 " %2u.%03u %s", cnt.counter->call_cnt, ms, us, cnt.counter->ident);
     }
 }
 

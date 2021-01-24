@@ -13,7 +13,7 @@ namespace hc
 {
     class Perf : public View, public Scriptable, public lrcpp::Perf {
     public:
-        Perf(Desktop* desktop) : View(desktop), _logger(nullptr) {}
+        Perf(Desktop* desktop) : View(desktop) {}
         virtual ~Perf() {}
 
         void init();
@@ -52,8 +52,6 @@ namespace hc
             retro_perf_counter* const counter;
             bool const mustDelete;
         };
-
-        lrcpp::Logger* _logger;
 
         std::unordered_map<std::string, Counter> _counters;
     };

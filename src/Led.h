@@ -32,8 +32,6 @@ namespace hc {
     protected:
         static int l_setState(lua_State* const L);
 
-        hc::Logger* _logger;
-
         std::vector<int> _states;
     };
 }
