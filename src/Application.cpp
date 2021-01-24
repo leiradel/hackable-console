@@ -99,7 +99,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
     Desktop::init();
 
-    addView(&_logger, true, false, "logger");
+    addView(&_logger, true, false);
 
     if (!_logger.init()) {
         return false;
@@ -272,15 +272,15 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         // Initialize components (logger has already been initialized)
         lrcpp::Frontend& frontend = lrcpp::Frontend::getInstance();
 
-        addView(&_config, true, false, "config");
-        addView(&_video, true, false, "video");
-        addView(&_led, true, false, "led");
-        addView(&_audio, true, false, "audio");
-        addView(&_input, true, false, "input");
-        addView(&_perf, true, false, "perf");
+        addView(&_config, true, false);
+        addView(&_video, true, false);
+        addView(&_led, true, false);
+        addView(&_audio, true, false);
+        addView(&_input, true, false);
+        addView(&_perf, true, false);
 
-        addView(&_control, true, false, "control");
-        addView(&_memory, true, false, "memory");
+        addView(&_control, true, false);
+        addView(&_memory, true, false);
 
         if (!_config.init()) {
             return false;
@@ -644,19 +644,25 @@ int hc::Application::push(lua_State* const L) {
 
     size_t const stringCount = sizeof(stringConsts) / sizeof(stringConsts[0]);
 
-    lua_createtable(L, 0, _views.size() + stringCount);
+    lua_createtable(L, 0, stringCount + 6);
 
-    for (auto const& pair : _views) {
-        ViewProperties const& props = pair.second;
-        View* const view = props.view;
+    _logger.push(L);
+    lua_setfield(L, -2, "logger");
 
-        auto const scriptable = dynamic_cast<Scriptable*>(view);
+    _config.push(L);
+    lua_setfield(L, -2, "config");
 
-        if (scriptable != nullptr) {
-            scriptable->push(L);
-            lua_setfield(L, -2, props.id);
-        }
-    }
+    _led.push(L);
+    lua_setfield(L, -2, "led");
+
+    _perf.push(L);
+    lua_setfield(L, -2, "perf");
+
+    _control.push(L);
+    lua_setfield(L, -2, "control");
+
+    _memory.push(L);
+    lua_setfield(L, -2, "memory");
 
     for (size_t i = 0; i < stringCount; i++) {
         lua_pushstring(L, stringConsts[i].value);

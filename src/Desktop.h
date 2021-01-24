@@ -5,7 +5,7 @@
 #include <lrcpp/Frontend.h>
 
 #include <string.h>
-#include <map>
+#include <unordered_set>
 
 extern "C" {
     #include <lua.h>
@@ -51,7 +51,7 @@ namespace hc {
         virtual ~Desktop() {}
 
         void init();
-        void addView(View* const view, bool const top, bool const free, char const* const id);
+        void addView(View* const view, bool const top, bool const free);
 
         double drawFps();
         void resetDrawFps();
@@ -60,8 +60,8 @@ namespace hc {
 
         template<typename T>
         T* getView() const {
-            for (auto const& pair : _views) {
-                View* const view = pair.second.view;
+            for (auto const& props : _views) {
+                View* const view = props->view;
 
                 if (dynamic_cast<T*>(view) != nullptr) {
                     return dynamic_cast<T*>(view);
@@ -97,13 +97,12 @@ namespace hc {
             View* view;
             bool top;
             bool free;
-            char const* id;
             bool opened;
         };
 
         Logger* _logger;
 
-        std::map<std::string, ViewProperties> _views;
+        std::unordered_set<ViewProperties*> _views;
 
         uint64_t _drawCount;
         Timer _drawTimer;

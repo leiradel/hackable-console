@@ -55,7 +55,7 @@ void hc::Memory::onDraw() {
 
         MemoryWatch* watch = new MemoryWatch(_desktop);
         watch->init(title, this, _selected + 1);
-        _desktop->addView(watch, false, true, nullptr);
+        _desktop->addView(watch, false, true);
     }
 }
 

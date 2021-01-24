@@ -23,9 +23,9 @@ void hc::Desktop::init() {
     _frameCount = 0;
 }
 
-void hc::Desktop::addView(View* const view, bool const top, bool const free, char const* const id) {
-    ViewProperties props = {view, top, free, id, true};
-    _views.emplace(id != nullptr ? id : view->getTitle(), props);
+void hc::Desktop::addView(View* const view, bool const top, bool const free) {
+    auto const props = new ViewProperties {view, top, free, true};
+    _views.emplace(props);
 }
 
 double hc::Desktop::drawFps() {
@@ -53,8 +53,8 @@ void hc::Desktop::resetFrameFps() {
 }
 
 void hc::Desktop::onStarted() {
-    for (auto const& pair : _views) {
-        View* const view = pair.second.view;
+    for (auto const& props : _views) {
+        View* const view = props->view;
         debug(TAG "onStarted %s", view->getTitle());
         view->onStarted();
     }
@@ -64,24 +64,24 @@ void hc::Desktop::onStarted() {
 }
 
 void hc::Desktop::onCoreLoaded() {
-    for (auto const& pair : _views) {
-        View* const view = pair.second.view;
+    for (auto const& props : _views) {
+        View* const view = props->view;
         debug(TAG "onCoreLoaded %s", view->getTitle());
         view->onCoreLoaded();
     }
 }
 
 void hc::Desktop::onGameLoaded() {
-    for (auto const& pair : _views) {
-        View* const view = pair.second.view;
+    for (auto const& props : _views) {
+        View* const view = props->view;
         debug(TAG "onGameLoaded %s", view->getTitle());
         view->onGameLoaded();
     }
 }
 
 void hc::Desktop::onGameStarted() {
-    for (auto const& pair : _views) {
-        View* const view = pair.second.view;
+    for (auto const& props : _views) {
+        View* const view = props->view;
         debug(TAG "onGameStarted %s", view->getTitle());
         view->onGameStarted();
     }
@@ -91,8 +91,8 @@ void hc::Desktop::onGameStarted() {
 }
 
 void hc::Desktop::onGamePaused() {
-    for (auto const& pair : _views) {
-        View* const view = pair.second.view;
+    for (auto const& props : _views) {
+        View* const view = props->view;
         debug(TAG "onGamePaused %s", view->getTitle());
         view->onGamePaused();
     }
@@ -101,8 +101,8 @@ void hc::Desktop::onGamePaused() {
 }
 
 void hc::Desktop::onGameResumed() {
-    for (auto const& pair : _views) {
-        View* const view = pair.second.view;
+    for (auto const& props : _views) {
+        View* const view = props->view;
         debug(TAG "onGameResumed %s", view->getTitle());
         view->onGameResumed();
     }
@@ -111,8 +111,8 @@ void hc::Desktop::onGameResumed() {
 }
 
 void hc::Desktop::onGameReset() {
-    for (auto const& pair : _views) {
-        View* const view = pair.second.view;
+    for (auto const& props : _views) {
+        View* const view = props->view;
         debug(TAG "onGameReset %s", view->getTitle());
         view->onGameReset();
     }
@@ -123,16 +123,16 @@ void hc::Desktop::onFrame() {
         _frameCount++;
     }
 
-    for (auto const& pair : _views) {
-        View* const view = pair.second.view;
+    for (auto const& props : _views) {
+        View* const view = props->view;
         // Don't log stuff per frame
         view->onFrame();
     }
 }
 
 void hc::Desktop::onStep() {
-    for (auto const& pair : _views) {
-        View* const view = pair.second.view;
+    for (auto const& props : _views) {
+        View* const view = props->view;
         // Don't log stuff per frame
         view->onStep();
     }
@@ -144,11 +144,10 @@ void hc::Desktop::onDraw() {
     if (ImGui::Begin(getTitle())) {
         ImGui::Columns(2);
 
-        for (auto& pair : _views) {
-            ViewProperties& props = pair.second;
-            View* const view = props.view;
+        for (auto const& props : _views) {
+            View* const view = props->view;
 
-            if (!props.top) {
+            if (!props->top) {
                 continue;
             }
 
@@ -156,10 +155,10 @@ void hc::Desktop::onDraw() {
             ImGui::NextColumn();
 
             char label[32];
-            snprintf(label, sizeof(label), "Open##%p", reinterpret_cast<void const*>(&props));
+            snprintf(label, sizeof(label), "Open##%p", reinterpret_cast<void const*>(props));
 
-            if (ImGuiAl::Button(label, !props.opened)) {
-                props.opened = true;
+            if (ImGuiAl::Button(label, !props->opened)) {
+                props->opened = true;
             }
 
             ImGui::NextColumn();
@@ -170,14 +169,13 @@ void hc::Desktop::onDraw() {
 
     ImGui::End();
 
-    for (auto& pair : _views) {
-        ViewProperties& props = pair.second;
-        View* const view = pair.second.view;
+    for (auto const& props : _views) {
+        View* const view = props->view;
         // Don't log stuff per frame
 
         // Don't recursively draw the plugin manager
-        if (view != this && props.opened) {
-            if (ImGui::Begin(view->getTitle(), &props.opened)) {
+        if (view != this && props->opened) {
+            if (ImGui::Begin(view->getTitle(), &props->opened)) {
                 view->onDraw();
                 ImGui::End();
             }
@@ -186,8 +184,8 @@ void hc::Desktop::onDraw() {
 }
 
 void hc::Desktop::onGameUnloaded() {
-    for (auto const& pair : _views) {
-        View* const view = pair.second.view;
+    for (auto const& props : _views) {
+        View* const view = props->view;
         debug(TAG "onGameUnloaded %s", view->getTitle());
         view->onGameUnloaded();
     }
@@ -196,21 +194,20 @@ void hc::Desktop::onGameUnloaded() {
 }
 
 void hc::Desktop::onCoreUnloaded() {
-    for (auto const& pair : _views) {
-        View* const view = pair.second.view;
+    for (auto const& props : _views) {
+        View* const view = props->view;
         debug(TAG "onCoreUnloaded %s", view->getTitle());
         view->onCoreUnloaded();
     }
 }
 
 void hc::Desktop::onQuit() {
-    for (auto const& pair : _views) {
-        ViewProperties const& props = pair.second;
-        View* const view = props.view;
+    for (auto const& props : _views) {
+        View* const view = props->view;
         debug(TAG "onQuit plugin %s", view->getTitle());
         view->onQuit();
 
-        if (view != this && props.free) {
+        if (view != this && props->free) {
             delete view;
         }
     }
