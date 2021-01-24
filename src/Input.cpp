@@ -1,5 +1,5 @@
 #include "Input.h"
-#include "Logger.h"
+#include "Video.h"
 
 #include <IconsFontAwesome4.h>
 
@@ -102,6 +102,10 @@ void hc::Input::onCoreLoaded() {
     }
 
     // TODO auto-assign controllers to ports here? Do it in the Lua console script?
+}
+
+void hc::Input::onGameStarted() {
+    _lastX = _lastY = 0;
 }
 
 void hc::Input::onFrame() {
@@ -277,10 +281,6 @@ int16_t hc::Input::state(unsigned portIndex, unsigned deviceId, unsigned index, 
     unsigned const base = deviceId & RETRO_DEVICE_MASK;
     Port const& port = _ports[portIndex];
 
-    if (port.type != base) {
-        return 0;
-    }
-
     switch (base) {
         case RETRO_DEVICE_JOYPAD: {
             size_t const count = _pads.size();
@@ -308,6 +308,28 @@ int16_t hc::Input::state(unsigned portIndex, unsigned deviceId, unsigned index, 
 
         case RETRO_DEVICE_KEYBOARD: {
             return id < RETROK_LAST ? (_keyState[id] != 0 ? 32767 : 0) : 0;
+        }
+
+        case RETRO_DEVICE_MOUSE: {
+            int x = 0, y = 0, dx = 0, dy = 0;
+            bool const inside = getMousePos(&x, &y);
+
+            if (inside) {
+                dx = x - _lastX;
+                dy = y - _lastY;
+                _lastX = x;
+                _lastY = y;
+
+            }
+
+            switch (id) {
+                case RETRO_DEVICE_ID_MOUSE_X: return dx;
+                case RETRO_DEVICE_ID_MOUSE_Y: return dy;
+                case RETRO_DEVICE_ID_MOUSE_LEFT: return inside ? (ImGui::IsMouseDown(0) ? 32767 : 0) : 0;
+                case RETRO_DEVICE_ID_MOUSE_RIGHT: return inside ? (ImGui::IsMouseDown(1) ? 32767 : 0) : 0;
+            }
+
+            break;
         }
     }
 
@@ -716,4 +738,16 @@ void hc::Input::joystickAdded(SDL_Event const* event) {
     else {
         SDL_free((void*)mapping);
     }
+}
+
+bool hc::Input::getMousePos(int* const x, int* const y) {
+    if (_video == nullptr) {
+        _video = _desktop->getView<Video>();
+    }
+
+    if (_video == nullptr) {
+        return false;
+    }
+
+    return _video->getMousePos(x, y);
 }

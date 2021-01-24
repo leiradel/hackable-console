@@ -24,6 +24,7 @@ namespace hc {
         // hc::View
         virtual char const* getTitle() override;
         virtual void onCoreLoaded() override;
+        virtual void onGameStarted() override;
         virtual void onFrame() override;
         virtual void onStep() override;
         virtual void onDraw() override;
@@ -84,6 +85,8 @@ namespace hc {
         void keyboard(SDL_Event const* event);
         void joystickAdded(SDL_Event const* event);
 
+        bool getMousePos(int* const x, int* const y);
+
         lrcpp::Frontend* _frontend;
 
         // Physical controllers attached
@@ -108,5 +111,9 @@ namespace hc {
          * key is set, and is decreased on every onFrame call.
          */
         uint8_t _keyState[RETROK_LAST];
+
+        // Mouse coordinates are provided by the video component
+        Video* _video;
+        int _lastX, _lastY;
     };
 }
