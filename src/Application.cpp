@@ -637,6 +637,48 @@ void hc::Application::onGameUnloaded() {
     _runningTime.stop();
 }
 
+int hc::Application::push(lua_State* const L) {
+    static struct {char const* const name; char const* const value;} const stringConsts[] = {
+        {"_COPYRIGHT", "Copyright (c) 2020 Andre Leiradella"},
+        {"_LICENSE", "MIT"},
+        {"_VERSION", "0.0.1"},
+        {"_NAME", "hc"},
+        {"_URL", "https://github.com/leiradel/hackable-console"},
+        {"_DESCRIPTION", "Hackable Console bindings"},
+
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
+        {"soExtension", "dll"}
+#elif __linux__
+        {"soExtension", "so"}
+#else
+        #error Unsupported platform
+#endif
+    };
+
+    size_t const stringCount = sizeof(stringConsts) / sizeof(stringConsts[0]);
+
+    lua_createtable(L, 0, _views.size() + stringCount);
+
+    for (auto const& pair : _views) {
+        ViewProperties const& props = pair.second;
+        View* const view = props.view;
+
+        auto const scriptable = dynamic_cast<Scriptable*>(view);
+
+        if (scriptable != nullptr) {
+            scriptable->push(L);
+            lua_setfield(L, -2, props.id);
+        }
+    }
+
+    for (size_t i = 0; i < stringCount; i++) {
+        lua_pushstring(L, stringConsts[i].value);
+        lua_setfield(L, -2, stringConsts[i].name);
+    }
+
+    return 1;
+}
+
 void hc::Application::sdlPrint(void* userdata, int category, SDL_LogPriority priority, char const* message) {
     auto const logger = static_cast<Logger*>(userdata);
 

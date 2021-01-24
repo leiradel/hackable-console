@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Scriptable.h"
 #include "Timer.h"
 
 #include <lrcpp/Frontend.h>
@@ -46,7 +45,7 @@ namespace hc {
         Desktop* _desktop;
     };
 
-    class Desktop : public View, public Scriptable {
+    class Desktop : public View {
     public:
         Desktop();
         virtual ~Desktop() {}
@@ -81,9 +80,6 @@ namespace hc {
         virtual void onGameUnloaded() override;
         virtual void onCoreUnloaded() override;
         virtual void onQuit() override;
-
-        // hc::Scriptable
-        virtual int push(lua_State* const L) override;
 
     protected:
         struct ViewProperties {

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "LifeCycle.h"
 #include "Desktop.h"
+#include "Scriptable.h"
 
 #include "Logger.h"
 #include "Config.h"
@@ -11,8 +11,11 @@
 #include "Input.h"
 #include "Perf.h"
 
+#include "LifeCycle.h"
+
 #include "Control.h"
 #include "Memory.h"
+
 #include "Fifo.h"
 
 #include <SDL.h>
@@ -25,7 +28,7 @@ extern "C" {
 #include <stdarg.h>
 
 namespace hc {
-    class Application : public Desktop {
+    class Application : public Desktop, public Scriptable {
     public:
         Application();
 
@@ -55,6 +58,9 @@ namespace hc {
         virtual void onGameResumed() override;
         virtual void onDraw() override;
         virtual void onGameUnloaded() override;
+
+        // hc::Scriptable
+        virtual int push(lua_State* const L) override;
 
     protected:
         static void sdlPrint(void* userdata, int category, SDL_LogPriority priority, char const* message);
