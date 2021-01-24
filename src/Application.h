@@ -25,7 +25,7 @@ extern "C" {
 #include <stdarg.h>
 
 namespace hc {
-    class Application {
+    class Application : public Desktop {
     public:
         Application();
 
@@ -34,6 +34,7 @@ namespace hc {
         void draw();
         void run();
 
+        // LifeCycle
         bool loadCore(char const* path);
         bool loadGame(char const* path);
         bool pauseGame();
@@ -45,21 +46,19 @@ namespace hc {
         bool unloadCore();
         bool unloadGame();
 
-        void onStarted();
-        void onCoreLoaded();
-        void onGameLoaded();
-        void onGameStarted();
-        void onGamePaused();
-        void onGameResumed();
-        void onGameReset();
-        void onFrame();
-        void onStep();
-        void onGameUnloaded();
-        void onCoreUnloaded();
-        void onQuit();
+        // hc::View
+        virtual char const* getTitle() override;
+        virtual void onCoreLoaded() override;
+        virtual void onGameLoaded() override;
+        virtual void onGameStarted() override;
+        virtual void onGamePaused() override;
+        virtual void onGameResumed() override;
+        virtual void onDraw() override;
+        virtual void onGameUnloaded() override;
 
     protected:
-        static void vprintf(void* ud, char const* fmt, va_list args);
+        static void sdlPrint(void* userdata, int category, SDL_LogPriority priority, char const* message);
+        static void lifeCycleVprintf(void* ud, char const* fmt, va_list args);
         static void audioCallback(void* const udata, Uint8* const stream, int const len);
 
         SDL_Window* _window;
@@ -69,18 +68,9 @@ namespace hc {
 
         LifeCycle _fsm;
 
-        Audio* _audio;
-        Config* _config;
-        Led* _led;
-        Logger* _logger;
-        Video* _video;
-        Input* _input;
-        Perf* _perf;
-
         Control* _control;
         Memory* _memory;
 
-        Desktop _desktop;
         Timer _runningTime;
         uint64_t _nextFrameTime;
         uint64_t _coreUsPerFrame;

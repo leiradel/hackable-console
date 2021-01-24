@@ -32,7 +32,7 @@ void hc::Desktop::init() {
     _frameCount = 0;
 }
 
-void hc::Desktop::add(View* const view, bool const top, bool const free, char const* const id) {
+void hc::Desktop::addView(View* const view, bool const top, bool const free, char const* const id) {
     ViewProperties props = {view, top, free, id, true};
     _views.emplace(id != nullptr ? id : view->getTitle(), props);
 
@@ -109,10 +109,6 @@ hc::Input* hc::Desktop::getInput() const {
 
 hc::Perf* hc::Desktop::getPerf() const {
     return _perf;
-}
-
-char const* hc::Desktop::getTitle() {
-    return ICON_FA_PLUG " Views";
 }
 
 void hc::Desktop::onStarted() {

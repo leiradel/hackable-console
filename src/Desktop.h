@@ -52,7 +52,8 @@ namespace hc {
         virtual ~Desktop() {}
 
         void init();
-        void add(View* const view, bool const top, bool const free, char const* const id);
+        void addView(View* const view, bool const top, bool const free, char const* const id);
+
         double drawFps();
         void resetDrawFps();
         double frameFps();
@@ -67,7 +68,6 @@ namespace hc {
         Perf* getPerf() const;
 
         // hc::View
-        virtual char const* getTitle() override;
         virtual void onStarted() override;
         virtual void onCoreLoaded() override;
         virtual void onGameLoaded() override;

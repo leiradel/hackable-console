@@ -62,7 +62,7 @@ static void const* readAll(hc::Logger* logger, char const* const path, size_t* c
     return data;
 }
 
-hc::Application::Application() : _fsm(*this, vprintf, this) {}
+hc::Application::Application() : _fsm(*this, lifeCycleVprintf, this) {}
 
 bool hc::Application::init(std::string const& title, int const width, int const height) {
     class Undo {
@@ -86,10 +86,10 @@ bool hc::Application::init(std::string const& title, int const width, int const 
     }
     undo;
 
-    _desktop.init();
+    Desktop::init();
 
-    _logger = new Logger(&_desktop);
-    _desktop.add(_logger, true, false, "logger");
+    _logger = new Logger(this);
+    addView(_logger, true, false, "logger");
 
     if (!_logger->init()) {
         delete _logger;
@@ -98,36 +98,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
     {
         // Redirect SDL logs
-        static auto const sdlLogger = [](void* userdata, int category, SDL_LogPriority priority, char const* message) {
-            auto const logger = static_cast<Logger*>(userdata);
-
-            char const* categoryStr = "?";
-
-            switch (category) {
-                case SDL_LOG_CATEGORY_APPLICATION: categoryStr = "application"; break;
-                case SDL_LOG_CATEGORY_ERROR: categoryStr = "error"; break;
-                case SDL_LOG_CATEGORY_ASSERT: categoryStr = "assert"; break;
-                case SDL_LOG_CATEGORY_SYSTEM: categoryStr = "system"; break;
-                case SDL_LOG_CATEGORY_AUDIO: categoryStr = "audio"; break;
-                case SDL_LOG_CATEGORY_VIDEO: categoryStr = "video"; break;
-                case SDL_LOG_CATEGORY_RENDER: categoryStr = "render"; break;
-                case SDL_LOG_CATEGORY_INPUT: categoryStr = "input"; break;
-                case SDL_LOG_CATEGORY_TEST: categoryStr = "test"; break;
-                case SDL_LOG_CATEGORY_CUSTOM: categoryStr = "custom"; break;
-            }
-
-            switch (priority) {
-                case SDL_LOG_PRIORITY_VERBOSE:
-                case SDL_LOG_PRIORITY_DEBUG: logger->debug("[SDL] (%s): %s", categoryStr, message); break;
-                case SDL_LOG_PRIORITY_INFO: logger->info("[SDL] (%s): %s", categoryStr, message); break;
-                case SDL_LOG_PRIORITY_WARN: logger->warn("[SDL] (%s): %s", categoryStr, message); break;
-                case SDL_LOG_PRIORITY_ERROR:
-                case SDL_LOG_PRIORITY_CRITICAL: logger->error("[SDL] (%s): %s", categoryStr, message); break;
-                case SDL_NUM_LOG_PRIORITIES: logger->error("[SDL] (%s): Invalid priority %d", categoryStr, priority); break;
-            }
-        };
-
-        SDL_LogSetOutputFunction(sdlLogger, _logger);
+        SDL_LogSetOutputFunction(sdlPrint, _logger);
         SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
 
         // Setup SDL
@@ -292,23 +263,23 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         // Initialize components (logger has already been initialized)
         lrcpp::Frontend& frontend = lrcpp::Frontend::getInstance();
 
-        _config = new Config(&_desktop);
-        _desktop.add(_config, true, false, "config");
-        _video = new Video(&_desktop);
-        _desktop.add(_video, true, false, "video");
-        _led = new Led(&_desktop);
-        _desktop.add(_led, true, false, "led");
-        _audio = new Audio(&_desktop);
-        _desktop.add(_audio, true, false, "audio");
-        _input = new Input(&_desktop);
-        _desktop.add(_input, true, false, "input");
-        _perf = new Perf(&_desktop);
-        _desktop.add(_perf, true, false, "perf");
+        _config = new Config(this);
+        addView(_config, true, false, "config");
+        _video = new Video(this);
+        addView(_video, true, false, "video");
+        _led = new Led(this);
+        addView(_led, true, false, "led");
+        _audio = new Audio(this);
+        addView(_audio, true, false, "audio");
+        _input = new Input(this);
+        addView(_input, true, false, "input");
+        _perf = new Perf(this);
+        addView(_perf, true, false, "perf");
 
-        _control = new Control(&_desktop);
-        _desktop.add(_control, true, false, "control");
-        _memory = new Memory(&_desktop);
-        _desktop.add(_memory, true, false, "memory");
+        _control = new Control(this);
+        addView(_control, true, false, "control");
+        _memory = new Memory(this);
+        addView(_memory, true, false, "memory");
 
         undo.add([this]() {
             delete _memory;
@@ -355,7 +326,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         undo.add([this]() { lua_close(_L); });
 
         luaL_openlibs(_L);
-        _desktop.push(_L);
+        push(_L);
         registerSearcher(_L);
 
         static auto const main = [](lua_State* const L) -> int {
@@ -387,7 +358,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 }
 
 void hc::Application::destroy() {
-    _desktop.onQuit();
+    Desktop::onQuit();
     lua_close(_L);
 
     ImGui_ImplOpenGL2_Shutdown();
@@ -402,27 +373,6 @@ void hc::Application::destroy() {
     SDL_Quit();
 
     delete _logger;
-}
-
-void hc::Application::draw() {
-    bool on = false;
-
-    if (_config->vsync(&on)) {
-        _desktop.resetDrawFps();
-        _desktop.resetFrameFps();
-        SDL_GL_SetSwapInterval(on ? 1 : 0);
-    }
-
-    if (_config->syncExact(&_syncExact)) {
-        _desktop.resetFrameFps();
-
-        if (_syncExact) {
-            _nextFrameTime = _runningTime.getTimeUs();
-        }
-    }
-
-    ImGui::DockSpaceOverViewport();
-    _desktop.onDraw();
 }
 
 void hc::Application::run() {
@@ -472,7 +422,7 @@ void hc::Application::run() {
 
         ImGui::End();
 
-        draw();
+        onDraw();
 
         ImGui::Render();
 
@@ -626,8 +576,8 @@ bool hc::Application::unloadGame() {
     return false;
 }
 
-void hc::Application::onStarted() {
-    _desktop.onStarted();
+char const* hc::Application::getTitle() {
+    return ICON_FA_PLUG " Desktop";
 }
 
 void hc::Application::onCoreLoaded() {
@@ -636,57 +586,87 @@ void hc::Application::onCoreLoaded() {
     _runPerf.ident = "hc::retro_run";
     _perf->register_(&_runPerf);
 
-    _desktop.onCoreLoaded();
+    Desktop::onCoreLoaded();
 }
 
 void hc::Application::onGameLoaded() {
-    _desktop.onGameLoaded();
+    Desktop::onGameLoaded();
     _coreUsPerFrame = 1000000.0 / _video->getCoreFps();
 }
 
 void hc::Application::onGameStarted() {
-    _desktop.onGameStarted();
+    Desktop::onGameStarted();
     _runningTime.start();
 }
 
 void hc::Application::onGamePaused() {
-    _desktop.onGamePaused();
+    Desktop::onGamePaused();
     _runningTime.pause();
 }
 
 void hc::Application::onGameResumed() {
-    _desktop.onGameResumed();
+    Desktop::onGameResumed();
 
     _runningTime.resume();
     _nextFrameTime = _runningTime.getTimeUs() + _coreUsPerFrame;
 }
 
-void hc::Application::onGameReset() {
-    _desktop.onGameReset();
-}
+void hc::Application::onDraw() {
+    bool on = false;
 
-void hc::Application::onFrame() {
-    _desktop.onFrame();
-}
+    if (_config->vsync(&on)) {
+        resetDrawFps();
+        resetFrameFps();
+        SDL_GL_SetSwapInterval(on ? 1 : 0);
+    }
 
-void hc::Application::onStep() {
-    _desktop.onStep();
+    if (_config->syncExact(&_syncExact)) {
+        resetFrameFps();
+
+        if (_syncExact) {
+            _nextFrameTime = _runningTime.getTimeUs();
+        }
+    }
+
+    ImGui::DockSpaceOverViewport();
+    Desktop::onDraw();
 }
 
 void hc::Application::onGameUnloaded() {
-    _desktop.onGameUnloaded();
+    Desktop::onGameUnloaded();
     _runningTime.stop();
 }
 
-void hc::Application::onCoreUnloaded() {
-    _desktop.onCoreUnloaded();
+void hc::Application::sdlPrint(void* userdata, int category, SDL_LogPriority priority, char const* message) {
+    auto const logger = static_cast<Logger*>(userdata);
+
+    char const* categoryStr = "?";
+
+    switch (category) {
+        case SDL_LOG_CATEGORY_APPLICATION: categoryStr = "application"; break;
+        case SDL_LOG_CATEGORY_ERROR: categoryStr = "error"; break;
+        case SDL_LOG_CATEGORY_ASSERT: categoryStr = "assert"; break;
+        case SDL_LOG_CATEGORY_SYSTEM: categoryStr = "system"; break;
+        case SDL_LOG_CATEGORY_AUDIO: categoryStr = "audio"; break;
+        case SDL_LOG_CATEGORY_VIDEO: categoryStr = "video"; break;
+        case SDL_LOG_CATEGORY_RENDER: categoryStr = "render"; break;
+        case SDL_LOG_CATEGORY_INPUT: categoryStr = "input"; break;
+        case SDL_LOG_CATEGORY_TEST: categoryStr = "test"; break;
+        case SDL_LOG_CATEGORY_CUSTOM: categoryStr = "custom"; break;
+    }
+
+    switch (priority) {
+        case SDL_LOG_PRIORITY_VERBOSE:
+        case SDL_LOG_PRIORITY_DEBUG: logger->debug("[SDL] (%s): %s", categoryStr, message); break;
+        case SDL_LOG_PRIORITY_INFO: logger->info("[SDL] (%s): %s", categoryStr, message); break;
+        case SDL_LOG_PRIORITY_WARN: logger->warn("[SDL] (%s): %s", categoryStr, message); break;
+        case SDL_LOG_PRIORITY_ERROR:
+        case SDL_LOG_PRIORITY_CRITICAL: logger->error("[SDL] (%s): %s", categoryStr, message); break;
+        case SDL_NUM_LOG_PRIORITIES: logger->error("[SDL] (%s): Invalid priority %d", categoryStr, priority); break;
+    }
 }
 
-void hc::Application::onQuit() {
-    _desktop.onQuit();
-}
-
-void hc::Application::vprintf(void* ud, char const* fmt, va_list args) {
+void hc::Application::lifeCycleVprintf(void* ud, char const* fmt, va_list args) {
     auto const self = static_cast<Application*>(ud);
     self->_logger->vprintf(RETRO_LOG_DEBUG, fmt, args);
 }
