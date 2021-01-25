@@ -311,20 +311,32 @@ int16_t hc::Input::state(unsigned portIndex, unsigned deviceId, unsigned index, 
         }
 
         case RETRO_DEVICE_MOUSE: {
-            int x = 0, y = 0, dx = 0, dy = 0;
+            int x = 0, y = 0;
             bool const inside = getMousePos(&x, &y);
 
-            if (inside) {
-                dx = x - _lastX;
-                dy = y - _lastY;
-                _lastX = x;
-                _lastY = y;
-
-            }
-
             switch (id) {
-                case RETRO_DEVICE_ID_MOUSE_X: return dx;
-                case RETRO_DEVICE_ID_MOUSE_Y: return dy;
+                case RETRO_DEVICE_ID_MOUSE_X: {
+                    int dx = 0;
+
+                    if (inside) {
+                        dx = x - _lastX;
+                        _lastX = x;
+                    }
+
+                    return dx;
+                }
+
+                case RETRO_DEVICE_ID_MOUSE_Y: {
+                    int dy = 0;
+
+                    if (inside) {
+                        dy = y - _lastY;
+                        _lastY = y;
+                    }
+
+                    return dy;
+                }
+
                 case RETRO_DEVICE_ID_MOUSE_LEFT: return inside ? (ImGui::IsMouseDown(0) ? 32767 : 0) : 0;
                 case RETRO_DEVICE_ID_MOUSE_RIGHT: return inside ? (ImGui::IsMouseDown(1) ? 32767 : 0) : 0;
             }
