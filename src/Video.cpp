@@ -61,6 +61,8 @@ void hc::Video::onDraw() {
         if (_mouseOnTexture) {
             ImVec2 const mouse = ImGui::GetMousePos();
             _mousePos = ImVec2((mouse.x - _texturePos.x) * _width / size.x, (mouse.y - _texturePos.y) * _height / size.y);
+
+            ImGui::SetMouseCursor(ImGuiMouseCursor_None);
         }
     }
 }
