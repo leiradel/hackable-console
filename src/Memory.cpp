@@ -19,10 +19,6 @@ hc::Memory::Region::Region(std::string const& name, void* data, size_t offset, s
 
 void hc::Memory::init() {}
 
-hc::Memory::Region const* hc::Memory::translate(Handle<Region> const handle) const {
-    return _handles.translate(handle);
-}
-
 char const* hc::Memory::getTitle() {
     return ICON_FA_MICROCHIP " Memory";
 }
@@ -32,7 +28,7 @@ void hc::Memory::onDraw() {
         auto const self = static_cast<Memory*>(data);
 
         if (idx < static_cast<int>(self->_regions.size())) {
-            *text = self->translate(self->_regions[idx])->name.c_str();
+            *text = self->_handles.translate(self->_regions[idx])->name.c_str();
             return true;
         }
 
@@ -47,7 +43,7 @@ void hc::Memory::onDraw() {
 
     if (ImGuiAl::Button(ICON_FA_EYE " View Region", _selected < count, size)) {
         char title[128];
-        snprintf(title, sizeof(title), ICON_FA_EYE" %s##%u", translate(_regions[_selected])->name.c_str(), _viewCount++);
+        snprintf(title, sizeof(title), ICON_FA_EYE" %s##%u", _handles.translate(_regions[_selected])->name.c_str(), _viewCount++);
 
         MemoryWatch* watch = new MemoryWatch(_desktop, title, _handles.full(_regions[_selected]));
         _desktop->addView(watch, false, true);
