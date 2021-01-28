@@ -55,7 +55,7 @@ namespace hc {
 
     class MemoryWatch : public View {
     public:
-        MemoryWatch(Desktop* desktop, char const* title, FullHandle<Memory::Region> handle);
+        MemoryWatch(Desktop* desktop, char const* title, Memory* memory, Handle<Memory::Region> handle);
         virtual ~MemoryWatch() {}
 
         // hc::View
@@ -70,7 +70,8 @@ namespace hc {
 
         std::string _title;
 
-        FullHandle<Memory::Region> _handle;
+        Memory* _memory;
+        Handle<Memory::Region> _handle;
 
         MemoryEditor _editor;
 

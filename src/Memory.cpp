@@ -45,7 +45,7 @@ void hc::Memory::onDraw() {
         char title[128];
         snprintf(title, sizeof(title), ICON_FA_EYE" %s##%u", _handles.translate(_regions[_selected])->name.c_str(), _viewCount++);
 
-        MemoryWatch* watch = new MemoryWatch(_desktop, title, _handles.full(_regions[_selected]));
+        MemoryWatch* watch = new MemoryWatch(_desktop, title, this, _regions[_selected]);
         _desktop->addView(watch, false, true);
     }
 }
@@ -117,14 +117,15 @@ int hc::Memory::l_addRegion(lua_State* const L) {
     return 0;
 }
 
-hc::MemoryWatch::MemoryWatch(Desktop* desktop, char const* title, FullHandle<Memory::Region> handle)
+hc::MemoryWatch::MemoryWatch(Desktop* desktop, char const* title, Memory* memory, Handle<Memory::Region> handle)
     : View(desktop)
     , _title(title)
+    , _memory(memory)
     , _handle(handle)
 {
     _editor.OptUpperCaseHex = false;
     _editor.OptShowDataPreview = true;
-    _editor.ReadOnly = handle.translate()->readOnly;
+    _editor.ReadOnly = memory->translate(handle)->readOnly;
 
     _lastPreviewAddress = (size_t)-1;
     _lastEndianess = -1;
@@ -138,7 +139,7 @@ char const* hc::MemoryWatch::getTitle() {
 void hc::MemoryWatch::onFrame() {
     static uint8_t sizes[ImGuiDataType_COUNT] = {1, 1, 2, 2, 4, 4, 8, 8, 4, 8};
 
-    Memory::Region const* const region = _handle.translate();
+    Memory::Region const* const region = _memory->translate(_handle);
 
     if (region != nullptr && _editor.DataPreviewAddr != (size_t)-1) {
         bool const clearSparline = _lastPreviewAddress != _editor.DataPreviewAddr ||
@@ -212,7 +213,7 @@ void hc::MemoryWatch::onDraw() {
         self->_sparkline.draw("#sparkline", max);
     };
 
-    Memory::Region const* const region = _handle.translate();
+    Memory::Region const* const region = _memory->translate(_handle);
 
     if (region != nullptr) {
         auto const data = static_cast<uint8_t*>(region->data) + region->offset;

@@ -4,7 +4,7 @@
 #include <vector>
 
 namespace hc {
-    template<typename T>
+template<typename T>
     class Handle {
     public:
         Handle() : offset(0), counter(0) {}
@@ -18,21 +18,6 @@ namespace hc {
 
         uint32_t offset;
         uint32_t counter;
-    };
-
-    template<typename T>
-    class HandleAllocator;
-
-    template<typename T>
-    class FullHandle {
-    public:
-        T* translate() const { return _translator->translate(_handle); }
-
-    protected:
-        template<typename U> friend class HandleAllocator;
-
-        Handle<T> _handle;
-        HandleAllocator<T> const* _translator;
     };
 
     template<typename T>
@@ -80,13 +65,6 @@ namespace hc {
             }
 
             return nullptr;
-        }
-
-        FullHandle<T> full(Handle<T> const handle) const {
-            FullHandle<T> fullHandle;
-            fullHandle._handle = handle;
-            fullHandle._translator = this;
-            return fullHandle;
         }
 
         void reset() {
