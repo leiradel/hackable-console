@@ -91,6 +91,9 @@ namespace hc {
 
         bool _keyState[RETROK_LAST];
         uint64_t _virtualState[RETROK_LAST];
+
+        int _lock1;
+        int _lock2;
     };
 
     class Mouse : public Device {

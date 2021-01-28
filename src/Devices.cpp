@@ -341,14 +341,22 @@ void hc::VirtualController::process(SDL_Event const* event) {
     }
 }
 
-hc::Keyboard::Keyboard(Desktop* desktop) : Device(desktop) {
+hc::Keyboard::Keyboard(Desktop* desktop)
+    : Device(desktop)
+    , _lock1(0)
+    , _lock2(0)
+{
     memset(_keyState, 0, sizeof(_keyState));
     memset(_virtualState, 0, sizeof(_virtualState));
 }
 
 bool hc::Keyboard::getKey(unsigned id) const {
     uint64_t const now = Perf::getTimeUs();
-    return _keyState[id] || (now - _virtualState[id]) < DurationKeepPressedUs;
+    bool const lshift = id == RETROK_LSHIFT && (_lock1 == 1 || _lock2 == 1);
+    bool const rshift = id == RETROK_RSHIFT && (_lock1 == 2 || _lock2 == 2);
+    bool const lcontrol = id == RETROK_LCTRL && (_lock1 == 3 || _lock2 == 3);
+    bool const rcontrol = id == RETROK_RCTRL && (_lock1 == 4 || _lock2 == 4);
+    return _keyState[id] || (now - _virtualState[id]) < DurationKeepPressedUs || lshift || rshift || lcontrol || rcontrol;
 }
 
 // Device
@@ -359,7 +367,9 @@ char const* hc::Keyboard::getName() const {
 void hc::Keyboard::draw() {
     typedef char const* Key;
 
+    // First row
     static Key const     row0[] = {"esc", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10", "f11", "f12", nullptr};
+    static Key const*    ROW0 = row0;
     static uint8_t const siz0[] = {25,    23,   23,   23,   23,   23,   23,   23,   23,   23,   23,    23,    23};
 
     static unsigned const cod0[] = {
@@ -367,7 +377,9 @@ void hc::Keyboard::draw() {
         RETROK_F7, RETROK_F8, RETROK_F9, RETROK_F10, RETROK_F11, RETROK_F12
     };
 
+    // Second row
     static Key const     row1[] = {"`",  "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "=", "bs", nullptr};
+    static Key const     ROW1[] = {"~",  "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "+", "bs", nullptr};
     static uint8_t const siz1[] = {20,   20,  20,  20,  20,  20,  20,  20,  20,  20,  20,  20,  20,  40};
 
     static unsigned const cod1[] = {
@@ -375,7 +387,9 @@ void hc::Keyboard::draw() {
         RETROK_8, RETROK_9, RETROK_0, RETROK_MINUS, RETROK_EQUALS, RETROK_BACKSPACE
     };
 
+    // Third row
     static Key const     row2[] = {"tab", "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "[", "]", "\\", nullptr};
+    static Key const     ROW2[] = {"tab", "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "{", "}", "|", nullptr};
     static uint8_t const siz2[] = {30,    20,  20,  20,  20,  20,  20,  20,  20,  20,  20,  20,  20,  30};
 
     static unsigned const cod2[] = {
@@ -383,7 +397,9 @@ void hc::Keyboard::draw() {
         RETROK_i, RETROK_o, RETROK_p, RETROK_LEFTBRACKET, RETROK_RIGHTBRACKET, RETROK_BACKSLASH
     };
 
+    // Fourth row
     static Key const     row3[] = {"caps", "a", "s", "d", "f", "g", "h", "j", "k", "l", ";", "'",  "enter", nullptr};
+    static Key const     ROW3[] = {"caps", "A", "S", "D", "F", "G", "H", "J", "K", "L", ":", "\"", "enter", nullptr};
     static uint8_t const siz3[] = {40,     20,  20,  20,  20,  20,  20,  20,  20,  20,  20,  20,   41};
 
     static unsigned const cod3[] = {
@@ -391,7 +407,9 @@ void hc::Keyboard::draw() {
         RETROK_j, RETROK_k, RETROK_l, RETROK_SEMICOLON, RETROK_QUOTE, RETROK_RETURN
     };
 
+    // Fifth row
     static Key const     row4[] = {"shift", "z", "x", "c", "v", "b", "n", "m", ",", ".", "/", "shift", nullptr};
+    static Key const     ROW4[] = {"shift", "Z", "X", "C", "V", "B", "N", "M", "<", ">", "?", "shift", nullptr};
     static uint8_t const siz4[] = {50,      20,  20,  20,  20,  20,  20,  20,  20,  20,  20,  52};
 
     static unsigned const cod4[] = {
@@ -399,19 +417,28 @@ void hc::Keyboard::draw() {
         RETROK_m, RETROK_COMMA, RETROK_PERIOD, RETROK_SLASH, RETROK_RSHIFT
     };
 
+    // Sixth row
     static Key const     row5[] = {"ctrl", "win", "alt", " ", "alt", "ctrl", nullptr};
+    static Key const*    ROW5 = row5;
     static uint8_t const siz5[] = {40,     30,    30,    136, 32,    40};
 
     static unsigned const cod5[] = {RETROK_LCTRL, RETROK_LSUPER, RETROK_LALT, RETROK_SPACE, RETROK_RALT, RETROK_RCTRL};
 
+    // Layout
     static Key const* const rows[] = {row0, row1, row2, row3, row4, row5};
+    static Key const* const ROWS[] = {ROW0, ROW1, ROW2, ROW3, ROW4, ROW5};
     static uint8_t const* const sizes[] = {siz0, siz1, siz2, siz3, siz4, siz5};
     static unsigned const* codes[] = {cod0, cod1, cod2, cod3, cod4, cod5};
 
+    bool const lshift = _lock1 == 1 || _lock2 == 1;
+    bool const rshift = _lock1 == 2 || _lock2 == 2;
+
+    Key const* const* const layout = (lshift || rshift) ? ROWS : rows;
+
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(1.0f, 1.0f));
 
-    for (size_t i = 0; i < sizeof(rows) / sizeof(rows[0]); i++) {
-        Key const* keys = rows[i];
+    for (size_t i = 0; i < 6; i++) {
+        Key const* keys = layout[i];
 
         for (size_t j = 0; keys[j] != nullptr; j++) {
             ImVec2 const size(static_cast<float>(sizes[i][j]), 20.0f);
@@ -427,6 +454,16 @@ void hc::Keyboard::draw() {
     }
 
     ImGui::PopStyleVar();
+
+    static char const* const lockables[] = {
+        "None","Left Shift", "Right Shift", "Left Control", "Right Control", "Left Alt", "Right Alt"
+    };
+
+    ImGui::Columns(2);
+    ImGui::Combo("Lock##1", &_lock1, lockables, sizeof(lockables) / sizeof(lockables[0]));
+    ImGui::NextColumn();
+    ImGui::Combo("Lock##2", &_lock2, lockables, sizeof(lockables) / sizeof(lockables[0]));
+    ImGui::Columns(1);
 }
 
 void hc::Keyboard::process(SDL_Event const* event) {
