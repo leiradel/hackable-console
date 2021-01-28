@@ -58,13 +58,19 @@ template<typename T>
 
         // Translated pointers can become invalid after a call to allocate
         T* translate(Handle<T> const handle) const {
-            uint32_t offset = handle.offset - 1;
+            uint32_t const offset = handle.offset - 1;
 
             if (offset < _elements.size() && handle.counter == _counters[offset]) {
                 return reinterpret_cast<T*>(const_cast<uint8_t*>(_elements[offset].element));
             }
 
             return nullptr;
+        }
+
+        void reset() {
+            for (auto& counter : _counters) {
+                counter++;
+            }
         }
 
     protected:
