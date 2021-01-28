@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Desktop.h"
+#include "Devices.h"
 
 #include <lrcpp/Components.h>
 #include <lrcpp/Frontend.h>
@@ -19,14 +20,10 @@ namespace hc {
         virtual ~Input() {}
 
         void init(lrcpp::Frontend* const frontend);
-        void processEvent(SDL_Event const* event);
 
         // hc::View
         virtual char const* getTitle() override;
         virtual void onCoreLoaded() override;
-        virtual void onGameStarted() override;
-        virtual void onFrame() override;
-        virtual void onStep() override;
         virtual void onDraw() override;
         virtual void onCoreUnloaded() override;
 
@@ -45,23 +42,6 @@ namespace hc {
             MaxPorts = 4
         };
 
-        struct Analog {
-            int16_t x, y;
-        };
-
-        struct Pad {
-            SDL_JoystickID id;
-            SDL_GameController* controller;
-            std::string controllerName;
-            SDL_Joystick* joystick;
-            std::string joystickName;
-            int lastDir[6];
-            bool state[16];
-            Analog analogs[3];
-            float sensitivity;
-            bool digital;
-        };
-
         struct ControllerInfo {
             ControllerInfo(char const* desc, unsigned id) : desc(desc), id(id) {}
             std::string desc;
@@ -72,25 +52,11 @@ namespace hc {
             int selectedType; // for the UI
             int selectedDevice; // for the UI
             unsigned type; // RETRO_DEVICE_*
-            SDL_JoystickID padId;
+            Handle<Controller*> controller;
         };
 
-        void addController(int which);
-        void drawPad(Pad& pad);
-        void drawKeyboard();
-        void addController(SDL_Event const* event);
-        void removeController(SDL_Event const* event);
-        void controllerButton(SDL_Event const* event);
-        void controllerAxis(SDL_Event const* event);
-        void keyboard(SDL_Event const* event);
-        void joystickAdded(SDL_Event const* event);
-
-        bool getMousePos(int* const x, int* const y);
-
         lrcpp::Frontend* _frontend;
-
-        // Physical controllers attached
-        std::vector<Pad> _pads;
+        Devices* _devices;
 
         /**
          * Available controllers set via RETRO_ENVIRONMENT_SET_CONTROLLER_INFO.
@@ -106,14 +72,8 @@ namespace hc {
         // The device attached to each port
         Port _ports[MaxPorts];
 
-        /**
-         * State of the keyboard keys, the value is the number of frames the
-         * key is set, and is decreased on every onFrame call.
-         */
-        uint8_t _keyState[RETROK_LAST];
-
-        // Mouse coordinates are provided by the video component
-        Video* _video;
-        int _lastX, _lastY;
+        // Last mouse positions to calculate the deltas
+        int _lastX;
+        int _lastY;
     };
 }

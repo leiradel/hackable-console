@@ -73,6 +73,7 @@ hc::Application::Application()
     , _perf(this)
     , _control(this)
     , _memory(this)
+    , _devices(this)
 {}
 
 bool hc::Application::init(std::string const& title, int const width, int const height) {
@@ -281,6 +282,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
         addView(&_control, true, false);
         addView(&_memory, true, false);
+        addView(&_devices, true, false);
 
         if (!_config.init()) {
             return false;
@@ -371,22 +373,10 @@ void hc::Application::run() {
 
         while (SDL_PollEvent(&event)) {
             ImGui_ImplSDL2_ProcessEvent(&event);
+            _devices.process(&event);
 
-            switch (event.type) {
-                case SDL_QUIT:
-                    done = _fsm.quit();
-                    break;
-
-                case SDL_CONTROLLERDEVICEADDED:
-                case SDL_CONTROLLERDEVICEREMOVED:
-                case SDL_CONTROLLERBUTTONUP:
-                case SDL_CONTROLLERBUTTONDOWN:
-                case SDL_CONTROLLERAXISMOTION:
-                case SDL_KEYUP:
-                case SDL_KEYDOWN:
-                case SDL_JOYDEVICEADDED:
-                    _input.processEvent(&event);
-                    break;
+            if (event.type == SDL_QUIT) {
+                done = _fsm.quit();
             }
         }
 

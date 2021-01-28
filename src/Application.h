@@ -15,6 +15,7 @@
 
 #include "Control.h"
 #include "Memory.h"
+#include "Devices.h"
 
 #include "Fifo.h"
 
@@ -84,6 +85,7 @@ namespace hc {
         
         Control _control;
         Memory _memory;
+        Devices _devices;
 
         Timer _runningTime;
         uint64_t _nextFrameTime;
