@@ -33,6 +33,7 @@ namespace hc {
         virtual ~Memory() {}
 
         void init();
+        Region const* translate(Handle<Region> const handle) const;
 
         static Memory* check(lua_State* const L, int const index);
 
