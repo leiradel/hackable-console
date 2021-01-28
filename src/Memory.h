@@ -2,6 +2,7 @@
 
 #include "Desktop.h"
 #include "Scriptable.h"
+#include "Handle.h"
 
 #include <imgui.h>
 #include <imgui_memory_editor.h>
@@ -18,7 +19,7 @@ namespace hc {
     class Memory : public View, public Scriptable {
     public:
         struct Region {
-            Region(std::string&& name, void* data, size_t offset, size_t size, size_t base, bool readOnly);
+            Region(std::string const& name, void* data, size_t offset, size_t size, size_t base, bool readOnly);
 
             std::string name;
             void* data;
@@ -28,13 +29,11 @@ namespace hc {
             bool readOnly;
         };
 
-        typedef size_t Handle;
-
         Memory(Desktop* desktop) : View(desktop), _selected(0), _viewCount(0) {}
         virtual ~Memory() {}
 
         void init();
-        Region* lock(Handle const handle);
+        Region const* translate(Handle<Region> const handle) const;
 
         static Memory* check(lua_State* const L, int const index);
 
@@ -49,18 +48,16 @@ namespace hc {
     protected:
         static int l_addRegion(lua_State* const L);
 
-        std::vector<Region> _regions;
+        HandleAllocator<Region> _handles;
+        std::vector<Handle<Region>> _regions;
         int _selected;
-
         unsigned _viewCount;
     };
 
     class MemoryWatch : public View {
     public:
-        MemoryWatch(Desktop* desktop) : View(desktop), _memory(nullptr), _handle(0) {}
+        MemoryWatch(Desktop* desktop, char const* title, Memory* memory, Handle<Memory::Region> handle);
         virtual ~MemoryWatch() {}
-
-        void init(char const* title, Memory* const memory, Memory::Handle const handle);
 
         // hc::View
         virtual char const* getTitle() override;
@@ -75,7 +72,8 @@ namespace hc {
         std::string _title;
 
         Memory* _memory;
-        Memory::Handle _handle;
+        Handle<Memory::Region> _handle;
+
         MemoryEditor _editor;
 
         ImGuiAl::BufferedSparkline<SparklineCount> _sparkline;

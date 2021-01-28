@@ -8,8 +8,8 @@
 
 #define TAG "[MEM] "
 
-hc::Memory::Region::Region(std::string&& name, void* data, size_t offset, size_t size, size_t base, bool readOnly)
-    : name(std::move(name))
+hc::Memory::Region::Region(std::string const& name, void* data, size_t offset, size_t size, size_t base, bool readOnly)
+    : name(name)
     , data(data)
     , offset(offset)
     , size(size)
@@ -19,12 +19,8 @@ hc::Memory::Region::Region(std::string&& name, void* data, size_t offset, size_t
 
 void hc::Memory::init() {}
 
-hc::Memory::Region* hc::Memory::lock(Handle const handle) {
-    if (handle != 0 && handle <= _regions.size()) {
-        return &_regions[handle - 1];
-    }
-
-    return nullptr;
+hc::Memory::Region const* hc::Memory::translate(Handle<Region> const handle) const {
+    return _handles.translate(handle);
 }
 
 char const* hc::Memory::getTitle() {
@@ -33,10 +29,10 @@ char const* hc::Memory::getTitle() {
 
 void hc::Memory::onDraw() {
     static auto const getter = [](void* const data, int const idx, char const** const text) -> bool {
-        auto const regions = (std::vector<Region>*)data;
+        auto const self = static_cast<Memory*>(data);
 
-        if (idx < static_cast<int>(regions->size())) {
-            *text = (*regions)[idx].name.c_str();
+        if (idx < static_cast<int>(self->_regions.size())) {
+            *text = self->translate(self->_regions[idx])->name.c_str();
             return true;
         }
 
@@ -46,15 +42,14 @@ void hc::Memory::onDraw() {
     int const count = static_cast<int>(_regions.size());
     ImVec2 const size = ImVec2(120.0f, 0.0f);
 
-    ImGui::Combo("##Regions", &_selected, getter, &_regions, count);
+    ImGui::Combo("##Regions", &_selected, getter, this, count);
     ImGui::SameLine();
 
     if (ImGuiAl::Button(ICON_FA_EYE " View Region", _selected < count, size)) {
         char title[128];
-        snprintf(title, sizeof(title), ICON_FA_EYE" %s##%u", _regions[_selected].name.c_str(), _viewCount++);
+        snprintf(title, sizeof(title), ICON_FA_EYE" %s##%u", translate(_regions[_selected])->name.c_str(), _viewCount++);
 
-        MemoryWatch* watch = new MemoryWatch(_desktop);
-        watch->init(title, this, _selected + 1);
+        MemoryWatch* watch = new MemoryWatch(_desktop, title, this, _regions[_selected]);
         _desktop->addView(watch, false, true);
     }
 }
@@ -62,7 +57,13 @@ void hc::Memory::onDraw() {
 void hc::Memory::onGameUnloaded() {
     _selected = 0;
     _viewCount = 0;
+
+    for (auto const& handle : _regions) {
+        _handles.free(handle);
+    }
+
     _regions.clear();
+    _handles.reset();
 }
 
 int hc::Memory::push(lua_State* const L) {
@@ -109,7 +110,8 @@ int hc::Memory::l_addRegion(lua_State* const L) {
         return luaL_error(L, "invalid offset: %I", size);
     }
 
-    self->_regions.emplace_back(std::string(name, length), data, offset, size, base, readOnly);
+    Handle<Region> const handle = self->_handles.allocate(std::string(name, length), data, offset, size, base, readOnly);
+    self->_regions.emplace_back(handle);
 
     self->_desktop->info(
         TAG "Added memory region {\"%s\", 0x%016" PRIxPTR ", 0x%016" PRIxPTR", %zu, %zu, %s}",
@@ -119,14 +121,15 @@ int hc::Memory::l_addRegion(lua_State* const L) {
     return 0;
 }
 
-void hc::MemoryWatch::init(char const* title, Memory* const memory, Memory::Handle const handle) {
-    _title = title;
-    _memory = memory;
-    _handle = handle;
-
+hc::MemoryWatch::MemoryWatch(Desktop* desktop, char const* title, Memory* memory, Handle<Memory::Region> handle)
+    : View(desktop)
+    , _title(title)
+    , _memory(memory)
+    , _handle(handle)
+{
     _editor.OptUpperCaseHex = false;
     _editor.OptShowDataPreview = true;
-    _editor.ReadOnly = memory->lock(handle)->readOnly;
+    _editor.ReadOnly = memory->translate(handle)->readOnly;
 
     _lastPreviewAddress = (size_t)-1;
     _lastEndianess = -1;
@@ -140,7 +143,7 @@ char const* hc::MemoryWatch::getTitle() {
 void hc::MemoryWatch::onFrame() {
     static uint8_t sizes[ImGuiDataType_COUNT] = {1, 1, 2, 2, 4, 4, 8, 8, 4, 8};
 
-    Memory::Region* const region = _memory->lock(_handle);
+    Memory::Region const* const region = _memory->translate(_handle);
 
     if (region != nullptr && _editor.DataPreviewAddr != (size_t)-1) {
         bool const clearSparline = _lastPreviewAddress != _editor.DataPreviewAddr ||
@@ -214,7 +217,7 @@ void hc::MemoryWatch::onDraw() {
         self->_sparkline.draw("#sparkline", max);
     };
 
-    Memory::Region* const region = _memory->lock(_handle);
+    Memory::Region const* const region = _memory->translate(_handle);
 
     if (region != nullptr) {
         auto const data = static_cast<uint8_t*>(region->data) + region->offset;
