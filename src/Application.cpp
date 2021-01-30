@@ -98,13 +98,12 @@ bool hc::Application::init(std::string const& title, int const width, int const 
     }
     undo;
 
-    Desktop::init();
-
-    addView(&_logger, true, false);
-
     if (!_logger.init()) {
         return false;
     }
+
+    Desktop::init(&_logger);
+    addView(&_logger, true, false);
 
     {
         // Redirect SDL logs
@@ -291,11 +290,12 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         _video.init();
         _led.init();
         _audio.init(_audioSpec.freq, &_fifo);
-        _input.init(&frontend);
+        _input.init(&frontend, &_devices);
         _perf.init();
 
-        _control.init(&_fsm);
+        _control.init(&_fsm, &_logger);
         _memory.init();
+        _devices.init(&_video);
 
         frontend.setLogger(&_logger);
         frontend.setConfig(&_config);

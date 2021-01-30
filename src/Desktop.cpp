@@ -18,7 +18,8 @@
 
 hc::Desktop::Desktop() : View(nullptr), _logger(nullptr) {}
 
-void hc::Desktop::init() {
+void hc::Desktop::init(Logger* const logger) {
+    _logger = logger;
     _drawCount = 0;
     _frameCount = 0;
 }
@@ -217,13 +218,7 @@ void hc::Desktop::onQuit() {
 }
 
 void hc::Desktop::vprintf(retro_log_level level, char const* format, va_list args) {
-    if (_logger == nullptr) {
-        _logger = getView<Logger>();
-    }
-
-    if (_logger != nullptr) {
-        _logger->vprintf(level, format, args);
-    }
+    _logger->vprintf(level, format, args);
 }
 
 void hc::Desktop::debug(char const* format, ...) {

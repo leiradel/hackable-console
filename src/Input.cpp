@@ -13,9 +13,9 @@ extern "C" {
 
 hc::Input::Input(Desktop* desktop) : View(desktop), _frontend(nullptr), _devices(nullptr) {}
 
-void hc::Input::init(lrcpp::Frontend* const frontend) {
+void hc::Input::init(lrcpp::Frontend* const frontend, Devices* devices) {
     _frontend = frontend;
-    _devices = _desktop->getView<Devices>();
+    _devices = devices;
 }
 
 char const* hc::Input::getTitle() {

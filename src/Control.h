@@ -12,7 +12,7 @@ namespace hc {
     public:
         Control(Desktop* desktop);
 
-        void init(LifeCycle* const fsm);
+        void init(LifeCycle* const fsm, Logger* const logger);
 
         void setSystemInfo(retro_system_info const* info);
 
@@ -72,6 +72,7 @@ namespace hc {
         };
 
         LifeCycle* _fsm;
+        Logger* _logger;
 
         std::vector<Console> _consoles;
         int _selected;

@@ -101,6 +101,8 @@ namespace hc {
         Mouse(Desktop* desktop);
         virtual ~Mouse() {}
 
+        void init(Video* video);
+
         bool getPosition(int* x, int* y);
         bool getLeftDown() const;
         bool getRightDown() const;
@@ -121,6 +123,7 @@ namespace hc {
         Devices(Desktop* desktop);
         virtual ~Devices() {}
 
+        void init(Video* video);
         void process(SDL_Event const* event);
 
         std::vector<Handle<Controller*>> const& getControllers() const { return _controllers; }

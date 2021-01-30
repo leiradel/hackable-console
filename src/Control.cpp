@@ -42,8 +42,9 @@ static int str2id(char const* const str) {
 
 hc::Control::Control(Desktop* desktop) : View(desktop),  _selected(0), _opened(-1) {}
 
-void hc::Control::init(LifeCycle* const fsm) {
+void hc::Control::init(LifeCycle* const fsm, Logger* const logger) {
     _fsm = fsm;
+    _logger = logger;
 }
 
 char const* hc::Control::getTitle() {
@@ -102,7 +103,7 @@ void hc::Control::onDraw() {
         Console const& cb = _consoles[_selected];
 
         lua_rawgeti(cb.L, LUA_REGISTRYINDEX, cb.ref);
-        protectedCallField(cb.L, -1, "onConsoleLoaded", 0, 0, _desktop->getView<Logger>());
+        protectedCallField(cb.L, -1, "onConsoleLoaded", 0, 0, _logger);
         lua_pop(cb.L, 1);
     }
 
@@ -230,7 +231,7 @@ void hc::Control::setSystemInfo(retro_system_info const* info) {
 void hc::Control::callConsoleMethod(char const* const name) {
     auto const& cb = _consoles[_opened];
     lua_rawgeti(cb.L, LUA_REGISTRYINDEX, cb.ref);
-    protectedCallField(cb.L, -1, name, 0, 0, _desktop->getView<Logger>());
+    protectedCallField(cb.L, -1, name, 0, 0, _logger);
     lua_pop(cb.L, 1);
 }
 

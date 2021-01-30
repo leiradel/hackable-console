@@ -614,15 +614,11 @@ void hc::Keyboard::process(SDL_Event const* event) {
 
 hc::Mouse::Mouse(Desktop* desktop) : Device(desktop), _video(nullptr) {}
 
+void hc::Mouse::init(Video* video) {
+    _video = video;
+}
+
 bool hc::Mouse::getPosition(int* x, int* y) {
-    if (_video == nullptr) {
-        _video = _desktop->getView<Video>();
-    }
-
-    if (_video == nullptr) {
-        return false;
-    }
-
     return _video->getMousePos(x, y);
 }
 
@@ -662,6 +658,10 @@ hc::Devices::Devices(Desktop* desktop)
 {
     Controller* const controller = new VirtualController(_desktop);
     _controllers.emplace_back(_handles.allocate(controller));
+}
+
+void hc::Devices::init(Video* video) {
+    _mouse.init(video);
 }
 
 void hc::Devices::process(SDL_Event const* event) {

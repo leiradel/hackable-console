@@ -19,7 +19,7 @@ namespace hc {
         Input(Desktop* desktop);
         virtual ~Input() {}
 
-        void init(lrcpp::Frontend* const frontend);
+        void init(lrcpp::Frontend* const frontend, Devices* const devices);
 
         // hc::View
         virtual char const* getTitle() override;

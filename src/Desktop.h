@@ -50,26 +50,13 @@ namespace hc {
         Desktop();
         virtual ~Desktop() {}
 
-        void init();
+        void init(Logger* const logger);
         void addView(View* const view, bool const top, bool const free);
 
         double drawFps();
         void resetDrawFps();
         double frameFps();
         void resetFrameFps();
-
-        template<typename T>
-        T* getView() const {
-            for (auto const& props : _views) {
-                View* const view = props->view;
-
-                if (dynamic_cast<T*>(view) != nullptr) {
-                    return dynamic_cast<T*>(view);
-                }
-            }
-
-            return nullptr;
-        }
 
         void vprintf(retro_log_level level, char const* format, va_list args);
         void debug(char const* format, ...);
