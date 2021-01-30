@@ -8,18 +8,36 @@
 
 #define TAG "[MEM] "
 
-hc::Memory::Region::Region(std::string const& name, void* data, size_t offset, size_t size, size_t base, bool readOnly)
-    : name(name)
-    , data(data)
-    , offset(offset)
-    , size(size)
-    , base(base)
-    , readOnly(readOnly)
-{}
+uint8_t hc::Memory::Region::peek(size_t address) const {
+    address -= base;
+
+    for (auto const& block : blocks) {
+        if (address < block.size) {
+            return static_cast<uint8_t const*>(block.data)[address];
+        }
+
+        address -= block.size;
+    }
+
+    return 0;
+}
+
+void hc::Memory::Region::poke(size_t address, uint8_t value) {
+    address -= base;
+
+    for (auto const& block : blocks) {
+        if (address < block.size) {
+            static_cast<uint8_t*>(block.data)[address] = value;
+            return;
+        }
+
+        address -= block.size;
+    }
+}
 
 void hc::Memory::init() {}
 
-hc::Memory::Region const* hc::Memory::translate(Handle<Region> const handle) const {
+hc::Memory::Region* hc::Memory::translate(Handle<Region> const handle) {
     return _handles.translate(handle);
 }
 
@@ -92,32 +110,90 @@ int hc::Memory::l_addRegion(lua_State* const L) {
     auto const self = check(L, 1);
     size_t length = 0;
     char const* const name = luaL_checklstring(L, 2, &length);
-    lua_Integer const base = luaL_checkinteger(L, 3);
-    void* const data = lua_touserdata(L, 4);
-    lua_Integer const size = luaL_checkinteger(L, 5);
-    lua_Integer const offset = luaL_optinteger(L, 6, 0);
-    int const readOnly = lua_toboolean(L, 7);
+    int const readOnly = lua_toboolean(L, 3);
 
-    if (data == nullptr) {
-        return luaL_error(L, "data is null");
+    int const top = lua_gettop(L);
+
+    Handle<Region> const handle = self->_handles.allocate();
+    Region* region = self->translate(handle);
+
+    region->name = std::string(name, length);
+    region->base = 0;
+    region->size = 0;
+    region->readOnly = readOnly != 0;
+
+    int i = 4;
+
+    do {
+        luaL_argexpected(L, lua_type(L, i) == LUA_TTABLE, i, "table");
+        int isnum = 0;
+
+        // data
+        lua_geti(L, i, 1);
+        void* const data = lua_touserdata(L, -1);
+
+        if (data == nullptr) {
+            self->_handles.free(handle);
+            return luaL_error(L, "data is null in block %d", i - 3);
+        }
+
+        // base
+        lua_geti(L, i, 2);
+        lua_Integer const base = lua_tointegerx(L, -1, &isnum);
+
+        if (!isnum) {
+            self->_handles.free(handle);
+            return luaL_error(L, "base address is not a number in block %d", i - 3);
+        }
+        else if (base < 0) {
+            self->_handles.free(handle);
+            return luaL_error(L, "base address is negative in block %d", i - 3);
+        }
+
+        if (i == 4) {
+            region->base = base;
+        }
+        else if (static_cast<size_t>(base) != (region->base + region->size)) {
+            self->_handles.free(handle);
+            return luaL_error(L, "base address for block %d is not contiguous to the previous block", i - 3);
+        }
+
+        // size
+        lua_geti(L, i, 3);
+        lua_Integer const size = lua_tointegerx(L, -1, &isnum);
+
+        if (!isnum) {
+            self->_handles.free(handle);
+            return luaL_error(L, "size is not a number in block %d", i - 3);
+        }
+        else if (size <= 0) {
+            self->_handles.free(handle);
+            return luaL_error(L, "invalid size %I in block %d", size, i - 3);
+        }
+
+        // offset
+        lua_geti(L, i, 4);
+        lua_Integer offset = lua_tointegerx(L, -1, &isnum);
+
+        if (isnum && offset < 0) {
+            self->_handles.free(handle);
+            return luaL_error(L, "invalid offset %I in block %d", offset, i - 3);
+        }
+
+        lua_pop(L, 4);
+
+        region->blocks.emplace_back();
+        Block& block = region->blocks[region->blocks.size() - 1];
+        block.data = data;
+        block.offset = offset;
+        block.size = size;
+
+        region->size += size;
     }
+    while (++i <= top);
 
-    if (size <= 0) {
-        return luaL_error(L, "invalid size: %I", size);
-    }
-
-    if (offset < 0) {
-        return luaL_error(L, "invalid offset: %I", size);
-    }
-
-    Handle<Region> const handle = self->_handles.allocate(std::string(name, length), data, offset, size, base, readOnly);
     self->_regions.emplace_back(handle);
-
-    self->_desktop->info(
-        TAG "Added memory region {\"%s\", 0x%016" PRIxPTR ", 0x%016" PRIxPTR", %zu, %zu, %s}",
-        name, static_cast<uintptr_t>(base), reinterpret_cast<uintptr_t>(data), size, offset, readOnly ? "true" : "false"
-    );
-
+    self->_desktop->info(TAG "Added memory region \"%s\"", name);
     return 0;
 }
 
@@ -130,6 +206,16 @@ hc::MemoryWatch::MemoryWatch(Desktop* desktop, char const* title, Memory* memory
     _editor.OptUpperCaseHex = false;
     _editor.OptShowDataPreview = true;
     _editor.ReadOnly = memory->translate(handle)->readOnly;
+
+    _editor.ReadFn = [](const ImU8* data, size_t off) -> ImU8 {
+        auto const region = reinterpret_cast<Memory::Region const*>(data);
+        return region->peek(off);
+    };
+
+    _editor.WriteFn = [](ImU8* data, size_t off, ImU8 d) -> void {
+        auto region = reinterpret_cast<Memory::Region*>(data);
+        region->poke(off, d);
+    };
 
     _lastPreviewAddress = (size_t)-1;
     _lastEndianess = -1;
@@ -157,22 +243,19 @@ void hc::MemoryWatch::onFrame() {
             _lastType = _editor.PreviewDataType;
         }
 
-        auto const data = static_cast<uint8_t*>(region->data) + region->offset;
-        uint64_t address = _editor.DataPreviewAddr - region->offset;
-        uint64_t const left = region->size - address;
+        uint64_t address = _editor.DataPreviewAddr;
         uint64_t const size = sizes[_editor.PreviewDataType];
-
         uint64_t value = 0;
 
-        switch (std::min(left, size)) {
-            case 8: value = value << 8 | data[address++];
-            case 7: value = value << 8 | data[address++];
-            case 6: value = value << 8 | data[address++];
-            case 5: value = value << 8 | data[address++];
-            case 4: value = value << 8 | data[address++];
-            case 3: value = value << 8 | data[address++];
-            case 2: value = value << 8 | data[address++];
-            case 1: value = value << 8 | data[address++];
+        switch (size) {
+            case 8: value = value << 8 | region->peek(address++);
+            case 7: value = value << 8 | region->peek(address++);
+            case 6: value = value << 8 | region->peek(address++);
+            case 5: value = value << 8 | region->peek(address++);
+            case 4: value = value << 8 | region->peek(address++);
+            case 3: value = value << 8 | region->peek(address++);
+            case 2: value = value << 8 | region->peek(address++);
+            case 1: value = value << 8 | region->peek(address++);
         }
 
         if (_editor.PreviewEndianess == 0) {
@@ -217,10 +300,9 @@ void hc::MemoryWatch::onDraw() {
         self->_sparkline.draw("#sparkline", max);
     };
 
-    Memory::Region const* const region = _memory->translate(_handle);
+    Memory::Region* const region = _memory->translate(_handle);
 
     if (region != nullptr) {
-        auto const data = static_cast<uint8_t*>(region->data) + region->offset;
-        _editor.DrawContents(data, region->size, region->base, custom, this, ImGui::GetTextLineHeight() * 5.0f);
+        _editor.DrawContents(region, region->size, region->base, custom, this, ImGui::GetTextLineHeight() * 5.0f);
     }
 }

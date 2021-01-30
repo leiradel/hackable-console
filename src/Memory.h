@@ -18,22 +18,28 @@ extern "C" {
 namespace hc {
     class Memory : public View, public Scriptable {
     public:
-        struct Region {
-            Region(std::string const& name, void* data, size_t offset, size_t size, size_t base, bool readOnly);
-
-            std::string name;
+        struct Block {
             void* data;
             size_t offset;
             size_t size;
+        };
+
+        struct Region {
+            std::string name;
             size_t base;
+            size_t size;
             bool readOnly;
+            std::vector<Block> blocks;
+
+            uint8_t peek(size_t address) const;
+            void poke(size_t address, uint8_t value);
         };
 
         Memory(Desktop* desktop) : View(desktop), _selected(0), _viewCount(0) {}
         virtual ~Memory() {}
 
         void init();
-        Region const* translate(Handle<Region> const handle) const;
+        Region* translate(Handle<Region> const handle);
 
         static Memory* check(lua_State* const L, int const index);
 
