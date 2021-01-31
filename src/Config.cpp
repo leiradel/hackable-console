@@ -127,6 +127,10 @@ bool hc::Config::syncExact(bool* const on) {
     return changed;
 }
 
+retro_proc_address_t hc::Config::getExtension(char const* const symbol) {
+    return _getCoreProc(symbol);
+}
+
 char const* hc::Config::getTitle() {
     return ICON_FA_WRENCH " Configuration";
 }

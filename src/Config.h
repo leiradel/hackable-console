@@ -25,6 +25,7 @@ namespace hc {
         std::string const& getAutorunPath() const;
         bool vsync(bool* const on);
         bool syncExact(bool* const on);
+        retro_proc_address_t getExtension(char const* const symbol);
 
         static Config* check(lua_State* const L, int const index);
 
