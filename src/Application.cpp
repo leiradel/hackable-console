@@ -74,6 +74,7 @@ hc::Application::Application()
     , _control(this)
     , _memory(this)
     , _devices(this)
+    , _debugger(this)
 {}
 
 bool hc::Application::init(std::string const& title, int const width, int const height) {
@@ -282,6 +283,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         addView(&_control, true, false);
         addView(&_memory, true, false);
         addView(&_devices, true, false);
+        addView(&_debugger, true, false);
 
         if (!_config.init()) {
             return false;
@@ -296,6 +298,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         _control.init(&_fsm, &_logger);
         _memory.init();
         _devices.init(&_video);
+        _debugger.init(&_config);
 
         frontend.setLogger(&_logger);
         frontend.setConfig(&_config);
@@ -396,8 +399,6 @@ void hc::Application::run() {
         ImGui_ImplOpenGL2_NewFrame();
         ImGui_ImplSDL2_NewFrame(_window);
         ImGui::NewFrame();
-
-        ImGui::End();
 
         onDraw();
 

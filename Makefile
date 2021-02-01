@@ -20,7 +20,7 @@ CXX=g++
 INCLUDES=\
 	-Isrc -Isrc/imgui -Isrc/imgui/backends -Isrc/ImGuiAl/term -Isrc/ImGuiAl/fonts \
 	-Isrc/ImGuiAl/button -Isrc/ImGuiAl/sparkline -Isrc/IconFontCppHeaders \
-	-Isrc/ImGui-Addons/addons/imguifilesystem -Isrc/dynlib \
+	-Isrc/ImGui-Addons/addons/imguifilesystem -Isrc/dynlib -Iinclude \
 	-Isrc/fnkdat -Isrc/speex -Isrc/lrcpp/include -Isrc/lua -Isrc/luafilesystem/src \
 	-Isrc/imgui_club/imgui_memory_editor
 DEFINES=-DIMGUI_DISABLE_WIN32_DEFAULT_IME_FUNCS -D"IM_ASSERT(x)=do{(void)(x);}while(0)"
@@ -36,7 +36,7 @@ HC_OBJS=\
 	src/main.o src/Application.o src/LifeCycle.o src/Fifo.o src/LuaUtil.o \
 	src/Audio.o src/Config.o src/Control.o src/Logger.o src/Memory.o src/Video.o \
 	src/Led.o src/Input.o src/Perf.o src/Desktop.o src/Timer.o src/Devices.o \
-	src/dynlib/dynlib.o src/fnkdat/fnkdat.o src/speex/resample.o 
+	src/dynlib/dynlib.o src/fnkdat/fnkdat.o src/speex/resample.o src/Debugger.o
 
 # lrcpp
 LRCPP_OBJS=\
@@ -46,7 +46,7 @@ LRCPP_OBJS=\
 # imgui
 IMGUI_OBJS=\
 	src/imgui/imgui.o src/imgui/imgui_draw.o \
-	src/imgui/imgui_tables.o src/imgui/imgui_widgets.o \
+	src/imgui/imgui_tables.o src/imgui/imgui_widgets.o src/imgui/imgui_demo.o \
 	src/imgui/backends/imgui_impl_sdl.o src/imgui/backends/imgui_impl_opengl2.o
 
 # imgui extras
