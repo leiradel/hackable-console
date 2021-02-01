@@ -90,15 +90,21 @@ void hc::Control::onDraw() {
         return true;
     };
 
+    ImVec2 const available = ImGui::GetContentRegionAvail();
+    ImVec2 const spacing = ImGui::GetStyle().ItemSpacing;
+    float const width = (available.x - spacing.x * 2) / 3.0f;
+    ImVec2 const size = ImVec2(width, 0.0f);
+
     int const count = static_cast<int>(_consoles.size());
-    ImVec2 const size = ImVec2(120.0f, 0.0f);
 
     ImGui::Combo("##Consoles", &_selected, getter, &_consoles, count);
     ImGui::SameLine();
 
     bool const loadConsoleEnabled = _fsm->currentState() == LifeCycle::State::Start && _selected < count;
 
-    if (ImGuiAl::Button(ICON_FA_FOLDER_OPEN " Load Console", loadConsoleEnabled, size)) {
+    ImVec2 const rest = ImVec2(ImGui::GetContentRegionAvail().x, 0.0f);
+
+    if (ImGuiAl::Button(ICON_FA_FOLDER_OPEN " Load Console", loadConsoleEnabled, rest)) {
         _opened = _selected;
         Console const& cb = _consoles[_selected];
 
