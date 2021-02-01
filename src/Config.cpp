@@ -128,7 +128,7 @@ bool hc::Config::syncExact(bool* const on) {
 }
 
 retro_proc_address_t hc::Config::getExtension(char const* const symbol) {
-    return _getCoreProc(symbol);
+    return _getCoreProc != nullptr ? _getCoreProc(symbol) : nullptr;
 }
 
 char const* hc::Config::getTitle() {
