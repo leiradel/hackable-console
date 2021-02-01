@@ -142,6 +142,8 @@ void hc::Desktop::onStep() {
 void hc::Desktop::onDraw() {
     _drawCount++;
 
+    ImGui::ShowDemoWindow();
+
     if (ImGui::Begin(getTitle())) {
         ImGui::Columns(2);
 
