@@ -1,27 +1,27 @@
 [submodule "src/imgui"]
-	path = src/imgui
+	path = src/deps/imgui
 	url = https://github.com/ocornut/imgui.git
 [submodule "src/ImGuiAl"]
-	path = src/ImGuiAl
+	path = src/deps/ImGuiAl
 	url = https://github.com/leiradel/ImGuiAl.git
 [submodule "src/lrcpp"]
-	path = src/lrcpp
+	path = src/deps/lrcpp
 	url = https://github.com/leiradel/lrcpp.git
 [submodule "src/lua"]
-	path = src/lua
+	path = src/deps/lua
 	url = https://github.com/lua/lua.git
 [submodule "src/ImGui-Addons"]
-	path = src/ImGui-Addons
+	path = src/deps/ImGui-Addons
 	url = https://github.com/Flix01/imgui.git
 [submodule "src/SDL_GameControllerDB"]
-	path = src/SDL_GameControllerDB
+	path = src/deps/SDL_GameControllerDB
 	url = https://github.com/gabomdq/SDL_GameControllerDB.git
 [submodule "src/IconFontCppHeaders"]
-	path = src/IconFontCppHeaders
+	path = src/deps/IconFontCppHeaders
 	url = https://github.com/juliettef/IconFontCppHeaders.git
 [submodule "src/luafilesystem"]
-	path = src/luafilesystem
+	path = src/deps/luafilesystem
 	url = https://github.com/keplerproject/luafilesystem.git
 [submodule "src/imgui_club"]
-	path = src/imgui_club
+	path = src/deps/imgui_club
 	url = https://github.com/leiradel/imgui_club.git
