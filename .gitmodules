@@ -25,3 +25,6 @@
 [submodule "src/imgui_club"]
 	path = src/deps/imgui_club
 	url = https://github.com/leiradel/imgui_club.git
+[submodule "src/deps/chips"]
+	path = src/deps/chips
+	url = https://github.com/floooh/chips.git
