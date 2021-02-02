@@ -6,10 +6,22 @@
 
 typedef struct hc_DebuggerIf hc_DebuggerIf;
 
+typedef enum {
+    HC_SIZE_1 = 0,
+    HC_SIZE_2 = 1,
+    HC_SIZE_4 = 2,
+    HC_SIZE_8 = 3,
+    HC_SIZE_MASK = 0xff,
+    HC_PROGRAM_COUNTER = 1 << 8,
+    HC_STACK_POINTER = 1 << 9,
+    HC_MEMORY_POINTER = 1 << 10
+}
+hc_RegisterFlags;
+
 typedef struct {
     struct {
         char const* name;
-        unsigned width_bytes;
+        unsigned flags;
         uint64_t (*get)(hc_DebuggerIf const* debugger_if, unsigned index);
         char const* const* bits;
 
