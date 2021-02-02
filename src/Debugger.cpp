@@ -56,7 +56,8 @@ void hc::Debugger::onDraw() {
         for (unsigned i = 0; i < cpu->v1.num_registers; i++) {
             hc_Register const* const reg = cpu->v1.registers[i];
             unsigned const width_bytes = 1U << (reg->v1.flags & HC_SIZE_MASK);
-            ImGuiInputTextFlags const readonly = reg->v1.set == NULL ? ImGuiInputTextFlags_ReadOnly : 0;
+            bool const readonly = reg->v1.set == NULL;
+            ImGuiInputTextFlags const readonlyFlag = readonly ? ImGuiInputTextFlags_ReadOnly : 0;
 
             ImGui::PushItemWidth(32.0f);
             ImGui::LabelText("", "%s", reg->v1.name);
@@ -71,14 +72,14 @@ void hc::Debugger::onDraw() {
             snprintf(format, sizeof(format), "0x%%0%d" PRIx64, width_bytes * 2);
             snprintf(buffer, sizeof(buffer), format, reg->v1.get(_debuggerIf, i));
             ImGuiInputTextFlags const flagsHex = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsHexadecimal
-                                               | readonly;
+                                               | readonlyFlag;
 
             ImGui::PushItemWidth(width);
 
             if (ImGui::InputText(label, buffer, sizeof(buffer), flagsHex)) {
                 uint64_t value = 0;
 
-                if (sscanf(buffer, "0x%" SCNx64, &value) == 1) {
+                if (!readonly && sscanf(buffer, "0x%" SCNx64, &value) == 1) {
                     reg->v1.set(_debuggerIf, i, value);
                 }
             }
@@ -88,15 +89,15 @@ void hc::Debugger::onDraw() {
 
             snprintf(label, sizeof(label), "##%udec", i);
             snprintf(buffer, sizeof(buffer), "%" PRIu64, reg->v1.get(_debuggerIf, i));
-            ImGuiInputTextFlags const flagsDec = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsDecimal;
-                                               | readonly;
+            ImGuiInputTextFlags const flagsDec = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsDecimal
+                                               | readonlyFlag;
 
             ImGui::PushItemWidth(width);
 
             if (ImGui::InputText(label, buffer, sizeof(buffer), flagsDec)) {
                 uint64_t value = 0;
 
-                if (sscanf(buffer, "%" SCNu64, &value) == 1) {
+                if (!readonly && sscanf(buffer, "%" SCNu64, &value) == 1) {
                     reg->v1.set(_debuggerIf, i, value);
                 }
             }
@@ -121,7 +122,7 @@ void hc::Debugger::onDraw() {
                     }
                 }
 
-                if (reg->v1.set != NULL) {
+                if (!readonly) {
                     reg->v1.set(_debuggerIf, i, newValue);
                 }
 
