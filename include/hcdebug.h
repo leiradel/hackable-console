@@ -18,10 +18,20 @@ typedef enum {
 }
 hc_RegisterFlags;
 
+typedef enum {
+    HC_ALIGNMENT_1 = 0,
+    HC_ALIGNMENT_2 = 1,
+    HC_ALIGNMENT_4 = 2,
+    HC_ALIGNMENT_8 = 3,
+    HC_ALIGNMENT_MASK = 0xff,
+    HC_CPU_ADDRESSABLE = 1 << 8
+}
+hc_MemoryFlags;
+
 typedef struct {
     struct {
         char const* name;
-        unsigned flags;
+        uint64_t flags;
         uint64_t (*get)(hc_DebuggerIf const* debugger_if, unsigned index);
         char const* const* bits;
 
@@ -37,7 +47,7 @@ typedef struct {
         char const* description;
         uint64_t base_address;
         uint64_t size;
-        int is_main;
+        uint64_t flags;
         uint8_t (*peek)(hc_DebuggerIf const* debugger_if, unsigned index, uint64_t address);
 
         /* poke can be null for read-only memory but all memory should be writeable to allow patching */
