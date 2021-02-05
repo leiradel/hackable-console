@@ -86,7 +86,7 @@ namespace hc {
         virtual ~MemorySelector() {}
 
         void init();
-        void add(Memory* memory);
+        Handle<Memory*> add(Memory* memory);
         Memory* translate(Handle<Memory*> const handle);
 
         // hc::View
@@ -96,8 +96,7 @@ namespace hc {
 
     protected:
         HandleAllocator<Memory*> _handles;
-
-        std::vector<Memory*> _regions;
+        std::vector<Handle<Memory*>> _regions;
         int _selected;
 
         unsigned _viewCount;

@@ -59,12 +59,15 @@ void hc::CoreMemory::poke(uint64_t address, uint8_t value) {
 
 void hc::MemorySelector::init() {}
 
-void hc::MemorySelector::add(Memory* memory) {
-    _regions.emplace_back(memory);
+hc::Handle<hc::Memory*> hc::MemorySelector::add(Memory* memory) {
+    Handle<Memory*> const handle = _handles.allocate(memory);
+    _regions.emplace_back(handle);
 
-    std::sort(_regions.begin(), _regions.end(), [](Memory* const a, Memory* const b) -> bool {
-        return strcmp(a->name(), b->name()) < 0;
+    std::sort(_regions.begin(), _regions.end(), [this](Handle<Memory*> const& a, Handle<Memory*> const& b) -> bool {
+        return strcmp(translate(a)->name(), translate(b)->name()) < 0;
     });
+
+    return handle;
 }
 
 hc::Memory* hc::MemorySelector::translate(Handle<Memory*> const handle) {
@@ -80,7 +83,7 @@ void hc::MemorySelector::onDraw() {
     static auto const getter = [](void* const data, int const idx, char const** const text) -> bool {
         auto const self = static_cast<MemorySelector*>(data);
 
-        *text = self->_regions[idx]->name();
+        *text = self->translate(self->_regions[idx])->name();
         return true;
     };
 
@@ -92,9 +95,9 @@ void hc::MemorySelector::onDraw() {
 
     if (ImGuiAl::Button(ICON_FA_EYE " View", _selected < count, size)) {
         char title[128];
-        snprintf(title, sizeof(title), ICON_FA_EYE" %s##%u", _regions[_selected]->name(), _viewCount++);
+        snprintf(title, sizeof(title), ICON_FA_EYE" %s##%u", translate(_regions[_selected])->name(), _viewCount++);
 
-        MemoryWatch* watch = new MemoryWatch(_desktop, title, this, _handles.allocate(_regions[_selected]));
+        MemoryWatch* watch = new MemoryWatch(_desktop, title, this, _regions[_selected]);
         _desktop->addView(watch, false, true);
     }
 }
@@ -103,8 +106,9 @@ void hc::MemorySelector::onGameUnloaded() {
     _selected = 0;
     _viewCount = 0;
 
-    for (auto const& memory : _regions) {
-        delete memory;
+    for (auto const& handle : _regions) {
+        delete translate(handle);
+        _handles.free(handle);
     }
 
     _regions.clear();
