@@ -65,14 +65,14 @@ static void const* readAll(hc::Logger* logger, char const* const path, size_t* c
 hc::Application::Application()
     : _fsm(*this, lifeCycleVprintf, this)
     , _logger(this)
-    , _config(this)
+    , _config(this, &_memorySelector)
     , _video(this)
     , _led(this)
     , _audio(this)
     , _input(this)
     , _perf(this)
     , _control(this)
-    , _memory(this)
+    , _memorySelector(this)
     , _devices(this)
     , _debugger(this)
 {}
@@ -281,7 +281,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         addView(&_perf, true, false);
 
         addView(&_control, true, false);
-        addView(&_memory, true, false);
+        addView(&_memorySelector, true, false);
         addView(&_devices, true, false);
         addView(&_debugger, true, false);
 
@@ -296,7 +296,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         _perf.init();
 
         _control.init(&_fsm, &_logger);
-        _memory.init();
+        _memorySelector.init();
         _devices.init(&_video);
         _debugger.init(&_config);
 
@@ -651,9 +651,6 @@ int hc::Application::push(lua_State* const L) {
 
     _control.push(L);
     lua_setfield(L, -2, "control");
-
-    _memory.push(L);
-    lua_setfield(L, -2, "memory");
 
     for (size_t i = 0; i < stringCount; i++) {
         lua_pushstring(L, stringConsts[i].value);

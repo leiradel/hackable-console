@@ -85,7 +85,7 @@ namespace hc {
         Perf _perf;
         
         Control _control;
-        Memory _memory;
+        MemorySelector _memorySelector;
         Devices _devices;
         Debugger _debugger;
 

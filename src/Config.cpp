@@ -35,8 +35,9 @@ static void getFlags(char flags[7], uint64_t const mcflags) {
     flags[5] = (mcflags & RETRO_MEMDESC_CONST) != 0 ? 'C' : 'c';
 }
 
-hc::Config::Config(Desktop* desktop)
+hc::Config::Config(Desktop* desktop, MemorySelector* memorySelector)
     : View(desktop)
+    , _memorySelector(memorySelector)
     , _performanceLevel(0)
     , _supportsNoGame(false)
     , _supportAchievements(false)
@@ -432,6 +433,10 @@ bool hc::Config::setCoreOptions(retro_core_option_definition const* options) {
             _desktop->debug(TAG "        value = %s", value->value);
             _desktop->debug(TAG "        label = %s", value->label);
 
+            if (strcmp(value->value, options->default_value) == 0) {
+                tempopt.selected = i;
+            }
+
             CoreOption::Value tempval;
             tempval.value = value->value;
             tempval.label = value->label != nullptr ? value->label : value->value;
@@ -481,6 +486,7 @@ int hc::Config::push(lua_State* const L) {
             {"getCoreOption", l_getCoreOption},
             {"setCoreOption", l_setCoreOption},
             {"getMemoryMap", l_getMemoryMap},
+            {"addMemory", l_addMemory},
             {nullptr, nullptr}
         };
 
@@ -660,4 +666,76 @@ int hc::Config::l_getMemoryMap(lua_State* const L) {
     }
 
     return 1;
+}
+
+int hc::Config::l_addMemory(lua_State* const L) {
+    auto const self = check(L, 1);
+    char const* const name = luaL_checkstring(L, 2);
+    int const readonly = lua_toboolean(L, 3);
+
+    CoreMemory* const memory = new CoreMemory(name, readonly);
+
+    int const top = lua_gettop(L);
+    int i = 4;
+
+    do {
+        luaL_argexpected(L, lua_type(L, i) == LUA_TTABLE, i, "table");
+        int isnum = 0;
+
+        // data
+        lua_geti(L, i, 1);
+        void* const data = lua_touserdata(L, -1);
+
+        if (data == nullptr) {
+            delete memory;
+            return luaL_error(L, "data is null in block %d", i - 3);
+        }
+
+        // base
+        lua_geti(L, i, 2);
+        lua_Integer const base = lua_tointegerx(L, -1, &isnum);
+
+        if (!isnum) {
+            delete memory;
+            return luaL_error(L, "base address is not a number in block %d", i - 3);
+        }
+        else if (base < 0) {
+            delete memory;
+            return luaL_error(L, "base address is negative in block %d", i - 3);
+        }
+
+        // size
+        lua_geti(L, i, 3);
+        lua_Integer const size = lua_tointegerx(L, -1, &isnum);
+
+        if (!isnum) {
+            delete memory;
+            return luaL_error(L, "size is not a number in block %d", i - 3);
+        }
+        else if (size <= 0) {
+            delete memory;
+            return luaL_error(L, "invalid size %I in block %d", size, i - 3);
+        }
+
+        // offset
+        lua_geti(L, i, 4);
+        lua_Integer offset = lua_tointegerx(L, -1, &isnum);
+
+        if (isnum && offset < 0) {
+            delete memory;
+            return luaL_error(L, "invalid offset %I in block %d", offset, i - 3);
+        }
+
+        lua_pop(L, 4);
+
+        if (!memory->addBlock(data, offset, base, size)) {
+            delete memory;
+            return luaL_error(L, "base address for block %d is not contiguous to the previous block", i - 3);
+        }
+    }
+    while (++i <= top);
+
+    self->_memorySelector->add(memory);
+    self->_desktop->info(TAG "Added memory \"%s\"", name);
+    return 0;
 }

@@ -2,6 +2,7 @@
 
 #include "Desktop.h"
 #include "Scriptable.h"
+#include "Memory.h"
 
 #include <lrcpp/Components.h>
 
@@ -16,7 +17,7 @@ extern "C" {
 namespace hc {
     class Config: public View, public Scriptable, public lrcpp::Config {
     public:
-        Config(Desktop* desktop);
+        Config(Desktop* desktop, MemorySelector* memorySelector);
         virtual ~Config() {}
 
         bool init();
@@ -71,6 +72,7 @@ namespace hc {
         static int l_getCoreOption(lua_State* const L);
         static int l_setCoreOption(lua_State* const L);
         static int l_getMemoryMap(lua_State* const L);
+        static int l_addMemory(lua_State* const L);
 
         struct SubsystemInfo {
             struct Rom {
@@ -118,6 +120,8 @@ namespace hc {
             size_t selected;
             bool visible;
         };
+
+        MemorySelector* _memorySelector;
 
         std::string _rootPath;
         std::string _autorunPath;
