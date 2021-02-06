@@ -4,7 +4,7 @@
 #include <vector>
 
 namespace hc {
-template<typename T>
+    template<typename T>
     class Handle {
     public:
         Handle() : offset(0), counter(0) {}
