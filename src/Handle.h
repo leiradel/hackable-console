@@ -4,6 +4,9 @@
 #include <vector>
 
 namespace hc {
+    class Memory;
+    class Register;
+
     template<typename T>
     class Handle {
     public:
@@ -83,4 +86,14 @@ namespace hc {
         std::vector<uint32_t> _counters;
         uint32_t _freeList;
     };
+
+    namespace handle {
+        Handle<Memory*> allocate(Memory* const memory);
+        void free(Handle<Memory*> const handle);
+        Memory* translate(Handle<Memory*> const handle);
+
+        Handle<Register*> allocate(Register* const reg);
+        void free(Handle<Register*> const handle);
+        Register* translate(Handle<Register*> const handle);
+    }
 }

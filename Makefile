@@ -22,7 +22,7 @@ INCLUDES=\
 	-Isrc/deps/ImGuiAl/button -Isrc/deps/ImGuiAl/sparkline -Isrc/deps/IconFontCppHeaders \
 	-Isrc/deps/ImGui-Addons/addons/imguifilesystem -Isrc/dynlib -Iinclude \
 	-Isrc/fnkdat -Isrc/speex -Isrc/deps/lrcpp/include -Isrc/deps/lua -Isrc/deps/luafilesystem/src \
-	-Isrc/deps/imgui_club/imgui_memory_editor
+	-Isrc/deps/imgui_club/imgui_memory_editor -Isrc/deps/chips/util
 DEFINES=-DIMGUI_DISABLE_WIN32_DEFAULT_IME_FUNCS -D"IM_ASSERT(x)=do{(void)(x);}while(0)"
 DEFINES+=-DOUTSIDE_SPEEX -DRANDOM_PREFIX=speex -DEXPORT= -D_USE_SSE2 -DFIXED_POINT
 DEFINES+=-DPACKAGE=\"hackable-console\" -DDEBUG_FSM
@@ -36,7 +36,8 @@ HC_OBJS=\
 	src/main.o src/Application.o src/LifeCycle.o src/Fifo.o src/LuaUtil.o \
 	src/Audio.o src/Config.o src/Control.o src/Logger.o src/Memory.o src/Video.o \
 	src/Led.o src/Input.o src/Perf.o src/Desktop.o src/Timer.o src/Devices.o \
-	src/dynlib/dynlib.o src/fnkdat/fnkdat.o src/speex/resample.o src/Debugger.o
+	src/dynlib/dynlib.o src/fnkdat/fnkdat.o src/speex/resample.o src/Debugger.o \
+	src/Cpu.o src/Disasm.o src/Handle.o
 
 # lrcpp
 LRCPP_OBJS=\

@@ -12,6 +12,54 @@ extern "C" {
 
 #define TAG "[CFG] "
 
+hc::CoreMemory::CoreMemory(char const* name, bool readonly)
+    : _name(name)
+    , _base(0)
+    , _size(0)
+    , _readonly(readonly)
+{}
+
+bool hc::CoreMemory::addBlock(void* data, uint64_t offset, uint64_t base, uint64_t size) {
+    if (_blocks.size() == 0) {
+        _base = base;
+        _size = 0;
+    }
+    else if (base != _base + _size) {
+        return false;
+    }
+
+    _blocks.emplace_back(data, offset, size);
+    _size += size;
+    return true;
+}
+
+uint8_t hc::CoreMemory::peek(uint64_t address) const {
+    address -= _base;
+
+    for (auto const& block : _blocks) {
+        if (address < block.size) {
+            return static_cast<uint8_t const*>(block.data)[address];
+        }
+
+        address -= block.size;
+    }
+
+    return 0;
+}
+
+void hc::CoreMemory::poke(uint64_t address, uint8_t value) {
+    address -= _base;
+
+    for (auto const& block : _blocks) {
+        if (address < block.size) {
+            static_cast<uint8_t*>(block.data)[address] = value;
+            return;
+        }
+
+        address -= block.size;
+    }
+}
+
 static void getFlags(char flags[7], uint64_t const mcflags) {
     flags[0] = 'M';
     flags[2] = 'A';
@@ -735,7 +783,7 @@ int hc::Config::l_addMemory(lua_State* const L) {
     }
     while (++i <= top);
 
-    self->_memorySelector->add(memory);
+    self->_memorySelector->add(hc::handle::allocate(memory));
     self->_desktop->info(TAG "Added memory \"%s\"", name);
     return 0;
 }

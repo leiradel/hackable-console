@@ -74,7 +74,7 @@ hc::Application::Application()
     , _control(this)
     , _memorySelector(this)
     , _devices(this)
-    , _debugger(this)
+    , _debugger(this, &_config, &_memorySelector)
 {}
 
 bool hc::Application::init(std::string const& title, int const width, int const height) {
@@ -298,7 +298,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         _control.init(&_fsm, &_logger);
         _memorySelector.init();
         _devices.init(&_video);
-        _debugger.init(&_config);
+        _debugger.init();
 
         frontend.setLogger(&_logger);
         frontend.setConfig(&_config);

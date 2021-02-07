@@ -1,13 +1,12 @@
 #include "Debugger.h"
+#include "Disasm.h"
 
 #include <IconsFontAwesome4.h>
 #include <imgui.h>
 
 #include <inttypes.h>
 
-void hc::Debugger::init(Config* config) {
-    _config = config;
-}
+void hc::Debugger::init() {}
 
 char const* hc::Debugger::getTitle() {
     return ICON_FA_BUG " Debugger";
@@ -26,7 +25,51 @@ void hc::Debugger::onGameLoaded() {
         hc_Set setDebugger = (hc_Set)_config->getExtension("hc_set_debuggger");
 
         if (setDebugger != nullptr) {
-            setDebugger(_debuggerIf);
+            _userdata = setDebugger(_debuggerIf);
+
+            Handle<Memory*> mainMemory;
+            Handle<Register*> programCounter;
+
+            for (unsigned i = 0; i < _debuggerIf->v1.system->v1.num_memory_regions; i++) {
+                DebugMemory* memory = new DebugMemory(_debuggerIf->v1.system->v1.memory_regions[i], _userdata);
+                _memorySelector->add(hc::handle::allocate(memory));
+            }
+
+            for (unsigned i = 0; i < _debuggerIf->v1.system->v1.num_cpus; i++) {
+                hc_Cpu const* const cpu = _debuggerIf->v1.system->v1.cpus[i];
+
+                if ((cpu->v1.flags & HC_CPU_MAIN) != 0) {
+                    _mainCpu = cpu;
+
+                    for (unsigned j = 0; j < cpu->v1.num_registers; j++) {
+                        hc_Register const* const reg = cpu->v1.registers[j];
+
+                        if ((reg->v1.flags & HC_PROGRAM_COUNTER) != 0) {
+                            programCounter = hc::handle::allocate(new Register(reg, _userdata));
+                            break;
+                        }
+                    }
+                }
+
+                for (unsigned j = 0; j < cpu->v1.num_memory_regions; j++) {
+                    hc_Memory const* mem = cpu->v1.memory_regions[i];
+                    DebugMemory* memory = new DebugMemory(mem, _userdata);
+                    Handle<Memory*> const handle = hc::handle::allocate(memory);
+                    _memorySelector->add(handle);
+
+                    if (cpu == _mainCpu && (mem->v1.flags & HC_CPU_ADDRESSABLE) != 0) {
+                        mainMemory = handle;
+                    }
+                }
+            }
+
+            if (!mainMemory.null() && !programCounter.null()) {
+                _desktop->addView(new Disasm(_desktop, mainMemory, programCounter), false, true);
+            }
+        }
+        else {
+            free(_debuggerIf);
+            _debuggerIf = nullptr;
         }
     }
 }
@@ -70,7 +113,7 @@ void hc::Debugger::onDraw() {
 
             snprintf(label, sizeof(label), "##%uhex", i);
             snprintf(format, sizeof(format), "0x%%0%d" PRIx64, width_bytes * 2);
-            snprintf(buffer, sizeof(buffer), format, reg->v1.get(_debuggerIf, i));
+            snprintf(buffer, sizeof(buffer), format, reg->v1.get(_userdata));
             ImGuiInputTextFlags const flagsHex = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsHexadecimal
                                                | readonlyFlag;
 
@@ -80,7 +123,7 @@ void hc::Debugger::onDraw() {
                 uint64_t value = 0;
 
                 if (!readonly && sscanf(buffer, "0x%" SCNx64, &value) == 1) {
-                    reg->v1.set(_debuggerIf, i, value);
+                    reg->v1.set(_userdata, value);
                 }
             }
 
@@ -88,7 +131,7 @@ void hc::Debugger::onDraw() {
             ImGui::SameLine();
 
             snprintf(label, sizeof(label), "##%udec", i);
-            snprintf(buffer, sizeof(buffer), "%" PRIu64, reg->v1.get(_debuggerIf, i));
+            snprintf(buffer, sizeof(buffer), "%" PRIu64, reg->v1.get(_userdata));
             ImGuiInputTextFlags const flagsDec = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsDecimal
                                                | readonlyFlag;
 
@@ -98,7 +141,7 @@ void hc::Debugger::onDraw() {
                 uint64_t value = 0;
 
                 if (!readonly && sscanf(buffer, "%" SCNu64, &value) == 1) {
-                    reg->v1.set(_debuggerIf, i, value);
+                    reg->v1.set(_userdata, value);
                 }
             }
 
@@ -108,7 +151,7 @@ void hc::Debugger::onDraw() {
                 ImGui::Dummy(ImVec2(32.0f, 0.0f));
                 ImGui::SameLine();
 
-                uint64_t const value = reg->v1.get(_debuggerIf, i);
+                uint64_t const value = reg->v1.get(_userdata);
                 uint64_t newValue = 0;
                 int f = 0;
 
@@ -123,7 +166,7 @@ void hc::Debugger::onDraw() {
                 }
 
                 if (!readonly) {
-                    reg->v1.set(_debuggerIf, i, newValue);
+                    reg->v1.set(_userdata, newValue);
                 }
 
                 ImGui::NewLine();
@@ -133,6 +176,7 @@ void hc::Debugger::onDraw() {
 }
 
 void hc::Debugger::onGameUnloaded() {
+    _mainCpu = nullptr;
     _debuggerIf = nullptr;
     _selectedCpu = 0;
 }

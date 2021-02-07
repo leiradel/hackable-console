@@ -9,70 +9,10 @@
 
 #define TAG "[MEM] "
 
-hc::CoreMemory::CoreMemory(char const* name, bool readonly)
-    : _name(name)
-    , _base(0)
-    , _size(0)
-    , _readonly(readonly)
-{}
-
-bool hc::CoreMemory::addBlock(void* data, uint64_t offset, uint64_t base, uint64_t size) {
-    if (_blocks.size() == 0) {
-        _base = base;
-        _size = 0;
-    }
-    else if (base != _base + _size) {
-        return false;
-    }
-
-    _blocks.emplace_back(data, offset, size);
-    _size += size;
-    return true;
-}
-
-uint8_t hc::CoreMemory::peek(uint64_t address) const {
-    address -= _base;
-
-    for (auto const& block : _blocks) {
-        if (address < block.size) {
-            return static_cast<uint8_t const*>(block.data)[address];
-        }
-
-        address -= block.size;
-    }
-
-    return 0;
-}
-
-void hc::CoreMemory::poke(uint64_t address, uint8_t value) {
-    address -= _base;
-
-    for (auto const& block : _blocks) {
-        if (address < block.size) {
-            static_cast<uint8_t*>(block.data)[address] = value;
-            return;
-        }
-
-        address -= block.size;
-    }
-}
-
 void hc::MemorySelector::init() {}
 
-hc::Handle<hc::Memory*> hc::MemorySelector::add(Memory* memory) {
-    Handle<Memory*> const handle = _handles.allocate(memory);
-    _regions.emplace_back(handle);
-
-    std::sort(_regions.begin(), _regions.end(), [this](Handle<Memory*> const& a, Handle<Memory*> const& b) -> bool {
-        return strcmp(translate(a)->name(), translate(b)->name()) < 0;
-    });
-
-    return handle;
-}
-
-hc::Memory* hc::MemorySelector::translate(Handle<Memory*> const handle) {
-    Memory** ref = _handles.translate(handle);
-    return ref != nullptr ? *ref : nullptr;
+void hc::MemorySelector::add(Handle<Memory*> memory) {
+    _regions.emplace_back(memory);
 }
 
 char const* hc::MemorySelector::getTitle() {
@@ -83,7 +23,7 @@ void hc::MemorySelector::onDraw() {
     static auto const getter = [](void* const data, int const idx, char const** const text) -> bool {
         auto const self = static_cast<MemorySelector*>(data);
 
-        *text = self->translate(self->_regions[idx])->name();
+        *text = hc::handle::translate(self->_regions[idx])->name();
         return true;
     };
 
@@ -95,9 +35,9 @@ void hc::MemorySelector::onDraw() {
 
     if (ImGuiAl::Button(ICON_FA_EYE " View", _selected < count, size)) {
         char title[128];
-        snprintf(title, sizeof(title), ICON_FA_EYE" %s##%u", translate(_regions[_selected])->name(), _viewCount++);
+        snprintf(title, sizeof(title), ICON_FA_EYE" %s##%u", hc::handle::translate(_regions[_selected])->name(), _viewCount++);
 
-        MemoryWatch* watch = new MemoryWatch(_desktop, title, this, _regions[_selected]);
+        MemoryWatch* watch = new MemoryWatch(_desktop, title, _regions[_selected]);
         _desktop->addView(watch, false, true);
     }
 }
@@ -107,24 +47,21 @@ void hc::MemorySelector::onGameUnloaded() {
     _viewCount = 0;
 
     for (auto const& handle : _regions) {
-        delete translate(handle);
-        _handles.free(handle);
+        hc::handle::free(handle);
     }
 
     _regions.clear();
-    _handles.reset();
 }
 
-hc::MemoryWatch::MemoryWatch(Desktop* desktop, char const* title, MemorySelector* memorySelector, Handle<Memory*> handle)
+hc::MemoryWatch::MemoryWatch(Desktop* desktop, char const* title, Handle<Memory*> handle)
     : View(desktop)
     , _title(title)
-    , _memorySelector(memorySelector)
     , _handle(handle)
 {
     _editor.OptUpperCaseHex = false;
     _editor.OptShowDataPreview = true;
     _editor.OptFooterExtraHeight = ImGui::GetTextLineHeight() * 5.0f;
-    _editor.ReadOnly = memorySelector->translate(handle)->readonly();
+    _editor.ReadOnly = hc::handle::translate(handle)->readonly();
 
     _editor.ReadFn = [](const ImU8* data, size_t off) -> ImU8 {
         auto const region = reinterpret_cast<Memory const*>(data);
@@ -148,7 +85,7 @@ char const* hc::MemoryWatch::getTitle() {
 void hc::MemoryWatch::onFrame() {
     static uint8_t sizes[ImGuiDataType_COUNT] = {1, 1, 2, 2, 4, 4, 8, 8, 4, 8};
 
-    Memory const* const memory = _memorySelector->translate(_handle);
+    Memory const* const memory = hc::handle::translate(_handle);
 
     if (memory != nullptr && _editor.DataPreviewAddr != (size_t)-1) {
         bool const clearSparline = _lastPreviewAddress != _editor.DataPreviewAddr ||
@@ -213,7 +150,7 @@ void hc::MemoryWatch::onFrame() {
 }
 
 void hc::MemoryWatch::onDraw() {
-    Memory* const memory = _memorySelector->translate(_handle);
+    Memory* const memory = hc::handle::translate(_handle);
 
     if (memory != nullptr) {
         _editor.DrawContents(memory, memory->size(), memory->base());
