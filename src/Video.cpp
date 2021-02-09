@@ -56,7 +56,7 @@ void hc::Video::onDraw() {
 
         ImGui::Image((ImTextureID)(uintptr_t)_texture, size, uv0, uv1);
 
-        _mouseOnTexture = ImGui::IsMouseHoveringRect(_texturePos, ImVec2(_texturePos.x + size.x, _texturePos.y + size.y));
+        _mouseOnTexture = ImGui::IsItemHovered();
 
         if (_mouseOnTexture) {
             ImVec2 const mouse = ImGui::GetMousePos();
