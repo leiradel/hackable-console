@@ -1,7 +1,7 @@
 #include "Disasm.h"
-#include "Cpu.h"
 #include "Memory.h"
 #include "Debugger.h"
+#include "cpus/Z80.h"
 
 #include <imgui.h>
 
@@ -42,7 +42,7 @@ void hc::Disasm::onDraw() {
     char format[16];
     snprintf(format, sizeof(format), "%%0%u" PRIx64 ":  %%s", addressDigitCount);
 
-    float const lineHeight = ImGui::GetTextLineHeight();
+    float const lineHeight = ImGui::GetTextLineHeightWithSpacing();
 
     ImGuiWindowFlags const flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollbar
                                  | ImGuiWindowFlags_NoScrollWithMouse;
@@ -52,63 +52,49 @@ void hc::Disasm::onDraw() {
     ImVec2 const regionMax = ImGui::GetContentRegionMax();
     size_t const numItems = static_cast<size_t>(ceil(regionMax.y / lineHeight));
 
-    struct Line {
-        Line(uint64_t addr, char const* dis) : address(addr), disasm(dis) {}
-        uint64_t address;
-        std::string disasm;
-    };
-
-    std::vector<Line> lines;
-    lines.reserve(numItems + numItems / 2);
+    std::vector<uint64_t> addresses;
+    addresses.reserve(numItems + numItems / 2);
 
     uint64_t const address = reg->get();
-    uint64_t addr = address >= numItems * 4 ? address - numItems * 4 : address;
+    uint64_t addr = address >= numItems * 4 ? address - numItems * 4 : 0;
     size_t addrLine = 0;
 
     for (size_t i = 0;; i++) {
-        auto const peek = [](uint64_t const address, void* const userdata) -> uint8_t {
-            Memory* const memory = static_cast<Memory*>(userdata);
-            return memory->peek(address);
-        };
+        addresses.emplace_back(addr);
 
-        char buffer[64];
-        unsigned const next = disasm_z80(addr, peek, memory, buffer, sizeof(buffer));
-
-        lines.emplace_back(addr, buffer);
-
-        if (addr == address) {
-            addrLine = i;
-            addr = next;
+        if (addr >= address) {
+            addrLine = addresses.size();
             break;
         }
 
-        addr = next;
-    }
+        uint8_t length = 0;
+        uint8_t cycles = 0;
+        z80::FlagState flags[8];
+        z80::info(addr, memory, &length, &cycles, flags);
 
-    for (size_t i = 0; i < numItems / 2; i++) {
-        auto const peek = [](uint64_t const address, void* const userdata) -> uint8_t {
-            Memory* const memory = static_cast<Memory*>(userdata);
-            return memory->peek(address);
-        };
-
-        char buffer[64];
-        unsigned const next = disasm_z80(addr, peek, memory, buffer, sizeof(buffer));
-
-        lines.emplace_back(addr, buffer);
-        addr = next;
+        addr += length;
     }
 
     size_t const firstLine = addrLine >= numItems / 2 ? addrLine - numItems / 2 : 0;
+    addr = addresses[firstLine];
 
     for (size_t i = 0; i < numItems; i++) {
-        Line const& line = lines[i + firstLine];
+        char buffer[64];
+        z80::disasm(addr, memory, buffer, sizeof(buffer));
 
-        if (line.address == address) {
+        if (addr == address) {
             ImVec2 const pos = ImGui::GetCursorScreenPos();
             renderFrame(ImVec2(pos.x, pos.y), ImVec2(pos.x + regionMax.x, pos.y + lineHeight), ImGui::GetColorU32(ImGuiCol_FrameBg));
         }
 
-        ImGui::Text(format, line.address, line.disasm.c_str());
+        ImGui::Text(format, addr, buffer);
+
+        uint8_t length = 0;
+        uint8_t cycles = 0;
+        z80::FlagState flags[8];
+        z80::info(addr, memory, &length, &cycles, flags);
+
+        addr += length;
     }
 
     ImGui::EndChild();

@@ -1,6 +1,9 @@
 #include "Z80.h"
 
-void hc::z80_info(uint64_t address, Memory const* memory, uint8_t* length, uint8_t* cycles, FlagState flags[8]) {
+#define CHIPS_IMPL
+#include <z80dasm.h>
+
+void hc::z80::info(uint64_t address, Memory const* memory, uint8_t* length, uint8_t* cycles, FlagState flags[8]) {
     // 64 is for DJNZ: 13 when it jumps, 8 when it doesn't.
     // 65 is for JR cc: 12 when it jumps, 7 when it doesn't.
     // 66 is for RET cc: 11 when it returns, 5 when it doesn't.
@@ -114,52 +117,81 @@ void hc::z80_info(uint64_t address, Memory const* memory, uint8_t* length, uint8
         0x0ef8, 0xfff4, 0xffff, 0xffff, 0x0000, 0x0000, 0x0000, 0x0000,
     };
 
-    uint16_t f = 0;
+    static uint8_t const lengths_main[128] = {
+        1, 3, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1,
+        2, 3, 1, 1, 1, 1, 2, 1, 2, 1, 1, 1, 1, 1, 2, 1,
+        2, 3, 3, 1, 1, 1, 2, 1, 2, 1, 3, 1, 1, 1, 2, 1,
+        2, 3, 3, 1, 1, 1, 2, 1, 2, 1, 3, 1, 1, 1, 2, 1,
+        1, 1, 3, 3, 3, 1, 2, 1, 1, 1, 3, 0, 3, 3, 2, 1,
+        1, 1, 3, 2, 3, 1, 2, 1, 1, 1, 3, 2, 3, 0, 2, 1,
+        1, 1, 3, 1, 3, 1, 2, 1, 1, 1, 3, 1, 3, 0, 2, 1,
+        1, 1, 3, 1, 3, 1, 2, 1, 1, 1, 3, 1, 3, 0, 2, 1,
+    };
 
     uint8_t const op0 = memory->peek(address);
+    uint16_t f = 0;
 
     if (op0 == 0xcb) {
+        uint8_t const op1 = memory->peek(address + 1);
+
         // Bit instructions, all shift and rotate instructions affect the flags
         // in the same way. Same thing for all bit test instructions. Set and
         // reset instructions don't affect the flags.
-        uint8_t const op1 = memory->peek(address + 1);
-        f = op1 < 0x40 ? 0xfefb : op1 < 0x80 ? 0xfdf8 : 0x0000;
+        f = (op1 < 0x40) ? 0xfefb : ((op1 < 0x80) ? 0xfdf8 : 0x0000);
+
+        // All bit instructions take 2 bytes.
+        *length = 2;
     }
     else if (op0 == 0xed) {
+        uint8_t const op1 = memory->peek(address + 1) - 0x40;
+
         // Valid extended instructions change the flags according to the
         // flags_ed table. Invalid ones are NOPs and don't change the flags.
-        uint8_t const op1 = memory->peek(address + 1) - 0x40;
         f = (op1 < 0x80) ? flags_ed[op1] : 0x0000;
+
+        // For the 64-127 range, ld (**), pair and ld pair, (**) take 4 bytes,
+        // all other isntructions take two bytes including invalid ones.
+        *length = (op1 < 0x40) ? ((op1 & 7) == 3) * 2 + 2 : 2;
     }
     else if (op0 == 0xdd || op0 == 0xfd) {
         // IX or IY.
         uint8_t const op1 = memory->peek(address + 1);
 
         if (op1 == 0xcb) {
+            uint8_t const op3 = memory->peek(address + 3);
             // The index prefix don't change how flags are affected by the bit
             // instructions.
-            uint8_t const op3 = memory->peek(address + 3);
+
             f = op3 < 0x40 ? 0xfefb : op3 < 0x80 ? 0xfdf8 : 0x0000;
+
+            // All bit instructions with IX or IY take 4 bytes.
+            *length = 4;
         }
         else if (op1 == 0xed || op1 == 0xdd || op1 == 0xfd) {
-            // A prefix followed by ED or by another prefix executes as a NOP,
-            // which doesn't affect the flags.
+            // A prefix followed by ED or by another prefix is a NOP, which
+            // doesn't affect the flags and takes 1 byte.
             f = 0x0000;
+            *length = 1;
         }
         else if (cycles_ddfd[op1] == 0) {
             // A prefix followed by an instruction that doesn't use IX or IY
-            // is also executed as a NOP.
+            // is also executed as a NOP and also takes 1 byte.
             f = 0x0000;
+            *length = 1;
         }
         else {
             // Use the flags_main table since the prefix will affect the flags
-            // in the same way as the unprefixed instructions.
+            // in the same way as the unprefixed instructions, and lengths_main
+            // since the instruction size is the regular instruction size plus
+            // the prefix.
             f = flags_main[op1];
+            *length = (op1 < 0x40 || op1 >= 0xc0) ? lengths_main[op1 & 0x7f] + 1 : 2;
         }
     }
     else {
-        // Use the flags_main table directly.
+        // Use the flags_main and lengths_main tables directly.
         f = flags_main[op0];
+        *length = (op0 < 0x40 || op0 >= 0xc0) ? lengths_main[op0 & 0x7f] : 1;
     }
 
     flags[0] = static_cast<FlagState>((f >>  0) & 3);
@@ -230,4 +262,30 @@ void hc::z80_info(uint64_t address, Memory const* memory, uint8_t* length, uint8
     }
 }
 
-void hc::z80_disasm(uint64_t const address, Handle<Memory*> const memory, char* const buffer, size_t size);
+void hc::z80::disasm(uint64_t address, Memory const* memory, char* buffer, size_t size) {
+    struct Userdata {
+        Memory const* memory;
+        uint64_t address;
+
+        char* buffer;
+        size_t position;
+        size_t size;
+    };
+
+    static auto const inCallback = [](void* user_data) -> uint8_t {
+        auto const ud = static_cast<Userdata const*>(user_data);
+        return ud->memory->peek(ud->address);
+    };
+
+    static auto const outCallback = [](char c, void* user_data) -> void {
+        auto const ud = static_cast<Userdata*>(user_data);
+
+        if (ud->position < ud->size) {
+            ud->buffer[ud->position++] = c;
+        }
+    };
+
+    Userdata ud = {memory, address, buffer, 0, size - 1};
+    z80dasm_op(static_cast<uint16_t>(address), inCallback, outCallback, &ud);
+    ud.buffer[ud.position] = 0;
+}
