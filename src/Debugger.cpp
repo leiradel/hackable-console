@@ -222,20 +222,20 @@ void hc::Disasm::onDraw() {
         char opcodes[12];
 
         switch (length) {
-            case 1: snprintf(opcodes, sizeof(opcodes), "%02X", _memory->peek(addr)); break;
-            case 2: snprintf(opcodes, sizeof(opcodes), "%02X %02X", _memory->peek(addr), _memory->peek(addr + 1)); break;
+            case 1: snprintf(opcodes, sizeof(opcodes), "%02x", _memory->peek(addr)); break;
+            case 2: snprintf(opcodes, sizeof(opcodes), "%02x %02x", _memory->peek(addr), _memory->peek(addr + 1)); break;
 
             case 3:
                 snprintf(
                     opcodes, sizeof(opcodes),
-                    "%02X %02X %02X", _memory->peek(addr), _memory->peek(addr + 1), _memory->peek(addr + 2)
+                    "%02x %02x %02x", _memory->peek(addr), _memory->peek(addr + 1), _memory->peek(addr + 2)
                 );
 
                 break;
 
             case 4:
                 snprintf(opcodes, sizeof(opcodes),
-                    "%02X %02X %02X %02X",
+                    "%02x %02x %02x %02x",
                     _memory->peek(addr), _memory->peek(addr + 1), _memory->peek(addr + 2), _memory->peek(addr + 3)
                 );
 
