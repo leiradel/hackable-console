@@ -29,6 +29,8 @@ namespace hc {
         virtual bool readonly() const = 0;
         virtual uint8_t peek(uint64_t address) const = 0;
         virtual void poke(uint64_t address, uint8_t value) = 0;
+
+        unsigned requiredDigits();
     };
 
     class MemorySelector : public View {

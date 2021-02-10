@@ -3,7 +3,7 @@
 #define CHIPS_IMPL
 #include <z80dasm.h>
 
-void hc::z80::info(uint64_t address, Memory const* memory, uint8_t* length, uint8_t* cycles, FlagState flags[8]) {
+void hc::z80::info(uint64_t address, Memory const* memory, uint8_t* length, uint8_t* cycles, char flags[8]) {
     // 64 is for DJNZ: 13 when it jumps, 8 when it doesn't.
     // 65 is for JR cc: 12 when it jumps, 7 when it doesn't.
     // 66 is for RET cc: 11 when it returns, 5 when it doesn't.
@@ -58,7 +58,7 @@ void hc::z80::info(uint64_t address, Memory const* memory, uint8_t* length, uint
          0,  0,  0,  0,  0,  0,  0,  0,  0, 10,  0,  0,  0,  0,  0,  0,
     };
 
-    // Two bits per flag, in the following order (MSB to LSB): SZ5H3PNV
+    // Two bits per flag, in the following order (MSB to LSB): SZ5H3PNC
     // 0b00: flag is unchanged
     // 0b01: flag is set
     // 0b10: flag is reset
@@ -117,6 +117,7 @@ void hc::z80::info(uint64_t address, Memory const* memory, uint8_t* length, uint
         0x0ef8, 0xfff4, 0xffff, 0xffff, 0x0000, 0x0000, 0x0000, 0x0000,
     };
 
+    // Instruction lengths for ranges 0x00-0x3f and 0xc0-0xff
     static uint8_t const lengths_main[128] = {
         1, 3, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1,
         2, 3, 1, 1, 1, 1, 2, 1, 2, 1, 1, 1, 1, 1, 2, 1,
@@ -194,14 +195,16 @@ void hc::z80::info(uint64_t address, Memory const* memory, uint8_t* length, uint
         *length = (op0 < 0x40 || op0 >= 0xc0) ? lengths_main[op0 & 0x7f] : 1;
     }
 
-    flags[0] = static_cast<FlagState>((f >>  0) & 3);
-    flags[1] = static_cast<FlagState>((f >>  2) & 3);
-    flags[2] = static_cast<FlagState>((f >>  4) & 3);
-    flags[3] = static_cast<FlagState>((f >>  6) & 3);
-    flags[4] = static_cast<FlagState>((f >>  8) & 3);
-    flags[5] = static_cast<FlagState>((f >> 10) & 3);
-    flags[6] = static_cast<FlagState>((f >> 12) & 3);
-    flags[7] = static_cast<FlagState>((f >> 14) & 3);
+    static char const states[] = "-10*";
+
+    flags[0] = states[(f >> 14) & 3];
+    flags[1] = states[(f >> 12) & 3];
+    flags[2] = states[(f >> 10) & 3];
+    flags[3] = states[(f >>  8) & 3];
+    flags[4] = states[(f >>  6) & 3];
+    flags[5] = states[(f >>  4) & 3];
+    flags[6] = states[(f >>  2) & 3];
+    flags[7] = states[(f >>  0) & 3];
 
     if (op0 == 0xcb) {
         // Bit instructions.
@@ -273,8 +276,8 @@ void hc::z80::disasm(uint64_t address, Memory const* memory, char* buffer, size_
     };
 
     static auto const inCallback = [](void* user_data) -> uint8_t {
-        auto const ud = static_cast<Userdata const*>(user_data);
-        return ud->memory->peek(ud->address);
+        auto const ud = static_cast<Userdata*>(user_data);
+        return ud->memory->peek(ud->address++);
     };
 
     static auto const outCallback = [](char c, void* user_data) -> void {

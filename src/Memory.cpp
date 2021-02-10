@@ -9,6 +9,16 @@
 
 #define TAG "[MEM] "
 
+unsigned hc::Memory::requiredDigits() {
+    unsigned count = 0;
+
+    for (uint64_t maximum = base() + size() - 1; maximum > 0; maximum >>= 4) {
+        count++;
+    }
+
+    return count;
+}
+
 void hc::MemorySelector::init() {}
 
 void hc::MemorySelector::add(Handle<Memory*> memory) {

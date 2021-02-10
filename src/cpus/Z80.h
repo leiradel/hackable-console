@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Cpu.h"
 #include "Memory.h"
 
 namespace hc {
@@ -13,14 +12,7 @@ namespace hc {
             CyclesBlockTransfer = 68 // 21 when it repeats, 16 when it doesn't
         };
 
-        enum FlagState : uint8_t {
-            Unchanged,
-            Set,
-            Reset,
-            Changed
-        };
-
-        void info(uint64_t address, Memory const* memory, uint8_t* length, uint8_t* cycles, FlagState flags[8]);
+        void info(uint64_t address, Memory const* memory, uint8_t* length, uint8_t* cycles, char flags[8]);
         void disasm(uint64_t address, Memory const* memory, char* buffer, size_t size);
     }
 }

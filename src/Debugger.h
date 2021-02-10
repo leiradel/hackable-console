@@ -9,6 +9,26 @@ extern "C" {
 }
 
 namespace hc {
+    class Register {
+    public:
+        Register(hc_Register const* reg, void* userdata) : _register(reg), _userdata(userdata) {}
+
+        char const* name() const { return _register->v1.name; }
+        unsigned size() const { return 1 << (_register->v1.flags & HC_SIZE_MASK); }
+        bool programCounter() const { return (_register->v1.flags & HC_PROGRAM_COUNTER) != 0; }
+        bool stackPointer() const { return (_register->v1.flags & HC_STACK_POINTER) != 0; }
+        bool memoryPointer() const { return (_register->v1.flags & HC_MEMORY_POINTER) != 0; }
+        uint64_t get() const { return _register->v1.get(_userdata); }
+        void set(uint64_t value) const { if (!readonly()) _register->v1.set(_userdata, value); }
+        char const* const* bits() { return _register->v1.bits; }
+
+        bool readonly() const { return _register->v1.set == nullptr; }
+
+    protected:
+        hc_Register const* const _register;
+        void* const _userdata;
+    };
+
     class DebugMemory : public Memory {
     public:
         DebugMemory(hc_Memory const* memory, void* userdata) : _memory(memory), _userdata(userdata) {}
@@ -16,27 +36,78 @@ namespace hc {
 
         // Memory
         virtual char const* name() const override { return _memory->v1.description; }
+        unsigned alignment() const { return 1 << (_memory->v1.flags & HC_ALIGNMENT_MASK); }
+        bool cpuAddressable() const { return (_memory->v1.flags & HC_CPU_ADDRESSABLE) != 0; }
         virtual uint64_t base() const override { return _memory->v1.base_address; }
         virtual uint64_t size() const override { return _memory->v1.size; }
-        virtual bool readonly() const override { return _memory->v1.poke == nullptr; }
         virtual uint8_t peek(uint64_t address) const override { return _memory->v1.peek(_userdata, address); }
-        virtual void poke(uint64_t address, uint8_t value) override { _memory->v1.poke(_userdata, address, value); }
+
+        virtual void poke(uint64_t address, uint8_t value) override {
+            if (!readonly()) _memory->v1.poke(_userdata, address, value);
+        }
+
+        virtual bool readonly() const override { return _memory->v1.poke == nullptr; }
 
     protected:
         hc_Memory const* const _memory;
         void* const _userdata;
     };
 
-    class Register {
+    class Cpu : public View {
     public:
-        Register(hc_Register const* reg, void* userdata) : _register(reg), _userdata(userdata) {}
+        Cpu(Desktop* desktop, hc_Cpu const* cpu, void* userdata);
 
-        uint64_t get() const { return _register->v1.get(_userdata); }
-        void set(uint64_t value) const { _register->v1.set(_userdata, value); }
+        hc_CpuType type() const { return _cpu->v1.type; }
+        char const* name() const { return _cpu->v1.description; }
+        bool main() const { return (_cpu->v1.flags & HC_CPU_MAIN) != 0; }
+
+        void pause() const { if (canPause()) _cpu->v1.pause(_userdata); }
+        void resume() const { if (canResume()) _cpu->v1.resume(_userdata); }
+        void stepInto() const { if (canStepInto()) _cpu->v1.step_into(_userdata); }
+        void stepOver() const { if (canStepOver()) _cpu->v1.step_over(_userdata); }
+        void stepOut() const { if (canStepOut()) _cpu->v1.step_out(_userdata); }
+
+        bool canPause() const { return _cpu->v1.pause != nullptr; }
+        bool canResume() const { return _cpu->v1.resume != nullptr; }
+        bool canStepInto() const { return _cpu->v1.step_into != nullptr; }
+        bool canStepOver() const { return _cpu->v1.step_over != nullptr; }
+        bool canStepOut() const { return _cpu->v1.step_out != nullptr; }
+
+        Memory* mainMemory() const { return _mainMemory; }
+        Register* programCounter() const { return _programCounter; }
+
+        // hc::View
+        virtual char const* getTitle() override;
+        virtual void onGameUnloaded() override;
+        virtual void onDraw() override;
 
     protected:
-        hc_Register const* const _register;
+        hc_Cpu const* const _cpu;
         void* const _userdata;
+        bool _valid;
+        std::string _title;
+
+        Memory* _mainMemory;
+
+        Register* _programCounter;
+        Register* _stackPointer;
+        std::vector<Register*> _memoryPointers;
+    };
+
+    class Disasm : public View {
+    public:
+        Disasm(Desktop* desktop, Cpu* cpu, Memory* memory, Register* reg);
+
+        // hc::View
+        virtual char const* getTitle() override;
+        virtual void onGameUnloaded() override;
+        virtual void onDraw() override;
+
+    protected:
+        bool _valid;
+        Memory* _memory;
+        Register* _register;
+        std::string _title;
     };
 
     class Debugger : public View {
@@ -45,7 +116,6 @@ namespace hc {
             : View(desktop)
             , _config(config)
             , _memorySelector(memorySelector)
-            , _mainCpu(nullptr)
             , _debuggerIf(nullptr)
             , _selectedCpu(0)
         {}
@@ -54,6 +124,7 @@ namespace hc {
 
         void init();
 
+        // hc::View
         virtual char const* getTitle() override;
         virtual void onGameLoaded() override;
         virtual void onGameUnloaded() override;
@@ -62,8 +133,6 @@ namespace hc {
     protected:
         Config* _config;
         MemorySelector* _memorySelector;
-
-        hc_Cpu const* _mainCpu;
 
         hc_DebuggerIf* _debuggerIf;
         void* _userdata;
