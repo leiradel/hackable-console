@@ -18,16 +18,6 @@ typedef enum {
 }
 hc_RegisterFlags;
 
-typedef enum {
-    HC_ALIGNMENT_1 = 0,
-    HC_ALIGNMENT_2 = 1,
-    HC_ALIGNMENT_4 = 2,
-    HC_ALIGNMENT_8 = 3,
-    HC_ALIGNMENT_MASK = 0xff,
-    HC_CPU_ADDRESSABLE = 1 << 8
-}
-hc_MemoryFlags;
-
 typedef struct {
     struct {
         char const* name;
@@ -42,6 +32,16 @@ typedef struct {
     v1;
 }
 hc_Register;
+
+typedef enum {
+    HC_ALIGNMENT_1 = 0,
+    HC_ALIGNMENT_2 = 1,
+    HC_ALIGNMENT_4 = 2,
+    HC_ALIGNMENT_8 = 3,
+    HC_ALIGNMENT_MASK = 0xff,
+    HC_CPU_ADDRESSABLE = 1 << 8
+}
+hc_MemoryFlags;
 
 typedef struct {
     struct {
