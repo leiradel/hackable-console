@@ -575,6 +575,7 @@ void hc::Application::onGameLoaded() {
 void hc::Application::onGameStarted() {
     Desktop::onGameStarted();
     _runningTime.start();
+    _nextFrameTime = _runningTime.getTimeUs();
 }
 
 void hc::Application::onGamePaused() {
