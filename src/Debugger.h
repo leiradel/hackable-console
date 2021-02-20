@@ -11,10 +11,10 @@ extern "C" {
 namespace hc {
     class Register {
     public:
-        Register(hc_Register const* reg, void* userdata) : _register(reg), _userdata(userdata) {}
+        Register(hc_Register const* reg, void* userdata) : _register(reg), _userdata(userdata), _previousValue(get()) {}
 
         char const* name() const { return _register->v1.name; }
-        unsigned size() const { return 1 << (_register->v1.flags & HC_SIZE_MASK); }
+        unsigned size() const { return 1U << (_register->v1.flags & HC_SIZE_MASK); }
         bool programCounter() const { return (_register->v1.flags & HC_PROGRAM_COUNTER) != 0; }
         bool stackPointer() const { return (_register->v1.flags & HC_STACK_POINTER) != 0; }
         bool memoryPointer() const { return (_register->v1.flags & HC_MEMORY_POINTER) != 0; }
@@ -24,9 +24,14 @@ namespace hc {
 
         bool readonly() const { return _register->v1.set == nullptr; }
 
+        bool changed();
+        void clearChanged() { _hasChanged = false; }
+
     protected:
         hc_Register const* const _register;
         void* const _userdata;
+        uint64_t _previousValue;
+        bool _hasChanged;
     };
 
     class DebugMemory : public Memory {
@@ -74,11 +79,13 @@ namespace hc {
         bool canStepOut() const { return _cpu->v1.step_out != nullptr; }
 
         Memory* mainMemory() const { return _mainMemory; }
-        Register* programCounter() const { return _programCounter; }
+        Register* programCounter() { return _programCounter < 0 ? nullptr : &_registers[_programCounter]; }
+        Register* stackPointer() { return _stackPointer < 0 ? nullptr : &_registers[_stackPointer]; }
 
         // hc::View
         virtual char const* getTitle() override;
         virtual void onGameUnloaded() override;
+        virtual void onFrame() override;
         virtual void onDraw() override;
 
     protected:
@@ -88,15 +95,17 @@ namespace hc {
         std::string _title;
 
         Memory* _mainMemory;
+        std::vector<Register> _registers;
 
-        Register* _programCounter;
-        Register* _stackPointer;
-        std::vector<Register*> _memoryPointers;
+        int _programCounter;
+        int _stackPointer;
+        std::vector<int> _memoryPointers;
     };
 
     class Disasm : public View {
     public:
         Disasm(Desktop* desktop, Cpu* cpu, Memory* memory, Register* reg);
+        Disasm(Desktop* desktop, Cpu* cpu, Memory* memory, uint64_t address);
 
         // hc::View
         virtual char const* getTitle() override;
@@ -107,6 +116,7 @@ namespace hc {
         bool _valid;
         Memory* _memory;
         Register* _register;
+        uint64_t _address;
         std::string _title;
     };
 

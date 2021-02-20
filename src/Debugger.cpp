@@ -3,32 +3,48 @@
 
 #include <IconsFontAwesome4.h>
 #include <imgui.h>
+#include <imguial_button.h>
 
 #include <inttypes.h>
 #include <math.h>
+
+#include <atomic>
+
+static std::atomic<unsigned> s_counter;
 
 static void renderFrame(ImVec2 const min, ImVec2 const max, ImU32 const color) {
     ImDrawList* const draw_list = ImGui::GetWindowDrawList();
     draw_list->AddRectFilled(min, max, color, false);
 }
 
+bool hc::Register::changed() {
+    if (!_hasChanged) {
+        uint64_t const value = get();
+        _hasChanged = value != _previousValue;
+        _previousValue = value;
+    }
+
+    return _hasChanged;
+}
+
 hc::Cpu::Cpu(Desktop* desktop, hc_Cpu const* cpu, void* userdata) : View(desktop), _cpu(cpu), _userdata(userdata), _valid(true) {
     _title = ICON_FA_MICROCHIP " ";
     _title += _cpu->v1.description;
 
-    _programCounter = _stackPointer = nullptr;
+    _programCounter = _stackPointer = -1;
 
     for (unsigned i = 0; i < _cpu->v1.num_registers; i++) {
         hc_Register const* const reg = _cpu->v1.registers[i];
+        _registers.emplace_back(reg, _userdata);
 
         if ((reg->v1.flags & HC_PROGRAM_COUNTER) != 0) {
-            _programCounter = new Register(reg, _userdata);
+            _programCounter = i;
         }
         else if ((reg->v1.flags & HC_STACK_POINTER) != 0) {
-            _stackPointer = new Register(reg, _userdata);
+            _stackPointer = i;
         }
         else if ((reg->v1.flags & HC_MEMORY_POINTER) != 0) {
-            _memoryPointers.emplace_back(new Register(reg, _userdata));
+            _memoryPointers.emplace_back(i);
         }
     }
 
@@ -51,6 +67,14 @@ void hc::Cpu::onGameUnloaded() {
     _valid = false;
 }
 
+void hc::Cpu::onFrame() {
+    size_t const numRegisters = _registers.size();
+
+    for (size_t i = 0; i < numRegisters; i++) {
+        _registers[i].clearChanged();
+    }
+}
+
 void hc::Cpu::onDraw() {
     if (!_valid) {
         return;
@@ -59,15 +83,21 @@ void hc::Cpu::onDraw() {
     ImVec2 const available = ImGui::GetContentRegionAvail();
     ImVec2 const spacing = ImGui::GetStyle().ItemSpacing;
     float const width = (available.x - 32.0f - spacing.x * 2) / 2.0f;
+    float const lineHeight = ImGui::GetTextLineHeightWithSpacing();
 
-    for (unsigned i = 0; i < _cpu->v1.num_registers; i++) {
-        hc_Register const* const reg = _cpu->v1.registers[i];
-        unsigned const width_bytes = 1U << (reg->v1.flags & HC_SIZE_MASK);
-        bool const readonly = reg->v1.set == NULL;
-        ImGuiInputTextFlags const readonlyFlag = readonly ? ImGuiInputTextFlags_ReadOnly : 0;
+    size_t const num_registers = _registers.size();
+
+    for (size_t i = 0; i < num_registers; i++) {
+        Register* const reg = &_registers[i];
+        unsigned const width_bytes = reg->size();
+
+        if (reg->changed()) {
+            ImVec2 const pos = ImGui::GetCursorScreenPos();
+            renderFrame(ImVec2(pos.x, pos.y), ImVec2(pos.x + 32.0f, pos.y + lineHeight), ImGui::GetColorU32(ImGuiCol_FrameBg));
+        }
 
         ImGui::PushItemWidth(32.0f);
-        ImGui::LabelText("", "%s", reg->v1.name);
+        ImGui::LabelText("", "%s", reg->name());
         ImGui::PopItemWidth();
         ImGui::SameLine();
 
@@ -75,53 +105,55 @@ void hc::Cpu::onDraw() {
         char format[32];
         char buffer[64];
 
-        snprintf(label, sizeof(label), "##%uhex", i);
+        snprintf(label, sizeof(label), "##%zuhex", i);
         snprintf(format, sizeof(format), "0x%%0%d" PRIx64, width_bytes * 2);
-        snprintf(buffer, sizeof(buffer), format, reg->v1.get(_userdata));
+        snprintf(buffer, sizeof(buffer), format, reg->get());
         ImGuiInputTextFlags const flagsHex = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsHexadecimal
-                                           | readonlyFlag;
+                                           | (reg->readonly() * ImGuiInputTextFlags_ReadOnly);
 
         ImGui::PushItemWidth(width);
 
         if (ImGui::InputText(label, buffer, sizeof(buffer), flagsHex)) {
             uint64_t value = 0;
 
-            if (!readonly && sscanf(buffer, "0x%" SCNx64, &value) == 1) {
-                reg->v1.set(_userdata, value);
+            if (sscanf(buffer, "0x%" SCNx64, &value) == 1) {
+                reg->set(value);
             }
         }
 
         ImGui::PopItemWidth();
         ImGui::SameLine();
 
-        snprintf(label, sizeof(label), "##%udec", i);
-        snprintf(buffer, sizeof(buffer), "%" PRIu64, reg->v1.get(_userdata));
+        snprintf(label, sizeof(label), "##%zudec", i);
+        snprintf(buffer, sizeof(buffer), "%" PRIu64, reg->get());
         ImGuiInputTextFlags const flagsDec = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsDecimal
-                                           | readonlyFlag;
+                                           | (reg->readonly() * ImGuiInputTextFlags_ReadOnly);
 
         ImGui::PushItemWidth(width);
 
         if (ImGui::InputText(label, buffer, sizeof(buffer), flagsDec)) {
             uint64_t value = 0;
 
-            if (!readonly && sscanf(buffer, "%" SCNu64, &value) == 1) {
-                reg->v1.set(_userdata, value);
+            if (sscanf(buffer, "%" SCNu64, &value) == 1) {
+                reg->set(value);
             }
         }
 
         ImGui::PopItemWidth();
 
-        if (reg->v1.bits != NULL) {
+        char const* const* const bits = reg->bits();
+
+        if (bits != NULL) {
             ImGui::Dummy(ImVec2(32.0f, 0.0f));
             ImGui::SameLine();
 
-            uint64_t const value = reg->v1.get(_userdata);
+            uint64_t const value = reg->get();
             uint64_t newValue = 0;
             int f = 0;
 
-            for (uint64_t bit = UINT64_C(1) << (width_bytes * 8 - 1); bit != 0 && reg->v1.bits[f] != NULL; bit >>= 1, f++) {
+            for (uint64_t bit = UINT64_C(1) << (width_bytes * 8 - 1); bit != 0 && bits[f] != NULL; bit >>= 1, f++) {
                 bool checked = (value & bit) != 0;
-                ImGui::Checkbox(reg->v1.bits[f], &checked);
+                ImGui::Checkbox(bits[f], &checked);
                 ImGui::SameLine();
 
                 if (checked) {
@@ -129,16 +161,21 @@ void hc::Cpu::onDraw() {
                 }
             }
 
-            if (!readonly) {
-                reg->v1.set(_userdata, newValue);
-            }
-
+            reg->set(newValue);
             ImGui::NewLine();
         }
     }
 
-    if (ImGui::Button(ICON_FA_EYE " Disassembly")) {
-        _desktop->addView(new Disasm(_desktop, this, _mainMemory, _programCounter), true, true);
+    if (ImGui::Button(ICON_FA_CODE " Disassembly")) {
+        _desktop->addView(new Disasm(_desktop, this, _mainMemory, _programCounter), false, true);
+    }
+
+    if (ImGuiAl::Button(ICON_FA_EYE " Step", canStepInto())) {
+        for (size_t i = 0; i < num_registers; i++) {
+            _registers[i].clearChanged();
+        }
+
+        stepInto();
     }
 }
 
@@ -147,10 +184,25 @@ hc::Disasm::Disasm(Desktop* desktop, Cpu* cpu, Memory* memory, Register* reg)
     , _valid(true)
     , _memory(memory)
     , _register(reg)
+    , _address(0)
 {
-    _title = ICON_FA_MICROCHIP " ";
+    _title = ICON_FA_CODE " ";
     _title += cpu->name();
-    _title += " disassembly";
+    _title += " Disassembly##";
+    _title += s_counter++;
+}
+
+hc::Disasm::Disasm(Desktop* desktop, Cpu* cpu, Memory* memory, uint64_t address)
+    : View(desktop)
+    , _valid(true)
+    , _memory(memory)
+    , _register(nullptr)
+    , _address(address)
+{
+    _title = ICON_FA_CODE " ";
+    _title += cpu->name();
+    _title += " Disassembly##";
+    _title += s_counter++;
 }
 
 char const* hc::Disasm::getTitle() {
@@ -171,10 +223,12 @@ void hc::Disasm::onDraw() {
 
     float const lineHeight = ImGui::GetTextLineHeightWithSpacing();
 
-    ImGuiWindowFlags const flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollbar
-                                 | ImGuiWindowFlags_NoScrollWithMouse;
+    ImGuiWindowFlags const flagsFollow = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollbar
+                                       | ImGuiWindowFlags_NoScrollWithMouse;
 
-    ImGui::BeginChild("##scrolling", ImVec2(0.0f, 0.0f), false, flags);
+    ImGuiWindowFlags const flagsStatic = 0;
+
+    ImGui::BeginChild("##scrolling", ImVec2(0.0f, 0.0f), false, _register != nullptr ? flagsFollow : flagsStatic);
 
     ImVec2 const regionMax = ImGui::GetContentRegionMax();
     size_t const numItems = static_cast<size_t>(ceil(regionMax.y / lineHeight));
@@ -182,7 +236,7 @@ void hc::Disasm::onDraw() {
     std::vector<uint64_t> addresses;
     addresses.reserve(numItems + numItems / 2);
 
-    uint64_t const address = _register->get();
+    uint64_t const address = _register != nullptr ? _register->get() : _address;
     uint64_t addr = address >= numItems * 4 ? address - numItems * 4 : 0;
     size_t addrLine = 0;
 
@@ -335,7 +389,7 @@ void hc::Debugger::onDraw() {
     ImVec2 const rest = ImVec2(ImGui::GetContentRegionAvail().x, 0.0f);
 
     if (ImGui::Button(ICON_FA_EYE " View", rest)) {
-        _desktop->addView(new Cpu(_desktop, _debuggerIf->v1.system->v1.cpus[_selectedCpu], _userdata), true, true);
+        _desktop->addView(new Cpu(_desktop, _debuggerIf->v1.system->v1.cpus[_selectedCpu], _userdata), false, true);
     }
 }
 
