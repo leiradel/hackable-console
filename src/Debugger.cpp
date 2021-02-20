@@ -167,7 +167,7 @@ void hc::Cpu::onDraw() {
     }
 
     if (ImGui::Button(ICON_FA_CODE " Disassembly")) {
-        _desktop->addView(new Disasm(_desktop, this, _mainMemory, _programCounter), false, true);
+        _desktop->addView(new Disasm(_desktop, this, _mainMemory, programCounter()), false, true);
     }
 
     if (ImGuiAl::Button(ICON_FA_EYE " Step", canStepInto())) {
