@@ -384,7 +384,7 @@ void hc::Application::run() {
         }
 
         if (_fsm.currentState() == LifeCycle::State::GameRunning) {
-            if (!_syncExact || _runningTime.getTimeUs() >= _nextFrameTime) {
+            if (_runningTime.getTimeUs() >= _nextFrameTime) {
                 _nextFrameTime += _coreUsPerFrame;
 
                 _perf.start(&_runPerf);
@@ -590,22 +590,6 @@ void hc::Application::onGameResumed() {
 }
 
 void hc::Application::onDraw() {
-    bool on = false;
-
-    if (_config.vsync(&on)) {
-        resetDrawFps();
-        resetFrameFps();
-        SDL_GL_SetSwapInterval(on ? 1 : 0);
-    }
-
-    if (_config.syncExact(&_syncExact)) {
-        resetFrameFps();
-
-        if (_syncExact) {
-            _nextFrameTime = _runningTime.getTimeUs();
-        }
-    }
-
     ImGui::DockSpaceOverViewport();
     Desktop::onDraw();
 }

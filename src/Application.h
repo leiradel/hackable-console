@@ -92,7 +92,6 @@ namespace hc {
         Timer _runningTime;
         uint64_t _nextFrameTime;
         uint64_t _coreUsPerFrame;
-        bool _syncExact;
 
         retro_perf_counter _runPerf;
 

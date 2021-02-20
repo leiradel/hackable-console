@@ -54,8 +54,6 @@ namespace hc {
         bool getSupportNoGame() const;
         std::string const& getRootPath() const;
         std::string const& getAutorunPath() const;
-        bool vsync(bool* const on);
-        bool syncExact(bool* const on);
         retro_proc_address_t getExtension(char const* const symbol);
 
         static Config* check(lua_State* const L, int const index);
@@ -172,10 +170,5 @@ namespace hc {
         std::vector<CoreOption> _coreOptions;
         std::unordered_map<std::string, size_t> _coreMap;
         bool _optionsUpdated;
-
-        bool _vsync;
-        bool _vsyncChanged;
-        bool _syncExact;
-        bool _syncExactChanged;
     };
 }
