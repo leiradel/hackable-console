@@ -15,8 +15,6 @@ hc::Audio::Audio(Desktop* desktop)
     : View(desktop)
     , _sampleRate(0.0)
     , _fifo(nullptr)
-    , _min(FLT_MAX)
-    , _max(-FLT_MAX)
     , _mute(false)
     , _wasMuted(false)
     , _rateControlDelta(0.0)
@@ -87,9 +85,6 @@ char const* hc::Audio::getTitle() {
 }
 
 void hc::Audio::onGameLoaded() {
-    _min = FLT_MAX;
-    _max = -FLT_MAX;
-
     // setSystemAvInfo has been called by now
     _currentRatio = _originalRatio = _sampleRate / _timing.sample_rate;
     _rateControlDelta = 0.005;
@@ -128,38 +123,39 @@ void hc::Audio::onDraw() {
 
     static auto const left = [](void* const data, int const idx) -> float {
         auto const self = static_cast<Audio*>(data);
-
-        float sample = self->_drawSamples[idx * 2];
-        self->_min = std::min(self->_min, sample);
-        self->_max = std::max(self->_max, sample);
-
-        return sample;
+        return self->_drawSamples[idx * 2];
     };
 
     static auto const right = [](void* data, int idx) -> float {
         auto const self = static_cast<Audio*>(data);
-
-        float sample = self->_drawSamples[idx * 2 + 1];
-        self->_min = std::min(self->_min, sample);
-        self->_max = std::max(self->_max, sample);
-
-        return sample;
+        return self->_drawSamples[idx * 2 + 1];
     };
 
-    ImVec2 max = ImGui::GetContentRegionAvail();
+    ImVec2 avail = ImGui::GetContentRegionAvail();
 
-    if (max.y > 0.0f) {
-        max.x /= 2;
+    if (avail.y > 0.0f) {
+        avail.x /= 2;
 
         _mutex.lock();
         _drawSamples = _previousSamples;
         _mutex.unlock();
 
-        size_t const size = _drawSamples.size() / 2;
+        int16_t min = INT16_MAX;
+        int16_t max = INT16_MIN;
 
-        ImGui::PlotLines("", left, this, size, 0, nullptr, _min, _max, max);
+        size_t const count = _drawSamples.size();
+
+        for (size_t i = 0; i < count; i++) {
+            int16_t const sample = _drawSamples[i];
+            min = std::min(min, sample);
+            max = std::max(max, sample);
+        }
+
+        size_t const size = count / 2;
+
+        ImGui::PlotLines("", left, this, size, 0, nullptr, min, max, avail);
         ImGui::SameLine(0.0f, 0.0f);
-        ImGui::PlotLines("", right, this, size, 0, nullptr, _min, _max, max);
+        ImGui::PlotLines("", right, this, size, 0, nullptr, min, max, avail);
 
         _drawSamples.clear();
     }

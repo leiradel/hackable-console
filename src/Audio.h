@@ -42,9 +42,6 @@ namespace hc {
         std::vector<int16_t> _samples;
         std::mutex _mutex;
 
-        float _min;
-        float _max;
-
         retro_system_timing _timing;
         bool _mute;
         bool _wasMuted;
