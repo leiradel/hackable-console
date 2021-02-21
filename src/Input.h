@@ -14,18 +14,22 @@
 #include <vector>
 
 namespace hc {
-    class Input: public View, public lrcpp::Input {
+    class Input: public View, public DeviceListener, public lrcpp::Input {
     public:
         Input(Desktop* desktop);
         virtual ~Input() {}
 
-        void init(lrcpp::Frontend* const frontend, Devices* const devices);
+        void init(lrcpp::Frontend* const frontend);
 
         // hc::View
         virtual char const* getTitle() override;
         virtual void onCoreLoaded() override;
         virtual void onDraw() override;
         virtual void onCoreUnloaded() override;
+
+        // hc::DeviceListener
+        virtual void deviceInserted(Device* device) override;
+        virtual void deviceRemoved(Device* device) override;
 
         // lrcpp::Input
         virtual bool setInputDescriptors(retro_input_descriptor const* descriptors) override;
@@ -52,11 +56,14 @@ namespace hc {
             int selectedType; // for the UI
             int selectedDevice; // for the UI
             unsigned type; // RETRO_DEVICE_*
-            Handle<Controller*> controller;
+            Controller* controller;
         };
 
         lrcpp::Frontend* _frontend;
-        Devices* _devices;
+
+        Keyboard* _keyboard;
+        Mouse* _mouse;
+        std::vector<Controller*> _controllers;
 
         /**
          * Available controllers set via RETRO_ENVIRONMENT_SET_CONTROLLER_INFO.

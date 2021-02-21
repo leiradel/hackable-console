@@ -7,7 +7,7 @@
 
 #define TAG "[DEV] "
 
-hc::Controller::Controller(Desktop* desktop) : Device(desktop), _controller(nullptr), _joystick(nullptr) {
+hc::Controller::Controller(Desktop* desktop) : Device(desktop), _deviceIndex(-1), _controller(nullptr), _joystick(nullptr) {
     _lastDir[0] = _lastDir[1] = _lastDir[2] = _lastDir[3] = _lastDir[4] = _lastDir[5] = -1;
     memset(_state, 0, sizeof(_state));
     memset(_analogs, 0, sizeof(_analogs));
@@ -655,13 +655,22 @@ hc::Devices::Devices(Desktop* desktop)
     , _selected(0)
     , _keyboard(desktop)
     , _mouse(desktop)
+    , _virtualController(desktop)
 {
-    Controller* const controller = new VirtualController(_desktop);
-    _controllers.emplace_back(_handles.allocate(controller));
+    _controllers.emplace_back(&_virtualController);
 }
 
 void hc::Devices::init(Video* video) {
     _mouse.init(video);
+
+    for (auto const listener : _listeners) {
+        listener->deviceInserted(&_keyboard);
+        listener->deviceInserted(&_mouse);
+
+        for (auto const controller : _controllers) {
+            listener->deviceInserted(controller);
+        }
+    }
 }
 
 void hc::Devices::process(SDL_Event const* event) {
@@ -680,28 +689,22 @@ void hc::Devices::process(SDL_Event const* event) {
     }
 
     for (auto& controller : _controllers) {
-        (*_handles.translate(controller))->process(event);
+        controller->process(event);
     }
 
     _keyboard.process(event);
     _mouse.process(event);
 }
 
-hc::Controller* hc::Devices::translate(Handle<Controller*> const handle) {
-    Controller** ref = _handles.translate(handle);
+void hc::Devices::addListener(DeviceListener* listener) {
+    _listeners.emplace_back(listener);
 
-    if (ref != nullptr) {
-        return *ref;
-    }
+    listener->deviceInserted(&_keyboard);
+    listener->deviceInserted(&_mouse);
 
-    if (handle.null()) {
-        _desktop->error(TAG "Trying to translate a null handle");
+    for (auto const controller : _controllers) {
+        listener->deviceInserted(controller);
     }
-    else {
-        _desktop->error(TAG "Trying to translate a freed handle");
-    }
-
-    return nullptr;
 }
 
 char const* hc::Devices::getTitle() {
@@ -710,7 +713,7 @@ char const* hc::Devices::getTitle() {
 
 void hc::Devices::onDraw() {
     static auto const getter = [](void* data, int idx, char const** text) -> bool {
-        auto const self = static_cast<Devices*>(data);
+        auto const controllers = static_cast<std::vector<Controller*> const*>(data);
 
         if (idx == 0) {
             *text = "Keyboard";
@@ -719,13 +722,13 @@ void hc::Devices::onDraw() {
             *text = "Mouse";
         }
         else {
-            *text = self->translate(self->_controllers[idx - 2])->getName();
+            *text = (*controllers)[idx - 2]->getName();
         }
 
         return true;
     };
 
-    ImGui::Combo("Device", &_selected, getter, this, static_cast<int>(_controllers.size() + 2));
+    ImGui::Combo("Device", &_selected, getter, &_controllers, static_cast<int>(_controllers.size() + 2));
 
     if (_selected == 0) {
         _keyboard.draw();
@@ -734,8 +737,7 @@ void hc::Devices::onDraw() {
         _mouse.draw();
     }
     else if (_selected >= 2 && static_cast<size_t>(_selected - 2) < _controllers.size()) {
-        Controller** const ref = _handles.translate(_controllers[_selected - 2]);
-        Controller* const controller = *ref;
+        Controller* const controller = _controllers[_selected - 2];
         controller->draw();
     }
 }
@@ -747,19 +749,29 @@ void hc::Devices::addController(SDL_ControllerDeviceEvent const* event) {
         return;
     }
 
-    _controllers.emplace_back(_handles.allocate(controller));
+    _controllers.emplace_back(controller);
+
+    for (auto const listener : _listeners) {
+        listener->deviceInserted(controller);
+    }
 }
 
 void hc::Devices::removeController(SDL_ControllerDeviceEvent const* event) {
     size_t const count = _controllers.size();
 
     for (size_t i = 0; i < count; i++) {
-        auto const& handle = _controllers[i];
-        Controller* const controller = *_handles.translate(handle);
+        Controller* const controller = _controllers[i];
 
         if (controller->destroy(event)) {
-            _handles.free(handle);
+            for (auto const listener : _listeners) {
+                listener->deviceRemoved(controller);
+            }
+
             _controllers.erase(_controllers.begin() + i);
+
+            if (controller != &_virtualController) {
+                delete controller;
+            }
 
             if (static_cast<size_t>(_selected) == (count + 1)) {
                 _selected--;

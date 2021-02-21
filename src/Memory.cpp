@@ -21,7 +21,7 @@ unsigned hc::Memory::requiredDigits() {
 
 void hc::MemorySelector::init() {}
 
-void hc::MemorySelector::add(Handle<Memory*> memory) {
+void hc::MemorySelector::add(Memory* memory) {
     _regions.emplace_back(memory);
 }
 
@@ -31,21 +31,20 @@ char const* hc::MemorySelector::getTitle() {
 
 void hc::MemorySelector::onDraw() {
     static auto const getter = [](void* const data, int const idx, char const** const text) -> bool {
-        auto const self = static_cast<MemorySelector*>(data);
-
-        *text = hc::handle::translate(self->_regions[idx])->name();
+        auto const regions = static_cast<std::vector<Memory*> const*>(data);
+        *text = (*regions)[idx]->name();
         return true;
     };
 
     int const count = static_cast<int>(_regions.size());
     ImVec2 const size = ImVec2(120.0f, 0.0f);
 
-    ImGui::Combo("##Regions", &_selected, getter, this, count);
+    ImGui::Combo("##Regions", &_selected, getter, &_regions, count);
     ImGui::SameLine();
 
     if (ImGuiAl::Button(ICON_FA_EYE " View", _selected < count, size)) {
         char title[128];
-        snprintf(title, sizeof(title), ICON_FA_EYE" %s##%u", hc::handle::translate(_regions[_selected])->name(), _viewCount++);
+        snprintf(title, sizeof(title), ICON_FA_EYE" %s##%u", _regions[_selected]->name(), _viewCount++);
 
         MemoryWatch* watch = new MemoryWatch(_desktop, title, _regions[_selected]);
         _desktop->addView(watch, false, true);
@@ -55,23 +54,18 @@ void hc::MemorySelector::onDraw() {
 void hc::MemorySelector::onGameUnloaded() {
     _selected = 0;
     _viewCount = 0;
-
-    for (auto const& handle : _regions) {
-        hc::handle::free(handle);
-    }
-
     _regions.clear();
 }
 
-hc::MemoryWatch::MemoryWatch(Desktop* desktop, char const* title, Handle<Memory*> handle)
+hc::MemoryWatch::MemoryWatch(Desktop* desktop, char const* title, Memory* memory)
     : View(desktop)
     , _title(title)
-    , _handle(handle)
+    , _memory(memory)
 {
     _editor.OptUpperCaseHex = false;
     _editor.OptShowDataPreview = true;
     _editor.OptFooterExtraHeight = ImGui::GetTextLineHeight() * 5.0f;
-    _editor.ReadOnly = hc::handle::translate(handle)->readonly();
+    _editor.ReadOnly = _memory->readonly();
 
     _editor.ReadFn = [](const ImU8* data, size_t off) -> ImU8 {
         auto const region = reinterpret_cast<Memory const*>(data);
@@ -95,33 +89,35 @@ char const* hc::MemoryWatch::getTitle() {
 void hc::MemoryWatch::onFrame() {
     static uint8_t sizes[ImGuiDataType_COUNT] = {1, 1, 2, 2, 4, 4, 8, 8, 4, 8};
 
-    Memory const* const memory = hc::handle::translate(_handle);
+    if (_memory == nullptr) {
+        return;
+    }
 
-    if (memory != nullptr && _editor.DataPreviewAddr != (size_t)-1) {
-        bool const clearSparline = _lastPreviewAddress != _editor.DataPreviewAddr ||
-                                   _lastEndianess != _editor.PreviewEndianess ||
-                                   _lastType != _editor.PreviewDataType;
+    if (_editor.DataPreviewAddr != (size_t)-1) {
+        bool const clearSparkline = _lastPreviewAddress != _editor.DataPreviewAddr ||
+                                    _lastEndianess != _editor.PreviewEndianess ||
+                                    _lastType != _editor.PreviewDataType;
 
-        if (clearSparline) {
+        if (clearSparkline) {
             _sparkline.clear();
             _lastPreviewAddress = _editor.DataPreviewAddr;
             _lastEndianess = _editor.PreviewEndianess;
             _lastType = _editor.PreviewDataType;
         }
 
-        uint64_t address = _editor.DataPreviewAddr + memory->base();
+        uint64_t address = _editor.DataPreviewAddr + _memory->base();
         uint64_t const size = sizes[_editor.PreviewDataType];
         uint64_t value = 0;
 
         switch (size) {
-            case 8: value = value << 8 | memory->peek(address++);
-            case 7: value = value << 8 | memory->peek(address++);
-            case 6: value = value << 8 | memory->peek(address++);
-            case 5: value = value << 8 | memory->peek(address++);
-            case 4: value = value << 8 | memory->peek(address++);
-            case 3: value = value << 8 | memory->peek(address++);
-            case 2: value = value << 8 | memory->peek(address++);
-            case 1: value = value << 8 | memory->peek(address++);
+            case 8: value = value << 8 | _memory->peek(address++);
+            case 7: value = value << 8 | _memory->peek(address++);
+            case 6: value = value << 8 | _memory->peek(address++);
+            case 5: value = value << 8 | _memory->peek(address++);
+            case 4: value = value << 8 | _memory->peek(address++);
+            case 3: value = value << 8 | _memory->peek(address++);
+            case 2: value = value << 8 | _memory->peek(address++);
+            case 1: value = value << 8 | _memory->peek(address++);
         }
 
         if (_editor.PreviewEndianess == 0) {
@@ -160,10 +156,12 @@ void hc::MemoryWatch::onFrame() {
 }
 
 void hc::MemoryWatch::onDraw() {
-    Memory* const memory = hc::handle::translate(_handle);
-
-    if (memory != nullptr) {
-        _editor.DrawContents(memory, memory->size(), memory->base());
+    if (_memory != nullptr) {
+        _editor.DrawContents(_memory, _memory->size(), _memory->base());
         _sparkline.draw("#sparkline", ImGui::GetContentRegionAvail());
     }
+}
+
+void hc::MemoryWatch::onGameUnloaded() {
+    _memory = nullptr;
 }

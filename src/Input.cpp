@@ -7,15 +7,16 @@ extern "C" {
     #include "lauxlib.h"
 }
 
+#include <algorithm>
+
 #define NONE_ID -1
 #define KEYBOARD_ID -2
 #define TAG "[INP] "
 
-hc::Input::Input(Desktop* desktop) : View(desktop), _frontend(nullptr), _devices(nullptr) {}
+hc::Input::Input(Desktop* desktop) : View(desktop), _frontend(nullptr) {}
 
-void hc::Input::init(lrcpp::Frontend* const frontend, Devices* devices) {
+void hc::Input::init(lrcpp::Frontend* const frontend) {
     _frontend = frontend;
-    _devices = devices;
 }
 
 char const* hc::Input::getTitle() {
@@ -28,7 +29,7 @@ void hc::Input::onCoreLoaded() {
         _ports[port].selectedType = 0;
         _ports[port].selectedDevice = -1;
         _ports[port].type = RETRO_DEVICE_NONE;
-        _ports[port].controller = Handle<Controller*>();
+        _ports[port].controller = nullptr;
 
         /**
          * Add None and RetroPad controllers to the ports, RetroArch always has
@@ -62,26 +63,24 @@ void hc::Input::onDraw() {
                     _ports[port].selectedType = selected;
                     _ports[port].selectedDevice = -1;
                     _ports[port].type = _controllerTypes[port][selected].id & RETRO_DEVICE_MASK;
-                    _ports[port].controller = Handle<Controller*>();
+                    _ports[port].controller = nullptr;
 
                     _frontend->setControllerPortDevice(port, _controllerTypes[port][selected].id);
                 }
 
                 if (_ports[port].type == RETRO_DEVICE_JOYPAD) {
                     static auto const getter = [](void* data, int idx, char const** text) -> bool {
-                        auto const devices = static_cast<Devices*>(data);
-                        *text = devices->translate(devices->getControllers()[idx])->getName();
+                        auto controllers = static_cast<std::vector<Controller*> const*>(data);
+                        *text = (*controllers)[idx]->getName();
                         return true;
                     };
 
-                    std::vector<hc::Handle<hc::Controller*>> const& controllers = _devices->getControllers();
                     int selected = _ports[port].selectedDevice;
-
-                    ImGui::Combo("Device", &selected, getter, _devices, static_cast<int>(controllers.size()));
+                    ImGui::Combo("Device", &selected, getter, &_controllers, static_cast<int>(_controllers.size()));
 
                     if (selected != _ports[port].selectedDevice) {
                         _ports[port].selectedDevice = selected;
-                        _ports[port].controller = controllers[selected];
+                        _ports[port].controller = _controllers[selected];
                     }
                 }
 
@@ -99,10 +98,55 @@ void hc::Input::onCoreUnloaded() {
         _ports[port].selectedType = 0;
         _ports[port].selectedDevice = -1;
         _ports[port].type = RETRO_DEVICE_NONE;
-        _ports[port].controller = Handle<Controller*>();
+        _ports[port].controller = nullptr;
 
         // Erase the controller types
         _controllerTypes[port].clear();
+    }
+}
+
+void hc::Input::deviceInserted(Device* device) {
+    if (dynamic_cast<Keyboard*>(device) != nullptr) {
+        _keyboard = dynamic_cast<Keyboard*>(device);
+    }
+    else if (dynamic_cast<Mouse*>(device) != nullptr) {
+        _mouse = dynamic_cast<Mouse*>(device);
+    }
+    else if (dynamic_cast<Controller*>(device) != nullptr) {
+        _controllers.emplace_back(dynamic_cast<Controller*>(device));
+
+        std::sort(_controllers.begin(), _controllers.end(), [](Controller* const& a, Controller* const& b) -> bool {
+            return strcmp(a->getName(), b->getName()) < 0;
+        });
+    }
+    else {
+        _desktop->warn(TAG "Cannot handle device \"%s\"", device->getName());
+    }
+}
+
+void hc::Input::deviceRemoved(Device* device) {
+    if (device == _keyboard) {
+        _keyboard = nullptr;
+    }
+    else if (device == _keyboard) {
+        _mouse = dynamic_cast<Mouse*>(device);
+    }
+    else if (dynamic_cast<Controller*>(device) != nullptr) {
+        for (size_t port = 0; port < MaxPorts; port++) {
+            if (_ports[port].controller == device) {
+                _ports[port].selectedType = 0;
+                _ports[port].selectedDevice = -1;
+                _ports[port].type = RETRO_DEVICE_NONE;
+                _ports[port].controller = nullptr;
+            }
+        }
+
+        for (auto it = _controllers.begin(); it != _controllers.end(); ++it) {
+            if (*it == device) {
+                _controllers.erase(it);
+                break;
+            }
+        }
     }
 }
 
@@ -193,24 +237,24 @@ int16_t hc::Input::state(unsigned portIndex, unsigned deviceId, unsigned index, 
 
     switch (base) {
         case RETRO_DEVICE_JOYPAD: {
-            Controller* const controller = port.controller.null() ? nullptr : _devices->translate(port.controller);
-            return controller != nullptr ? (controller->getButton(id) ? 32767 : 0) : 0;
+            return port.controller != nullptr ? (port.controller->getButton(id) ? 32767 : 0) : 0;
         }
 
         case RETRO_DEVICE_ANALOG: {
-            Controller* const controller = port.controller.null() ? nullptr : _devices->translate(port.controller);
-            return controller != nullptr ? controller->getAnalog(index, id) : 0;
+            return port.controller != nullptr ? port.controller->getAnalog(index, id) : 0;
         }
 
         case RETRO_DEVICE_KEYBOARD: {
-            return _devices->getKeyboard()->getKey(id) ? 32767 : 0;
+            return _keyboard != nullptr ? (_keyboard->getKey(id) ? 32767 : 0) : 0;
         }
 
         case RETRO_DEVICE_MOUSE: {
-            Mouse* const mouse = _devices->getMouse();
+            if (_mouse == nullptr) {
+                return 0;
+            }
 
             int x = 0, y = 0;
-            bool const inside = mouse->getPosition(&x, &y);
+            bool const inside = _mouse->getPosition(&x, &y);
 
             switch (id) {
                 case RETRO_DEVICE_ID_MOUSE_X: {
@@ -235,8 +279,8 @@ int16_t hc::Input::state(unsigned portIndex, unsigned deviceId, unsigned index, 
                     return dy;
                 }
 
-                case RETRO_DEVICE_ID_MOUSE_LEFT: return inside ? (mouse->getLeftDown() ? 32767 : 0) : 0;
-                case RETRO_DEVICE_ID_MOUSE_RIGHT: return inside ? (mouse->getRightDown() ? 32767 : 0) : 0;
+                case RETRO_DEVICE_ID_MOUSE_LEFT: return inside ? (_mouse->getLeftDown() ? 32767 : 0) : 0;
+                case RETRO_DEVICE_ID_MOUSE_RIGHT: return inside ? (_mouse->getRightDown() ? 32767 : 0) : 0;
             }
 
             break;

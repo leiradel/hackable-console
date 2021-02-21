@@ -292,13 +292,15 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         _video.init();
         _led.init();
         _audio.init(_audioSpec.freq, &_fifo);
-        _input.init(&frontend, &_devices);
+        _input.init(&frontend);
         _perf.init();
 
         _control.init(&_fsm, &_logger);
         _memorySelector.init();
         _devices.init(&_video);
         _debugger.init();
+
+        _devices.addListener(&_input);
 
         frontend.setLogger(&_logger);
         frontend.setConfig(&_config);

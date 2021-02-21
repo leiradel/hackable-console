@@ -347,7 +347,7 @@ void hc::Debugger::onGameLoaded() {
 
             for (unsigned i = 0; i < _debuggerIf->v1.system->v1.num_memory_regions; i++) {
                 DebugMemory* memory = new DebugMemory(_debuggerIf->v1.system->v1.memory_regions[i], _userdata);
-                _memorySelector->add(hc::handle::allocate(memory));
+                _memorySelector->add(memory);
             }
 
             for (unsigned i = 0; i < _debuggerIf->v1.system->v1.num_cpus; i++) {
@@ -356,8 +356,7 @@ void hc::Debugger::onGameLoaded() {
                 for (unsigned j = 0; j < cpu->v1.num_memory_regions; j++) {
                     hc_Memory const* mem = cpu->v1.memory_regions[i];
                     DebugMemory* memory = new DebugMemory(mem, _userdata);
-                    Handle<Memory*> const handle = hc::handle::allocate(memory);
-                    _memorySelector->add(handle);
+                    _memorySelector->add(memory);
                 }
             }
         }

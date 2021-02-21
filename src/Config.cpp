@@ -739,7 +739,7 @@ int hc::Config::l_addMemory(lua_State* const L) {
     }
     while (++i <= top);
 
-    self->_memorySelector->add(hc::handle::allocate(memory));
+    self->_memorySelector->add(memory);
     self->_desktop->info(TAG "Added memory \"%s\"", name);
     return 0;
 }

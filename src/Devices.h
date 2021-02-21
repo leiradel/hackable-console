@@ -2,7 +2,6 @@
 
 #include "Desktop.h"
 #include "Scriptable.h"
-#include "Handle.h"
 
 #include <lrcpp/libretro.h>
 
@@ -23,6 +22,12 @@ namespace hc {
 
     protected:
         Desktop* _desktop;
+    };
+
+    class DeviceListener {
+    public:
+        virtual void deviceInserted(Device* device) = 0;
+        virtual void deviceRemoved(Device* device) = 0;
     };
 
     class Controller : public Device {
@@ -125,12 +130,7 @@ namespace hc {
 
         void init(Video* video);
         void process(SDL_Event const* event);
-
-        std::vector<Handle<Controller*>> const& getControllers() const { return _controllers; }
-        Controller* translate(Handle<Controller*> const handle);
-
-        Keyboard* getKeyboard() { return &_keyboard; }
-        Mouse* getMouse() { return &_mouse; }
+        void addListener(DeviceListener* listener);
 
         // hc::View
         virtual char const* getTitle() override;
@@ -141,11 +141,13 @@ namespace hc {
         void removeController(SDL_ControllerDeviceEvent const* event);
         void joystickAdded(SDL_JoyDeviceEvent const* event);
 
-        HandleAllocator<Controller*> _handles;
-        std::vector<Handle<Controller*>> _controllers;
+        std::vector<Controller*> _controllers;
         int _selected;
 
         Keyboard _keyboard;
         Mouse _mouse;
+        VirtualController _virtualController;
+
+        std::vector<DeviceListener*> _listeners;
     };
 }

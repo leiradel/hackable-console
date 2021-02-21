@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Desktop.h"
-#include "Handle.h"
 
 #include <imgui.h>
 #include <imgui_memory_editor.h>
@@ -40,7 +39,7 @@ namespace hc {
         virtual ~MemorySelector() {}
 
         void init();
-        void add(Handle<Memory*> memory);
+        void add(Memory* memory);
 
         // hc::View
         virtual char const* getTitle() override;
@@ -48,7 +47,7 @@ namespace hc {
         virtual void onGameUnloaded() override;
 
     protected:
-        std::vector<Handle<Memory*>> _regions;
+        std::vector<Memory*> _regions;
         int _selected;
 
         unsigned _viewCount;
@@ -56,13 +55,14 @@ namespace hc {
 
     class MemoryWatch : public View {
     public:
-        MemoryWatch(Desktop* desktop, char const* title, Handle<Memory*> handle);
+        MemoryWatch(Desktop* desktop, char const* title, Memory* memory);
         virtual ~MemoryWatch() {}
 
         // hc::View
         virtual char const* getTitle() override;
         virtual void onFrame() override;
         virtual void onDraw() override;
+        virtual void onGameUnloaded() override;
 
     protected:
         enum {
@@ -70,7 +70,7 @@ namespace hc {
         };
 
         std::string _title;
-        Handle<Memory*> _handle;
+        Memory* _memory;
         MemoryEditor _editor;
 
         ImGuiAl::BufferedSparkline<SparklineCount> _sparkline;
