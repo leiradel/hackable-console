@@ -53,7 +53,7 @@ namespace hc {
         bool init();
         bool getSupportNoGame() const;
         std::string const& getRootPath() const;
-        std::string const& getAutorunPath() const;
+        std::string const& getScriptsPath() const;
         retro_proc_address_t getExtension(char const* const symbol);
 
         static Config* check(lua_State* const L, int const index);
@@ -92,7 +92,7 @@ namespace hc {
 
     protected:
         static int l_getRootPath(lua_State* const L);
-        static int l_getAutorunPath(lua_State* const L);
+        static int l_getScriptsPath(lua_State* const L);
         static int l_getSystemPath(lua_State* const L);
         static int l_getCoreAssetsPath(lua_State* const L);
         static int l_getSavePath(lua_State* const L);
@@ -152,7 +152,7 @@ namespace hc {
         MemorySelector* _memorySelector;
 
         std::string _rootPath;
-        std::string _autorunPath;
+        std::string _scriptsPath;
         std::string _systemPath;
         std::string _coreAssetsPath;
         std::string _savePath;

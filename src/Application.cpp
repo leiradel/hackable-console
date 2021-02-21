@@ -336,7 +336,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
             return 0;
         };
 
-        std::string const& autorun = _config.getAutorunPath();
+        std::string const& autorun = _config.getScriptsPath() + "autorun.lua";
 
         lua_pushcfunction(_L, main);
         lua_pushlstring(_L, autorun.c_str(), autorun.length());

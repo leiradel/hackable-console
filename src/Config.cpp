@@ -103,13 +103,13 @@ bool hc::Config::init() {
 
     char path[1024];
 
-    if (fnkdat("autorun.lua", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
+    if (fnkdat("scripts/", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
         _desktop->error(TAG "Error getting the autorun.lua file path");
         return false;
     }
 
-    _autorunPath = path;
-    _desktop->info(TAG "The autorun.lua file path is \"%s\"", path);
+    _scriptsPath = path;
+    _desktop->info(TAG "The scripts path is \"%s\"", path);
 
     if (fnkdat("system/", path, sizeof(path), FNKDAT_USER | FNKDAT_CREAT) != 0) {
         _desktop->error(TAG "Error getting the system path");
@@ -154,8 +154,8 @@ const std::string& hc::Config::getRootPath() const {
     return _rootPath;
 }
 
-const std::string& hc::Config::getAutorunPath() const {
-    return _autorunPath;
+const std::string& hc::Config::getScriptsPath() const {
+    return _scriptsPath;
 }
 
 retro_proc_address_t hc::Config::getExtension(char const* const symbol) {
@@ -482,7 +482,7 @@ int hc::Config::push(lua_State* const L) {
     if (luaL_newmetatable(L, "hc::Config")) {
         static luaL_Reg const methods[] = {
             {"getRootPath", l_getRootPath},
-            {"getAutorunPath", l_getAutorunPath},
+            {"getScriptsPath", l_getScriptsPath},
             {"getSystemPath", l_getSystemPath},
             {"getCoreAssetsPath", l_getCoreAssetsPath},
             {"getSavePath", l_getSavePath},
@@ -512,9 +512,9 @@ int hc::Config::l_getRootPath(lua_State* const L) {
     return 1;
 }
 
-int hc::Config::l_getAutorunPath(lua_State* const L) {
+int hc::Config::l_getScriptsPath(lua_State* const L) {
     auto const self = check(L, 1);
-    lua_pushlstring(L, self->_autorunPath.c_str(), self->_autorunPath.length());
+    lua_pushlstring(L, self->_scriptsPath.c_str(), self->_scriptsPath.length());
     return 1;
 }
 
