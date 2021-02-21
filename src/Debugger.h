@@ -66,14 +66,10 @@ namespace hc {
         char const* name() const { return _cpu->v1.description; }
         bool main() const { return (_cpu->v1.flags & HC_CPU_MAIN) != 0; }
 
-        void pause() const { if (canPause()) _cpu->v1.pause(_userdata); }
-        void resume() const { if (canResume()) _cpu->v1.resume(_userdata); }
         void stepInto() const { if (canStepInto()) _cpu->v1.step_into(_userdata); }
         void stepOver() const { if (canStepOver()) _cpu->v1.step_over(_userdata); }
         void stepOut() const { if (canStepOut()) _cpu->v1.step_out(_userdata); }
 
-        bool canPause() const { return _cpu->v1.pause != nullptr; }
-        bool canResume() const { return _cpu->v1.resume != nullptr; }
         bool canStepInto() const { return _cpu->v1.step_into != nullptr; }
         bool canStepOver() const { return _cpu->v1.step_over != nullptr; }
         bool canStepOut() const { return _cpu->v1.step_out != nullptr; }
