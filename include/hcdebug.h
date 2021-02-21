@@ -83,8 +83,6 @@ typedef struct {
         unsigned num_memory_regions;
 
         /* any one of these can be null if the cpu doesn't support the functionality */
-        void (*pause)(void* user_data);
-        void (*resume)(void* user_data);
         void (*step_into)(void* user_data);
         void (*step_over)(void* user_data);
         void (*step_out)(void* user_data);
