@@ -2,7 +2,7 @@
 
 Hackable Console is a pretentious project to add debugging capabilities to [Libretro](https://www.libretro.com/index.php/api/) cores, and to create a front-end capable of debugging such cores.
 
-![Hackable Console screenshot](https://raw.githubusercontent.com/leiradel/hackable-console/hc.png)
+![Hackable Console screenshot](https://raw.githubusercontent.com/leiradel/hackable-console/master/hc.png)
 
 ## Why Libretro
 
