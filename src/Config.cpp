@@ -437,7 +437,7 @@ bool hc::Config::setCoreOptions(retro_core_option_definition const* options) {
             _desktop->debug(TAG "        value = %s", value->value);
             _desktop->debug(TAG "        label = %s", value->label);
 
-            if (strcmp(value->value, options->default_value) == 0) {
+            if (options->default_value != nullptr && strcmp(value->value, options->default_value) == 0) {
                 tempopt.selected = i;
             }
 
