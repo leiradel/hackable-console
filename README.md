@@ -55,10 +55,14 @@ The API is written in C to allow its implementation in as many cores as possible
 
 ```c
 typedef struct {
-    unsigned const frontend_version;
-    unsigned core_version;
+    unsigned const frontend_api_version;
+    unsigned core_api_version;
 
     struct {
+        /* Informs the front-end that a breakpoint occurred */
+        void (* const breakpoint_cb)(unsigned id);
+
+        /* The emulated system */
         hc_System const* system;
     }
     v1;
@@ -66,8 +70,8 @@ typedef struct {
 hc_DebuggerIf;
 ```
 
-* `frontend_version` comes in filled by the front-end with the debug API version it supports when the `hc_set_debugger` implementation is called. Only data and functions available inside the structures which versions are less than or equal to `frontend_version` must be used.
-* `core_version` must be filled by the core with the version that it supports. The front-end will never try to access data or functions that the core doesn't support.
+* `frontend_api_version` comes in filled by the front-end with the debug API version it supports when the `hc_set_debugger` implementation is called. Only data and functions available inside the structures which versions are less than or equal to `frontend_version` must be used.
+* `core_api_version` must be filled by the core with the version that it supports. The front-end will never try to access data or functions that the core doesn't support.
 * `v1.system`: a pointer to a `hc_System` structure that describes the system being emulated.
 
 > It's likely that `hc_DebuggerIf` will be extended to allow more than one system per core, as it's common for emulators to support an entire family of consoles or computers.
@@ -80,12 +84,18 @@ hc_DebuggerIf;
 typedef struct {
     struct {
         char const* description;
+
+        /* CPUs */
         hc_Cpu const* const* cpus;
         unsigned num_cpus;
-        hc_Register const* const* registers;
-        unsigned num_registers;
+
+        /* Memory regions that aren't addressable by any of the CPUs on the system */
         hc_Memory const* const* memory_regions;
         unsigned num_memory_regions;
+
+        /* Supported breakpoints not covered by specific functions */
+        hc_Breakpoint const* const* break_points;
+        unsigned num_break_points;
     }
     v1;
 }
@@ -95,91 +105,95 @@ hc_System;
 * `v1.description`: The system name that the core emulates.
 * `v1.cpus`: A list of CPUs present in the system. It's not mandatory that all CPUs that compose the system are available in the debug API.
 * `v1.num_cpus`: The number of CPUs in the `cpus` list.
-* `v1.registers`: System-wide registers deemed important for debugging, such as timers.
-* `v1.num_registers`: The number of registers in the `registers` list.
 * `v1.memory_regions`: A list of memory regions that are not attached to a specific CPU.
 * `v1.num_memory_regions`: The number of memory regions in the `memory_regions` list.
+* `v1.break_points`: The system-wide breakpoints that can be activated.
+* `v1.num_break_points`: The number of breakpoints in the `break_points` list.
 
 > `memory_regions` here are used for blocks of memory that are not directly accessible by any of the CPUs, at list not in their entirety, like memory that is banked or only accessible via I/O.
 
 ### hc_Cpu
 
 ```c
-typedef enum {
-    HC_Z80
-}
-hc_CpuType;
-
-typedef enum {
-    HC_CPU_MAIN = 1 << 0
-}
-hc_CpuFlags;
-
 typedef struct {
     struct {
-        hc_CpuType type;
+        /* CPU info */
         char const* description;
-        uint64_t flags;
-        hc_Register const* const* registers;
-        unsigned num_registers;
-        hc_Memory const* const* memory_regions;
-        unsigned num_memory_regions;
+        unsigned type;
+        int is_main;
 
-        /* any one of these can be null if the cpu doesn't support the functionality */
-        void (*step_into)(void* user_data);
-        void (*step_over)(void* user_data);
-        void (*step_out)(void* user_data);
+        /* Memory region that is CPU addressable */
+        hc_Memory const* memory_region;
+
+        /* Registers */
+        uint64_t (*get_register)(void* ud, unsigned reg);
+        void (*set_register)(void* ud, unsigned reg, uint64_t value);
+        unsigned (*set_reg_breakpoint)(void* ud, unsigned reg);
+
+        /* Any one of these can be null if the cpu doesn't support the functionality */
+        void (*step_into)(void* ud); /* step_into is also used to step a single instruction */
+        void (*step_over)(void* ud);
+        void (*step_out)(void* ud);
 
         /* set_break_point can be null when not supported */
-        unsigned (*set_break_point)(void* user_data, uint64_t address);
+        unsigned (*set_exec_breakpoint)(void* ud, uint64_t address);
+
+        /* Breaks on read and writes to the input/output address space */
+        unsigned (*set_io_watchpoint)(void* ud, uint64_t address, uint64_t length, int read, int write);
+
+        /* Breaks when an interrupt occurs */
+        unsigned (*set_int_breakpoint)(void* ud, unsigned type);
+
+        /* Supported breakpoints not covered by specific functions */
+        hc_Breakpoint const* const* break_points;
+        unsigned num_break_points;
     }
     v1;
 }
 hc_Cpu;
 ```
 
-* `v1.type`: The particular CPU model, so that the front-end knows how to disassemble instructions etc.
 * `v1.description`: The CPU description, i.e. Zilog Z80.
-* `v1.flags`: Flags for the CPU. Add `HC_CPU_MAIN` for the main system CPU.
-* `v1.registers`: The list of registers present in the CPU. While this could be inferred from the CPU type, some CPU emulators may be able to emulate more registers than others. In the case of the Z80, some emulators can correctly emulate the [WZ](https://retrocomputing.stackexchange.com/questions/6671/what-are-the-registers-w-and-z-inside-a-z80) register.
-* `v1.num_registers`: The number of registers in the `registers` list.
-* `v1.memory_regions`: The memory regions accessible by the CPU.
-* `v1.num_memory_regions`: The number of memory regions in the `memory_regions` list.
+* `v1.type`: The particular CPU model, so that the front-end knows how to disassemble instructions etc.
+* `v1.is_main`: True (`!=0`) if this is the main CPU in the system.
+* `v1.memory_region`: The memory region accessible by the CPU.
+* `v1.get_register`: Gets the value of a register. In the case of the Z80, not all emulators can correctly emulate the [WZ](https://retrocomputing.stackexchange.com/questions/6671/what-are-the-registers-w-and-z-inside-a-z80) register, in this case `get_register` should return zero.
+* `v1.set_register`: Sets the value of a register.
+* `v1.set_reg_breakpoint`: Sets a breakpoint that triggers when the register's value changes.
 * `v1.step_into`: Executes a single instruction for the CPU. If the instruction is a **call**, execution continues in the called address.
 * `v1.step_over`: Executes a single instruction for the CPU. If the instruction is a **call**, execution will be resumed until the callee returns.
 * `v1.step_out`: Resumes execution until control is returned to the caller, e.g. via a `RET` instruction in the Z80 case.
+* `v1.set_exec_breakpoint`: Sets a breakpoint that triggers when the given address is executed. Only the actuall address of the instruction can trigger the breakpoint, i.e. setting a breakpoint to the address of an operand won't work.
+* `v1.set_io_watchpoint`: Sets a breakpoint that triggers when an I/O port in the given range is read and/or written.
+* `v1.set_int_breakpoint`: Sets a breakpoint that triggers when an interrupt is served by the CPU.
+* `v1.break_points`: A list of other breakpoints supported by the CPU, i.e. an exception condition that is not an interrupt.
+* `v1.num_break_points`: The number of breakpoints in the `break_points` list.
 
-> `memory_regions` here reflect exact what the CPU sees when it reads bytes. As an example, a banked cartridge won't appear in its entirety here, only the banks that are currently selected to be visible via the CPU address bus.
+> `memory_region` here reflect exact what the CPU sees when it reads bytes. As an example, a banked cartridge won't appear in its entirety here, only the banks that are currently selected to be visible via the CPU address bus.
 
 > Many games written in assembly employ tricks to save either memory space, CPU cycles, or both. Sometimes when an address is called, the callee won't return to the instruction following the `CALL` instruction. The core must be careful to implement `step_over` and `step_out` to support the required functionality as best as possible. In any case, the core must never lock into an execution loop that prevents the user from interacting with the front-end.
 
 ### hc_Memory
 
 ```c
-typedef enum {
-    HC_ALIGNMENT_1 = 0,
-    HC_ALIGNMENT_2 = 1,
-    HC_ALIGNMENT_4 = 2,
-    HC_ALIGNMENT_8 = 3,
-    HC_ALIGNMENT_MASK = 0xff,
-    HC_CPU_ADDRESSABLE = 1 << 8
-}
-hc_MemoryFlags;
-
 typedef struct {
     struct {
         char const* description;
-        uint64_t flags;
+        unsigned alignment; /* in bytes */
         uint64_t base_address;
         uint64_t size;
-        uint8_t (*peek)(void* user_data, uint64_t address);
+        uint8_t (*peek)(void* ud, uint64_t address);
 
         /* poke can be null for read-only memory but all memory should be writeable to allow patching */
         /* poke can be non-null and still don't change the value, i.e. for the main memory region when the address is in rom */
-        void (*poke)(void* user_data, uint64_t address, uint8_t value);
+        void (*poke)(void* ud, uint64_t address, uint8_t value);
 
         /* set_watch_point can be null when not supported */
-        unsigned (*set_watch_point)(void* user_data, uint64_t address, uint64_t length, int read, int write);
+        unsigned (*set_watchpoint)(void* ud, uint64_t address, uint64_t length, int read, int write);
+
+        /* Supported breakpoints not covered by specific functions */
+        hc_Breakpoint const* const* break_points;
+        unsigned num_break_points;
     }
     v1;
 }
@@ -187,51 +201,51 @@ hc_Memory;
 ```
 
 * `v1.description`: The description of the memory region.
-* `v1.flags`: The flags for the region. Specifically, `HC_CPU_ADDRESSABLE` must be set for regions that which contents are exactly what the CPU would see via its address bus.
+* `v1.alignment`: The alignment of the memory region. This can be used by the front-end to decide how to show the memory in an editor.
 * `v1.base_address`: Where in the CPU address space the region begins. As an example, a MSX cartridge has a base address of `0x4000`.
 * `v1.size`: The size of the region.
 * `v1.peek`: A function that can read bytes from the memory region. The address will be inside the `base_address`-`base_address + size - 1` range.
 * `v1.poke`: A function that can write bytes to the region. ROMs should support writes to allow patches.
 * `v1.set_watch_point`: Sets a watchpoint at the given block of region, starting at `address` and going for `length` bytes. The watchpoint can be triggered for reads, writes, or both.
+* `v1.break_points`: A list of other breakpoints supported by the memory, i.e. if the read is contended.
+* `v1.num_break_points`: The number of breakpoints in the `break_points` list.
 
 > A 256 KiB [MegaROM](https://www.msx.org/wiki/MegaROM_Mappers) MSX cartridge (a cartridge that has banking) can be exposed via two different memory regions, one that begins at `0x4000` and has a size of 32 KiB, and that always reflect what the CPU can see via its address bus and has the `HC_CPU_ADDRESSABLE` bit set, and another that begins at address 0 and has a size of 256 KiB, which is the entire contents of the cartridge, and that does **not** have the `HC_CPU_ADDRESSABLE` bit set as the CPU is not capable of accessing the contents of the entire 256 KiB range via its address bus.
 
-### hc_Register
+### Supported CPUs
+
+During development, support for the Z80 is being coded.
 
 ```c
-typedef enum {
-    HC_SIZE_1 = 0,
-    HC_SIZE_2 = 1,
-    HC_SIZE_4 = 2,
-    HC_SIZE_8 = 3,
-    HC_SIZE_MASK = 0xff,
-    HC_PROGRAM_COUNTER = 1 << 8,
-    HC_STACK_POINTER = 1 << 9,
-    HC_MEMORY_POINTER = 1 << 10
-}
-hc_RegisterFlags;
+/* Supported CPUs in API version 1 */
+#define HC_CPU_Z80 HC_MAKE_CPU_TYPE(0, 1)
 
-typedef struct {
-    struct {
-        char const* name;
-        uint64_t flags;
-        uint64_t (*get)(void* user_data);
+/* Z80 registers */
+#define HC_Z80_A 0
+#define HC_Z80_F 1
+#define HC_Z80_BC 2
+#define HC_Z80_DE 3
+#define HC_Z80_HL 4
+#define HC_Z80_IX 5
+#define HC_Z80_IY 6
+#define HC_Z80_AF2 7
+#define HC_Z80_BC2 8
+#define HC_Z80_DE2 9
+#define HC_Z80_HL2 10
+#define HC_Z80_I 11
+#define HC_Z80_R 12
+#define HC_Z80_SP 13
+#define HC_Z80_PC 14
+#define HC_Z80_IFF 15
+#define HC_Z80_IM 16
+#define HC_Z80_WZ 17
 
-        /* set can be null if the register can't be changed or if it doesn't make sense to do so */ 
-        void (*set)(void* user_data, uint64_t value);
+#define HC_Z80_NUM_REGISTERS 18
 
-        char const* const* bits;
-    }
-    v1;
-}
-hc_Register;
+/* Z80 interrupts */
+#define HC_Z80_INT 0
+#define HC_Z80_NMI 1
 ```
-
-* `v1.name`: The register name.
-* `v1.flags`: The flags for the register. `HC_SIZE_*` specifies the size of the register in bytes. If the register is the program counter, the register will have the `HC_PROGRAM_COUNTER` bit set. Same thing for the stack pointers. If the register is commonly used to index memory, as e.g. `HL`, `IX`, and `IY` in the Z80, it can set the `HC_MEMORY_POINTER` bit so the front-end can provide a special visualization if possible.
-* `v1.get`: Gets the value of the register.
-* `v1.set`: Sets the value of the register. Read-only registers can have this set to `NULL`.
-* `v1.bits`: An array of C strings for each bit of the register, from most to less significant, I.e. the Z80 `F` register should set this to `{"S", "Z", "Y", "H", "X", "PV", "N", "C"}`. This makes it possible for the front-end to provide a bit-by-bit view of the register, where each bit can be changed in isolation.
 
 ## The Front-end
 
@@ -262,7 +276,7 @@ Some technology that is used:
 * [ddlt](https://github.com/leiradel/luamods) for its Finite State Machine compiler that is used to generate a class from `LifeCycle.fsm` that guarantees the application is always in a consistent status.
 * I'm currently using [chips](https://github.com/floooh/chips) for its Z80 disassembler, but I'll likely have to write a custom one that can use symbols instead of only addresses
 
-The language used for the front-end is C++, and I'm employing multiple-inheritance as a way to allow classes to implement multiple interfaces, where an interface is an abstract C++ class. For all the criticism that multiple-inheritance gets, for this project I believe that it's working quite well. Everything is declared in the `hc` namespace.
+The language used for the front-end is C++, and I'm employing multiple-inheritance as a way to allow classes to implement multiple interfaces, where an interface is an abstract C++ class. For all the criticism that multiple-inheritance gets, for this project I believe that it's working quite well. IMO the real issue with OOP is a deep hierarchy tree (not counting issues like cache which I'm not worried about in this project). Everything is declared in the `hc` namespace.
 
 The Front-end has the concept of a desktop, where multiple views can be added and laid out.
 
@@ -279,7 +293,7 @@ Some notes about the code:
         * The only class that inherits from `Desktop` is `Application`.
 * `Scriptable.h`
     * Declares the `Scriptable` interface.
-        * This interface has only one method, `push`, which must pushe an instance of a class that implements it onto the Lua stack as a full userdata object.
+        * This interface has only one method, `push`, which must push an instance of a class that implements it onto the Lua stack as a full userdata object.
         * Classes that implement this interface should also have a method that can check if an instance of it is present at a particular index of the Lua stack, i.e. `static Config* check(lua_State* const L, int const index);`
         * I'm not convinced of the necessity of this interface, but it'll stay there for now.
 * `Application.h`
