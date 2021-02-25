@@ -37,7 +37,7 @@ HC_OBJS=\
 	src/Audio.o src/Config.o src/Control.o src/Logger.o src/Memory.o src/Video.o \
 	src/Led.o src/Input.o src/Perf.o src/Desktop.o src/Timer.o src/Devices.o \
 	src/dynlib/dynlib.o src/fnkdat/fnkdat.o src/speex/resample.o src/Debugger.o \
-	src/cpus/Z80.o
+	src/Cpu.o src/cpus/Z80.o
 
 # lrcpp
 LRCPP_OBJS=\

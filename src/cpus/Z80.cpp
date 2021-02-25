@@ -1,9 +1,22 @@
 #include "Z80.h"
+#include "Debugger.h"
 
 #define CHIPS_IMPL
 #include <z80dasm.h>
 
-void hc::z80::info(uint64_t address, Memory const* memory, uint8_t* length, uint8_t* cycles, char flags[8]) {
+#include <IconsFontAwesome4.h>
+#include <imgui.h>
+#include <imguial_button.h>
+
+enum Cycles : uint8_t {
+    CyclesDjnz = 64,         // 13 when it jumps, 8 when it doesn't
+    CyclesCondJr = 65,       // 12 when it jumps, 7 when it doesn't
+    CyclesCondRet = 66,      // 11 when it returns, 5 when it doesn't
+    CyclesCondCall = 67,     // 17 when it jumps, 10 when it doesn't
+    CyclesBlockTransfer = 68 // 21 when it repeats, 16 when it doesn't
+};
+
+static void info(uint64_t address, hc::Memory const* memory, uint8_t* length, uint8_t* cycles, char flags[8]) {
     // 64 is for DJNZ: 13 when it jumps, 8 when it doesn't.
     // 65 is for JR cc: 12 when it jumps, 7 when it doesn't.
     // 66 is for RET cc: 11 when it returns, 5 when it doesn't.
@@ -265,7 +278,22 @@ void hc::z80::info(uint64_t address, Memory const* memory, uint8_t* length, uint
     }
 }
 
-void hc::z80::disasm(uint64_t address, Memory const* memory, char* buffer, size_t size) {
+hc::Z80::Z80(Desktop* desktop, hc_Cpu const* cpu, void* userdata) : Cpu(desktop, cpu, userdata), _hasChanged(0) {
+    for (unsigned i = 0; i < HC_Z80_NUM_REGISTERS; i++) {
+        _previousValue[i] = _cpu->v1.get_register(_userdata, i);
+    }
+}
+
+uint64_t hc::Z80::instructionLength(uint64_t address, Memory const* memory) {
+    uint8_t length = 0;
+    uint8_t cycles = 0;
+    char flags[8];
+    info(address, memory, &length, &cycles, flags);
+
+    return length;
+}
+
+void hc::Z80::disasm(uint64_t address, Memory const* memory, char* buffer, size_t size, char* tooltip, size_t ttsz) {
     struct Userdata {
         Memory const* memory;
         uint64_t address;
@@ -291,4 +319,76 @@ void hc::z80::disasm(uint64_t address, Memory const* memory, char* buffer, size_
     Userdata ud = {memory, address, buffer, 0, size - 1};
     z80dasm_op(static_cast<uint16_t>(address), inCallback, outCallback, &ud);
     ud.buffer[ud.position] = 0;
+
+    uint8_t length = 0;
+    uint8_t cycles = 0;
+    char flags[8];
+    info(address, memory, &length, &cycles, flags);
+
+    switch (cycles) {
+        case CyclesDjnz: snprintf(tooltip, ttsz, "13/8 cycles"); break;
+        case CyclesCondJr: snprintf(tooltip, ttsz, "12/7 cycles"); break;
+        case CyclesCondRet: snprintf(tooltip, ttsz, "11/5 cycles"); break;
+        case CyclesCondCall: snprintf(tooltip, ttsz, "17/10 cycles"); break;
+        case CyclesBlockTransfer: snprintf(tooltip, ttsz, "21/16 cycles"); break;
+        default: snprintf(tooltip, ttsz, "%u cycles", cycles); break;
+    }
+
+    size_t const curlen = strlen(tooltip);
+
+    snprintf(
+        tooltip + curlen, ttsz - curlen, "\nS=%c Z=%c Y=%c H=%c X=%c P/V=%c N=%c C=%c",
+        flags[0], flags[1], flags[2], flags[3], flags[4], flags[5], flags[6], flags[7]
+    );
+}
+
+void hc::Z80::onFrame() {
+    _hasChanged = 0;
+}
+
+void hc::Z80::onDraw() {
+    if (!_valid) {
+        return;
+    }
+
+    for (unsigned i = 0; i < HC_Z80_NUM_REGISTERS; i++) {
+        static char const* const names[HC_Z80_NUM_REGISTERS] = {
+            "A", "F", "BC", "DE", "HL", "IX", "IY", "AF2", "BC2", "DE2", "HL2", "I", "R", "SP", "PC", "IFF", "IM", "WZ"
+        };
+
+        static uint8_t const width[HC_Z80_NUM_REGISTERS] = {
+            8, 8, 16, 16, 16, 16, 16, 16, 16, 16, 16, 8, 8, 16, 16, 2, 8, 16
+        };
+
+        uint32_t const regBit = UINT32_C(1) << i;
+
+        if ((_hasChanged & regBit) == 0) {
+            uint64_t const value = _cpu->v1.get_register(_userdata, i);
+            _hasChanged |= ((value == _previousValue[i]) - 1) & regBit;
+            _previousValue[i] = value;
+        }
+
+        bool const highlight = (regBit & _hasChanged) != 0;
+
+        if (i == HC_Z80_F) {
+            static char const* const flags[] = {"S", "Z", "Y", "H", "X", "PV", "N", "C"};
+            drawFlags(i, names[i], flags, width[i], highlight);
+        }
+        else if (i == HC_Z80_IFF) {
+            static char const* const flags[] = {"IFF1", "IFF2"};
+            drawFlags(i, names[i], flags, width[i], highlight);
+        }
+        else {
+            drawRegister(i, names[i], width[i], highlight);
+        }
+    }
+
+    if (ImGui::Button(ICON_FA_CODE " Disassembly")) {
+        _desktop->addView(new Disasm(_desktop, this, mainMemory(), HC_Z80_PC), false, true);
+    }
+
+    if (ImGuiAl::Button(ICON_FA_EYE " Step", canStepInto())) {
+        _hasChanged = 0;
+        stepInto();
+    }
 }

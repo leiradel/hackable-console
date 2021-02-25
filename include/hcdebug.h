@@ -1,94 +1,74 @@
 #ifndef HC_DEBUG__
 #define HC_DEBUG__
 
-#include <stdarg.h>
 #include <stdint.h>
 
-typedef struct hc_DebuggerIf hc_DebuggerIf;
-
-typedef enum {
-    HC_SIZE_1 = 0,
-    HC_SIZE_2 = 1,
-    HC_SIZE_4 = 2,
-    HC_SIZE_8 = 3,
-    HC_SIZE_MASK = 0xff,
-    HC_PROGRAM_COUNTER = 1 << 8,
-    HC_STACK_POINTER = 1 << 9,
-    HC_MEMORY_POINTER = 1 << 10
-}
-hc_RegisterFlags;
-
-typedef struct {
-    struct {
-        char const* name;
-        uint64_t flags;
-        uint64_t (*get)(void* user_data);
-
-        /* set can be null if the register can't be changed or if it doesn't make sense to do so */ 
-        void (*set)(void* user_data, uint64_t value);
-
-        char const* const* bits;
-    }
-    v1;
-}
-hc_Register;
-
-typedef enum {
-    HC_ALIGNMENT_1 = 0,
-    HC_ALIGNMENT_2 = 1,
-    HC_ALIGNMENT_4 = 2,
-    HC_ALIGNMENT_8 = 3,
-    HC_ALIGNMENT_MASK = 0xff,
-    HC_CPU_ADDRESSABLE = 1 << 8
-}
-hc_MemoryFlags;
+#define HC_API_VERSION 1
 
 typedef struct {
     struct {
         char const* description;
-        uint64_t flags;
+        unsigned (*enable)(void* ud, int yes);
+    }
+    v1;
+}
+hc_Breakpoint;
+
+typedef struct {
+    struct {
+        char const* description;
+        unsigned alignment; /* in bytes */
         uint64_t base_address;
         uint64_t size;
-        uint8_t (*peek)(void* user_data, uint64_t address);
+        uint8_t (*peek)(void* ud, uint64_t address);
 
         /* poke can be null for read-only memory but all memory should be writeable to allow patching */
         /* poke can be non-null and still don't change the value, i.e. for the main memory region when the address is in rom */
-        void (*poke)(void* user_data, uint64_t address, uint8_t value);
+        void (*poke)(void* ud, uint64_t address, uint8_t value);
 
         /* set_watch_point can be null when not supported */
-        unsigned (*set_watch_point)(void* user_data, uint64_t address, uint64_t length, int read, int write);
+        unsigned (*set_watchpoint)(void* ud, uint64_t address, uint64_t length, int read, int write);
+
+        /* Supported breakpoints not covered by specific functions */
+        hc_Breakpoint const* const* break_points;
+        unsigned num_break_points;
     }
     v1;
 }
 hc_Memory;
 
-typedef enum {
-    HC_Z80
-}
-hc_CpuType;
-
-typedef enum {
-    HC_CPU_MAIN = 1 << 0
-}
-hc_CpuFlags;
-
 typedef struct {
     struct {
-        hc_CpuType type;
+        /* CPU info */
         char const* description;
-        uint64_t flags;
-        hc_Register const* const* registers;
-        unsigned num_registers;
-        hc_Memory const* const* memory_regions;
-        unsigned num_memory_regions;
+        unsigned type;
+        int is_main;
 
-        /* any one of these can be null if the cpu doesn't support the functionality */
-        void (*step_into)(void* user_data);
-        void (*step_over)(void* user_data);
-        void (*step_out)(void* user_data);
+        /* Memory region that is CPU addressable */
+        hc_Memory const* memory_region;
+
+        /* Registers */
+        uint64_t (*get_register)(void* ud, unsigned reg);
+        void (*set_register)(void* ud, unsigned reg, uint64_t value);
+        unsigned (*set_reg_breakpoint)(void* ud, unsigned reg);
+
+        /* Any one of these can be null if the cpu doesn't support the functionality */
+        void (*step_into)(void* ud); /* step_into is also used to step a single instruction */
+        void (*step_over)(void* ud);
+        void (*step_out)(void* ud);
 
         /* set_break_point can be null when not supported */
-        unsigned (*set_break_point)(void* user_data, uint64_t address);
+        unsigned (*set_exec_breakpoint)(void* ud, uint64_t address);
+
+        /* Breaks on read and writes to the input/output address space */
+        unsigned (*set_io_watchpoint)(void* ud, uint64_t address, uint64_t length, int read, int write);
+
+        /* Breaks when an interrupt occurs */
+        unsigned (*set_int_breakpoint)(void* ud, unsigned type);
+
+        /* Supported breakpoints not covered by specific functions */
+        hc_Breakpoint const* const* break_points;
+        unsigned num_break_points;
     }
     v1;
 }
@@ -97,26 +77,70 @@ hc_Cpu;
 typedef struct {
     struct {
         char const* description;
+
+        /* CPUs */
         hc_Cpu const* const* cpus;
         unsigned num_cpus;
-        hc_Register const* const* registers;
-        unsigned num_registers;
+
+        /* Memory regions that aren't addressable by any of the CPUs on the system */
         hc_Memory const* const* memory_regions;
         unsigned num_memory_regions;
+
+        /* Supported breakpoints not covered by specific functions */
+        hc_Breakpoint const* const* break_points;
+        unsigned num_break_points;
     }
     v1;
 }
 hc_System;
 
-struct hc_DebuggerIf {
-    unsigned const version;
+typedef struct {
+    unsigned const frontend_api_version;
+    unsigned core_api_version;
 
     struct {
+        /* Informs the front-end that a breakpoint occurred */
+        void (* const breakpoint_cb)(unsigned id);
+
+        /* The emulated system */
         hc_System const* system;
     }
     v1;
-};
+}
+hc_DebuggerIf;
 
 typedef void* (*hc_Set)(hc_DebuggerIf* const debugger_if);
+
+#define HC_MAKE_CPU_TYPE(id, version) ((id) << 16 | (version))
+#define HC_CPU_API_VERSION(type) ((type) & 0xffffU)
+
+/* Supported CPUs in API version 1 */
+#define HC_CPU_Z80 HC_MAKE_CPU_TYPE(0, 1)
+
+/* Z80 registers */
+#define HC_Z80_A 0
+#define HC_Z80_F 1
+#define HC_Z80_BC 2
+#define HC_Z80_DE 3
+#define HC_Z80_HL 4
+#define HC_Z80_IX 5
+#define HC_Z80_IY 6
+#define HC_Z80_AF2 7
+#define HC_Z80_BC2 8
+#define HC_Z80_DE2 9
+#define HC_Z80_HL2 10
+#define HC_Z80_I 11
+#define HC_Z80_R 12
+#define HC_Z80_SP 13
+#define HC_Z80_PC 14
+#define HC_Z80_IFF 15
+#define HC_Z80_IM 16
+#define HC_Z80_WZ 17
+
+#define HC_Z80_NUM_REGISTERS 18
+
+/* Z80 interrupts */
+#define HC_Z80_INT 0
+#define HC_Z80_NMI 1
 
 #endif /* HC_DEBUG__ */

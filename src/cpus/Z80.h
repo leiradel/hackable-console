@@ -1,18 +1,25 @@
 #pragma once
 
-#include "Memory.h"
+#include "Cpu.h"
+
+#include <stdint.h>
 
 namespace hc {
-    namespace z80 {
-        enum Cycles : uint8_t {
-            CyclesDjnz = 64,         // 13 when it jumps, 8 when it doesn't
-            CyclesCondJr = 65,       // 12 when it jumps, 7 when it doesn't
-            CyclesCondRet = 66,      // 11 when it returns, 5 when it doesn't
-            CyclesCondCall = 67,     // 17 when it jumps, 10 when it doesn't
-            CyclesBlockTransfer = 68 // 21 when it repeats, 16 when it doesn't
-        };
+    class Z80 : public Cpu {
+    public:
+        Z80(Desktop* desktop, hc_Cpu const* cpu, void* userdata);
+        ~Z80() {}
 
-        void info(uint64_t address, Memory const* memory, uint8_t* length, uint8_t* cycles, char flags[8]);
-        void disasm(uint64_t address, Memory const* memory, char* buffer, size_t size);
-    }
+        // hc::Cpu
+        virtual uint64_t instructionLength(uint64_t address, Memory const* memory) override;
+        virtual void disasm(uint64_t address, Memory const* memory, char* buffer, size_t size, char* tooltip, size_t ttsz) override;
+
+        // hc::View
+        virtual void onFrame() override;
+        virtual void onDraw() override;
+
+    protected:
+        uint32_t _hasChanged;
+        uint16_t _previousValue[HC_Z80_NUM_REGISTERS];
+    };
 }
