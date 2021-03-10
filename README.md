@@ -318,7 +318,7 @@ Some notes about the code:
 * `lrcpp` components
     * `Logger.h`: Declares the `Logger` implementation. The logger is also a `View` and `Scriptable`.
     * `Config.h`: Declares the `Config` implementation. `Config` also implements `View` and `Scriptable`.
-        * `Config` is also responsible for declaring memory views using the concatenation of different memory regions or descriptors. This can be done in a Lua script.
+        * `Config` is also responsible for declaring memory views using the concatenation of different memory regions or descriptors made available by the core, which can be done in a Lua script.
     * `Video.h`: Declares the `Video` implementation. `Video` is a view, and uses OpenGL to keep a texture updated in respect to the emulated framebuffer and blit it via ImGui.
     * `Led.h`: Declares the `Led` implementation. Led is also a `View` and `Scriptable` so Lua can use leds to signal state if they want. This `lrcpp` component is a minor one, but the Vice Libretro core crashes if there's not one available.
     * `Audio.h`: Declares the `Audio` implementation, which is also a `View` that renders the audio frames as a wave form. Not particularly useful but interesting to watch.
@@ -328,9 +328,11 @@ Some notes about the code:
     * Other components are not implemented for now
 * Other views
     * `Control.h`: Has a GUI to allow the control of the application lifecycle: open a core, open a game, run, pause, and resume the game, unload it, and unload the core. It's also scriptable, and provides Lua methods to call into the Libretro API implemented by the core.
+    * `Cpu.h`
+        * Has the `DebugMemory` view which implements the `Memory` interface for memory regions published by the core via the debug API.
+        * Has the `Cpu` interface, which is a view with a couple of additional abstract methods. Each CPU type supported by the core must implement this interface, and `Cpu::create` must be changed to create and return the actual instance for a CPU type.
     * `Debugger.h`
         * Has the `Debugger` view, which can be used to open a view for one of the CPUs present in the emulated system.
-        * Has the `Cpu` view, which shows the registers, can step the code instruction by instruction, and can open views for a disassembly window.
         * Has the `Disasm` view, which presents the disassembly of the code surrounding the CPU's program counter. Must be extended to support scrolling to arbitrary addresses.
     * `Memory.h`
         * Declares the `Memory` interface, which must be implemented by anyone wanting to present an edit control for a block of memory as a hexadecimal view.
