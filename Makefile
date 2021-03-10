@@ -24,7 +24,7 @@ INCLUDES=\
 	-Isrc/fnkdat -Isrc/speex -Isrc/deps/lrcpp/include -Isrc/deps/lua -Isrc/deps/luafilesystem/src \
 	-Isrc/deps/imgui_club/imgui_memory_editor -Isrc/deps/chips/util
 DEFINES=-DIMGUI_DISABLE_WIN32_DEFAULT_IME_FUNCS -D"IM_ASSERT(x)=do{(void)(x);}while(0)"
-DEFINES+=-DOUTSIDE_SPEEX -DRANDOM_PREFIX=speex -DEXPORT= -D_USE_SSE2 -DFIXED_POINT
+DEFINES+=-DOUTSIDE_SPEEX -DRANDOM_PREFIX=speex -DEXPORT= -D_USE_SSE -D_USE_SSE2 -DFIXED_POINT
 DEFINES+=-DPACKAGE=\"hackable-console\" -DDEBUG_FSM
 CFLAGS+=$(INCLUDES) $(DEFINES) `sdl2-config --cflags`
 CXXFLAGS=$(CFLAGS) -std=c++11
