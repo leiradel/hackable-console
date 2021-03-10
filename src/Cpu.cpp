@@ -86,7 +86,9 @@ void hc::Cpu::drawRegister(unsigned const reg, char const* const name, unsigned 
 }
 
 void hc::Cpu::drawFlags(unsigned reg, char const* name, char const* const* flags, unsigned width, bool highlight) {
-    ImGui::Dummy(ImVec2(32.0f, 0.0f));
+    ImGui::PushItemWidth(32.0f);
+    ImGui::LabelText("", "%s", name);
+    ImGui::PopItemWidth();
     ImGui::SameLine();
 
     uint64_t const value = _cpu->v1.get_register(_userdata, reg);
