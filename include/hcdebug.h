@@ -117,7 +117,6 @@ typedef void* (*hc_Set)(hc_DebuggerIf* const debugger_if);
 /* Supported CPUs in API version 1 */
 #define HC_CPU_Z80 HC_MAKE_CPU_TYPE(0, 1)
 
-/* Z80 registers */
 #define HC_Z80_A 0
 #define HC_Z80_F 1
 #define HC_Z80_BC 2
@@ -139,8 +138,18 @@ typedef void* (*hc_Set)(hc_DebuggerIf* const debugger_if);
 
 #define HC_Z80_NUM_REGISTERS 18
 
-/* Z80 interrupts */
 #define HC_Z80_INT 0
 #define HC_Z80_NMI 1
+
+#define HC_CPU_6502 HC_MAKE_CPU_TYPE(1, 1)
+
+#define HC_6502_A 0
+#define HC_6502_X 1
+#define HC_6502_Y 2
+#define HC_6502_S 3
+#define HC_6502_PC 4
+#define HC_6502_P 5
+
+#define HC_6502_NUM_REGISTERS 6
 
 #endif /* HC_DEBUG__ */

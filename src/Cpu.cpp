@@ -1,5 +1,6 @@
 #include "Cpu.h"
 #include "cpus/Z80.h"
+#include "cpus/M6502.h"
 
 #include <IconsFontAwesome4.h>
 #include <imgui.h>
@@ -16,6 +17,7 @@ static void renderFrame(ImVec2 const min, ImVec2 const max, ImU32 const color) {
 hc::Cpu* hc::Cpu::create(Desktop* desktop, hc_Cpu const* cpu, void* userdata) {
     switch (cpu->v1.type) {
         case HC_CPU_Z80: return new Z80(desktop, cpu, userdata);
+        case HC_CPU_6502: return new M6502(desktop, cpu, userdata);
     }
 
     return nullptr;
