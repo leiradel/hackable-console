@@ -29,6 +29,19 @@ void hc::Desktop::addView(View* const view, bool const top, bool const free) {
     _views.emplace(props);
 }
 
+void hc::Desktop::removeView(View const* const view) {
+    for (auto const& props : _views) {
+        if (props->view == view) {
+            if (props->free) {
+                delete view;
+            }
+
+            _views.erase(props);
+            return;
+        }
+    }
+}
+
 double hc::Desktop::drawFps() {
     double const fps = static_cast<double>(_drawCount) * 1000000.0f / static_cast<double>(_drawTimer.getTimeUs());
     return isnan(fps) || isinf(fps) ? 0.0 : fps;

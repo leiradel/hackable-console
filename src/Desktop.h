@@ -52,6 +52,7 @@ namespace hc {
 
         void init(Logger* const logger);
         void addView(View* const view, bool const top, bool const free);
+        void removeView(View const* const view);
 
         double drawFps();
         void resetDrawFps();
