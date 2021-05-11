@@ -152,7 +152,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         undo.add([this]() { SDL_GL_DeleteContext(_glContext); });
 
         SDL_GL_MakeCurrent(_window, _glContext);
-        SDL_GL_SetSwapInterval(0);
+        SDL_GL_SetSwapInterval(1);
 
         // Init audio
         SDL_AudioSpec want;
@@ -504,6 +504,7 @@ bool hc::Application::loadGame(char const* path) {
 }
 
 bool hc::Application::pauseGame() {
+    SDL_GL_SetSwapInterval(1);
     onGamePaused();
     return true;
 }
@@ -519,11 +520,13 @@ bool hc::Application::resetGame() {
 }
 
 bool hc::Application::resumeGame() {
+    SDL_GL_SetSwapInterval(0);
     onGameResumed();
     return true;
 }
 
 bool hc::Application::startGame() {
+    SDL_GL_SetSwapInterval(0);
     onGameStarted();
     return true;
 }
@@ -547,6 +550,8 @@ bool hc::Application::unloadCore() {
 }
 
 bool hc::Application::unloadGame() {
+    SDL_GL_SetSwapInterval(1);
+
     if (lrcpp::Frontend::getInstance().unloadGame()) {
         onGameUnloaded();
         _runPerf.start = _runPerf.total = _runPerf.call_cnt = 0;
