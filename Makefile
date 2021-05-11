@@ -24,7 +24,7 @@ INCLUDES=\
 	-Isrc/fnkdat -Isrc/speex -Isrc/deps/lrcpp/include -Isrc/deps/lua -Isrc/deps/luafilesystem/src \
 	-Isrc/deps/imgui_club/imgui_memory_editor -Isrc/deps/chips/util
 DEFINES=-DIMGUI_DISABLE_WIN32_DEFAULT_IME_FUNCS -D"IM_ASSERT(x)=do{(void)(x);}while(0)"
-DEFINES+=-DOUTSIDE_SPEEX -DRANDOM_PREFIX=speex -DEXPORT= -D_USE_SSE -D_USE_SSE2 -DFIXED_POINT
+DEFINES+=-DOUTSIDE_SPEEX -DRANDOM_PREFIX=speex -DEXPORT= -D_USE_SSE -D_USE_SSE2 -DFLOATING_POINT
 DEFINES+=-DPACKAGE=\"hackable-console\" -DDEBUG_FSM
 CFLAGS+=$(INCLUDES) $(DEFINES) `sdl2-config --cflags`
 CXXFLAGS=$(CFLAGS) -std=c++11
@@ -37,7 +37,8 @@ HC_OBJS=\
 	src/Audio.o src/Config.o src/Control.o src/Logger.o src/Memory.o src/Video.o \
 	src/Led.o src/Input.o src/Perf.o src/Desktop.o src/Timer.o src/Devices.o \
 	src/dynlib/dynlib.o src/fnkdat/fnkdat.o src/speex/resample.o src/Debugger.o \
-	src/Cpu.o src/cpus/Z80.o src/cpus/M6502.o
+	src/Cpu.o src/cpus/Z80.o src/cpus/M6502.o \
+	src/cheats/Set.o src/cheats/Snapshot.o src/cheats/Filter.o
 
 # lrcpp
 LRCPP_OBJS=\
