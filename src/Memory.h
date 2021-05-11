@@ -49,7 +49,7 @@ namespace hc {
         static int l_poke(lua_State* L);
     };
 
-    class MemorySelector : public View {
+    class MemorySelector : public View, public Scriptable {
     public:
         MemorySelector(Desktop* desktop) : View(desktop), _selected(0) {}
         virtual ~MemorySelector() {}
@@ -60,13 +60,20 @@ namespace hc {
         bool select(char const* label, int* selected, Handle<Memory*>* handle);
         Memory* const* translate(Handle<Memory*> const& handle) const { return _handleAllocator.translate(handle); }
 
+        static MemorySelector* check(lua_State* L, int index);
+
         // hc::View
         virtual char const* getTitle() override;
         virtual void onFrame() override;
         virtual void onDraw() override;
         virtual void onGameUnloaded() override;
 
+        // hc::Scriptable
+        virtual int push(lua_State* L) override;
+
     protected:
+        static int l_getMemory(lua_State* const L);
+
         HandleAllocator<Memory*> _handleAllocator;
         std::vector<Memory*> _regions;
         int _selected;

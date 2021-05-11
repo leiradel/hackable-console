@@ -66,11 +66,11 @@ namespace {
 }
 #endif
 
-static void formatU64(char* buffer, size_t size, uint64_t value) {
-    if (value <= UINT16_C(0xffff)) {
+static void formatU64(char* const buffer, size_t const size, uint64_t const value) {
+    if (value <= UINT64_C(0xffff)) {
         snprintf(buffer, size, "0x%04" PRIx64, value);
     }
-    else if (value <= UINT32_C(0xffffffff)) {
+    else if (value <= UINT64_C(0xffffffff)) {
         snprintf(buffer, size, "0x%08" PRIx64, value);
     }
     else {
@@ -78,8 +78,8 @@ static void formatU64(char* buffer, size_t size, uint64_t value) {
     }
 }
 
-static int pushU64(lua_State* L, uint64_t value) {
-    const auto i = static_cast<lua_Integer>(value);
+static int pushU64(lua_State* const L, uint64_t const value) {
+    auto const i = static_cast<lua_Integer>(value);
 
     if (static_cast<uint64_t>(i) == value) {
         lua_pushinteger(L, i);
@@ -91,6 +91,54 @@ static int pushU64(lua_State* L, uint64_t value) {
     return 1;
 }
 
+#define MEMORY_MT "hc::Memory"
+
+namespace {
+    class MemoryHandle : public hc::Memory {
+    public:
+        MemoryHandle(hc::Handle<hc::Memory*> handle, hc::MemorySelector* selector): _handle(handle), _selector(selector) {}
+        virtual ~MemoryHandle() {}
+
+        // hc::Memory
+        virtual char const* name() const override {
+            Memory* const* const memptr = _selector->translate(_handle);
+            return memptr != nullptr ? (*memptr)->name() : "(invalid)";
+        }
+
+        virtual uint64_t base() const override {
+            Memory* const* const memptr = _selector->translate(_handle);
+            return memptr != nullptr ? (*memptr)->base() : 0;
+        }
+
+        virtual uint64_t size() const override {
+            Memory* const* const memptr = _selector->translate(_handle);
+            return memptr != nullptr ? (*memptr)->size() : 0;
+        }
+
+        virtual bool readonly() const override {
+            Memory* const* const memptr = _selector->translate(_handle);
+            return memptr != nullptr ? (*memptr)->readonly() : true;
+        }
+
+        virtual uint8_t peek(uint64_t address) const override {
+            Memory* const* const memptr = _selector->translate(_handle);
+            return memptr != nullptr ? (*memptr)->peek(address) : 0;
+        }
+
+        virtual void poke(uint64_t address, uint8_t value) override {
+            Memory* const* const memptr = _selector->translate(_handle);
+            
+            if (memptr != nullptr) {
+                (*memptr)->poke(address, value);
+            }
+        }
+
+    protected:
+        hc::Handle<hc::Memory*> const _handle;
+        hc::MemorySelector* const _selector;
+    };
+}
+
 unsigned hc::Memory::requiredDigits() {
     unsigned count = 0;
 
@@ -100,8 +148,6 @@ unsigned hc::Memory::requiredDigits() {
 
     return count;
 }
-
-#define MEMORY_MT "Memory"
 
 hc::Memory* hc::Memory::check(lua_State* L, int index) {
     return *static_cast<Memory**>(luaL_checkudata(L, index, MEMORY_MT));
@@ -135,30 +181,30 @@ int hc::Memory::push(lua_State* L) {
 }
 
 int hc::Memory::l_name(lua_State* L) {
-    auto self = check(L, 1);
+    auto const self = check(L, 1);
     lua_pushstring(L, self->name());
     return 1;
 }
 
 int hc::Memory::l_base(lua_State* L) {
-    auto self = check(L, 1);
+    auto const self = check(L, 1);
     return pushU64(L, self->base());
 }
 
 int hc::Memory::l_size(lua_State* L) {
-    auto self = check(L, 1);
+    auto const self = check(L, 1);
     return pushU64(L, self->size());
 }
 
 int hc::Memory::l_readonly(lua_State* L) {
-    auto self = check(L, 1);
+    auto const self = check(L, 1);
     lua_pushboolean(L, self->readonly());
     return 1;
 }
 
 int hc::Memory::l_peek(lua_State* L) {
-    auto self = check(L, 1);
-    size_t address = luaL_checkinteger(L, 2);
+    auto const self = check(L, 1);
+    size_t const address = luaL_checkinteger(L, 2);
 
     if (address - self->base() >= self->size()) {
         char buffer[64];
@@ -171,9 +217,9 @@ int hc::Memory::l_peek(lua_State* L) {
 }
 
 int hc::Memory::l_poke(lua_State* L) {
-    auto self = check(L, 1);
-    size_t address = luaL_checkinteger(L, 2);
-    uint8_t value = luaL_checkinteger(L, 3);
+    auto const self = check(L, 1);
+    size_t const address = luaL_checkinteger(L, 2);
+    uint8_t const value = luaL_checkinteger(L, 3);
 
     if (address - self->base() >= self->size()) {
         char buffer[64];
@@ -256,6 +302,43 @@ void hc::MemorySelector::onGameUnloaded() {
 #else
     _regions.clear();
 #endif
+}
+
+int hc::MemorySelector::push(lua_State* const L) {
+    auto const self = static_cast<MemorySelector**>(lua_newuserdata(L, sizeof(MemorySelector*)));
+    *self = this;
+
+    if (luaL_newmetatable(L, "hc::MemorySelector")) {
+        static luaL_Reg const methods[] = {
+            {"getMemory", l_getMemory},
+            {nullptr, nullptr}
+        };
+
+        luaL_newlib(L, methods);
+        lua_setfield(L, -2, "__index");
+    }
+
+    lua_setmetatable(L, -2);
+    return 1;
+}
+
+hc::MemorySelector* hc::MemorySelector::check(lua_State* const L, int const index) {
+    return *static_cast<MemorySelector**>(luaL_checkudata(L, index, "hc::MemorySelector"));
+}
+
+int hc::MemorySelector::l_getMemory(lua_State* const L) {
+    auto const self = check(L, 1);
+    char const* const name = luaL_checkstring(L, 2);
+
+    for (auto const& region : self->_regions) {
+        if (!strcmp(name, region->name())) {
+            Handle<Memory*> handle = self->_handleAllocator.allocate(region);
+            auto memory = new MemoryHandle(handle, self);
+            return memory->push(L);
+        }
+    }
+
+    return 0;
 }
 
 hc::MemoryWatch::MemoryWatch(Desktop* desktop, Handle<Memory*> handle, MemorySelector* selector)

@@ -608,7 +608,7 @@ void hc::Application::onGameUnloaded() {
 }
 
 int hc::Application::push(lua_State* const L) {
-    static struct {char const* const name; char const* const value;} const stringConsts[] = {
+    static struct {char const* name; char const* value;} const stringConsts[] = {
         {"_COPYRIGHT", "Copyright (c) 2020 Andre Leiradella"},
         {"_LICENSE", "MIT"},
         {"_VERSION", "0.0.1"},
@@ -643,6 +643,9 @@ int hc::Application::push(lua_State* const L) {
 
     _control.push(L);
     lua_setfield(L, -2, "control");
+
+    _memorySelector.push(L);
+    lua_setfield(L, -2, "memory");
 
     for (size_t i = 0; i < stringCount; i++) {
         lua_pushstring(L, stringConsts[i].value);
