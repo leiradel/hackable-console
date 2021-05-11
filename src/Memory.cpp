@@ -371,6 +371,7 @@ void hc::MemoryWatch::onDraw() {
     Memory* const* const memptr = _selector->translate(_handle);
 
     if (memptr == nullptr) {
+        _desktop->removeView(this);
         return;
     }
 
