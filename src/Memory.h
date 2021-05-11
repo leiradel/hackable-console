@@ -3,6 +3,7 @@
 #include "Desktop.h"
 #include "PeekPoke.h"
 #include "Scriptable.h"
+#include "Handle.h"
 
 #include <imgui.h>
 #include <imgui_memory_editor.h>
@@ -50,13 +51,14 @@ namespace hc {
 
     class MemorySelector : public View {
     public:
-        MemorySelector(Desktop* desktop) : View(desktop), _selected(0), _viewCount(0) {}
+        MemorySelector(Desktop* desktop) : View(desktop), _selected(0) {}
         virtual ~MemorySelector() {}
 
         void init();
         void add(Memory* memory);
 
-        Memory* select(char const* label, int* selected, bool button);
+        bool select(char const* label, int* selected, Handle<Memory*>* handle);
+        Memory* const* translate(Handle<Memory*> const& handle) const { return _handleAllocator.translate(handle); }
 
         // hc::View
         virtual char const* getTitle() override;
@@ -65,22 +67,20 @@ namespace hc {
         virtual void onGameUnloaded() override;
 
     protected:
+        HandleAllocator<Memory*> _handleAllocator;
         std::vector<Memory*> _regions;
         int _selected;
-
-        unsigned _viewCount;
     };
 
     class MemoryWatch : public View {
     public:
-        MemoryWatch(Desktop* desktop, char const* title, Memory* memory);
+        MemoryWatch(Desktop* desktop, Handle<Memory*> handle, MemorySelector* selector);
         virtual ~MemoryWatch() {}
 
         // hc::View
         virtual char const* getTitle() override;
         virtual void onFrame() override;
         virtual void onDraw() override;
-        virtual void onGameUnloaded() override;
 
     protected:
         enum {
@@ -88,7 +88,8 @@ namespace hc {
         };
 
         std::string _title;
-        Memory* _memory;
+        Handle<Memory*> const _handle;
+        MemorySelector* const _selector;
         MemoryEditor _editor;
 
         ImGuiAl::BufferedSparkline<SparklineCount> _sparkline;

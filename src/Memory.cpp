@@ -195,7 +195,7 @@ void hc::MemorySelector::add(Memory* memory) {
     _regions.emplace_back(memory);
 }
 
-hc::Memory* hc::MemorySelector::select(char const* const label, int* const selected, bool const button) {
+bool hc::MemorySelector::select(char const* const label, int* const selected, Handle<Memory*>* const handle) {
     static auto const getter = [](void* const data, int const idx, char const** const text) -> bool {
         auto const regions = static_cast<std::vector<Memory*> const*>(data);
         *text = (*regions)[idx]->name();
@@ -204,28 +204,28 @@ hc::Memory* hc::MemorySelector::select(char const* const label, int* const selec
 
     int const count = static_cast<int>(_regions.size());
 
-    ImGui::PushID(selected);
-    ImGui::Combo(button ? "##memory_selector" : label, selected, getter, &_regions, count);
-
-    if (button) {
-        ImGui::SameLine();
+    if (*selected >= count) {
+        *selected = 0;
     }
+
+    ImGui::PushID(selected);
+    ImGui::Combo("##memory_selector", selected, getter, &_regions, count);
+    ImGui::SameLine();
 
     Memory* memory = nullptr;
 
-    if (button) {
-        if (ImGuiAl::Button(label, *selected < count, ImVec2(120.0f, 0.0f))) {
-            memory = _regions[*selected];
-        }
-    }
-    else {
-        if (*selected >= 0 && *selected < count) {
-            memory = _regions[*selected];
-        }
+    if (ImGuiAl::Button(label, *selected < count, ImVec2(120.0f, 0.0f))) {
+        memory = _regions[*selected];
     }
 
     ImGui::PopID();
-    return memory;
+
+    if (memory != nullptr) {
+        *handle = _handleAllocator.allocate(memory);
+        return true;
+    }
+
+    return false;
 }
 
 char const* hc::MemorySelector::getTitle() {
@@ -239,32 +239,41 @@ void hc::MemorySelector::onFrame() {
 }
 
 void hc::MemorySelector::onDraw() {
-    Memory* const memory = select(ICON_FA_EYE " View", &_selected, true);
+    Handle<Memory*> handle;
 
-    if (memory != nullptr) {
-        char title[128];
-        snprintf(title, sizeof(title), ICON_FA_EYE" %s##%u", memory->name(), _viewCount++);
-
-        MemoryWatch* watch = new MemoryWatch(_desktop, title, memory);
+    if (select(ICON_FA_EYE " View", &_selected, &handle)) {
+        MemoryWatch* watch = new MemoryWatch(_desktop, handle, this);
         _desktop->addView(watch, false, true);
     }
 }
 
 void hc::MemorySelector::onGameUnloaded() {
     _selected = 0;
-    _viewCount = 0;
+    _handleAllocator.reset();
+
+#ifdef HC_DEBUG_MEMORY_ENABLED
+    _regions.erase(_regions.begin() + 1, _regions.end());
+#else
     _regions.clear();
+#endif
 }
 
-hc::MemoryWatch::MemoryWatch(Desktop* desktop, char const* title, Memory* memory)
+hc::MemoryWatch::MemoryWatch(Desktop* desktop, Handle<Memory*> handle, MemorySelector* selector)
     : View(desktop)
-    , _title(title)
-    , _memory(memory)
+    , _handle(handle)
+    , _selector(selector)
 {
+    Memory* const* const memptr = selector->translate(handle);
+    Memory* const memory = *memptr;
+
+    char title[128];
+    snprintf(title, sizeof(title), ICON_FA_EYE" %s##%p", memory->name(), static_cast<void*>(memory));
+    _title = title;
+
     _editor.OptUpperCaseHex = false;
     _editor.OptShowDataPreview = true;
     _editor.OptFooterExtraHeight = ImGui::GetTextLineHeight() * 5.0f;
-    _editor.ReadOnly = _memory->readonly();
+    _editor.ReadOnly = memory->readonly();
 
     _editor.ReadFn = [](const ImU8* data, size_t off) -> ImU8 {
         auto const region = reinterpret_cast<Memory const*>(data);
@@ -288,9 +297,13 @@ char const* hc::MemoryWatch::getTitle() {
 void hc::MemoryWatch::onFrame() {
     static uint8_t sizes[ImGuiDataType_COUNT] = {1, 1, 2, 2, 4, 4, 8, 8, 4, 8};
 
-    if (_memory == nullptr) {
+    Memory* const* const memptr = _selector->translate(_handle);
+
+    if (memptr == nullptr) {
         return;
     }
+
+    Memory* const memory = *memptr;
 
     if (_editor.DataPreviewAddr != (size_t)-1) {
         bool const clearSparkline = _lastPreviewAddress != _editor.DataPreviewAddr ||
@@ -304,19 +317,19 @@ void hc::MemoryWatch::onFrame() {
             _lastType = _editor.PreviewDataType;
         }
 
-        uint64_t address = _editor.DataPreviewAddr + _memory->base();
+        uint64_t address = _editor.DataPreviewAddr + memory->base();
         uint64_t const size = sizes[_editor.PreviewDataType];
         uint64_t value = 0;
 
         switch (size) {
-            case 8: value = value << 8 | _memory->peek(address++);
-            case 7: value = value << 8 | _memory->peek(address++);
-            case 6: value = value << 8 | _memory->peek(address++);
-            case 5: value = value << 8 | _memory->peek(address++);
-            case 4: value = value << 8 | _memory->peek(address++);
-            case 3: value = value << 8 | _memory->peek(address++);
-            case 2: value = value << 8 | _memory->peek(address++);
-            case 1: value = value << 8 | _memory->peek(address++);
+            case 8: value = value << 8 | memory->peek(address++);
+            case 7: value = value << 8 | memory->peek(address++);
+            case 6: value = value << 8 | memory->peek(address++);
+            case 5: value = value << 8 | memory->peek(address++);
+            case 4: value = value << 8 | memory->peek(address++);
+            case 3: value = value << 8 | memory->peek(address++);
+            case 2: value = value << 8 | memory->peek(address++);
+            case 1: value = value << 8 | memory->peek(address++);
         }
 
         if (_editor.PreviewEndianess == 0) {
@@ -355,12 +368,14 @@ void hc::MemoryWatch::onFrame() {
 }
 
 void hc::MemoryWatch::onDraw() {
-    if (_memory != nullptr) {
-        _editor.DrawContents(_memory, _memory->size(), _memory->base());
-        _sparkline.draw("#sparkline", ImGui::GetContentRegionAvail());
-    }
-}
+    Memory* const* const memptr = _selector->translate(_handle);
 
-void hc::MemoryWatch::onGameUnloaded() {
-    _memory = nullptr;
+    if (memptr == nullptr) {
+        return;
+    }
+
+    Memory* const memory = *memptr;
+
+    _editor.DrawContents(memory, memory->size(), memory->base());
+    _sparkline.draw("#sparkline", ImGui::GetContentRegionAvail());
 }
