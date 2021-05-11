@@ -9,7 +9,7 @@ endif
 
 # Debug
 ifeq ($(DEBUG), 1)
-	CFLAGS=-O0 -g
+	CFLAGS=-O0 -g -DHC_DEBUG_MEMORY_ENABLED=1
 else
 	CFLAGS=-O2 -DNDEBUG
 endif
