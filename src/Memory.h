@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Desktop.h"
+#include "PeekPoke.h"
+#include "Scriptable.h"
 
 #include <imgui.h>
 #include <imgui_memory_editor.h>
@@ -18,7 +20,7 @@ extern "C" {
 }
 
 namespace hc {
-    class Memory {
+    class Memory : public MemoryPeek<Memory>, public MemoryPoke<Memory>, public Scriptable {
     public:
         virtual ~Memory() {}
 
@@ -30,19 +32,35 @@ namespace hc {
         virtual void poke(uint64_t address, uint8_t value) = 0;
 
         unsigned requiredDigits();
+
+        static Memory* check(lua_State* L, int index);
+        static bool is(lua_State* L, int index);
+
+        // hc::Scriptable
+        virtual int push(lua_State* L) override;
+
+    protected:
+        static int l_name(lua_State* L);
+        static int l_base(lua_State* L);
+        static int l_size(lua_State* L);
+        static int l_readonly(lua_State* L);
+        static int l_peek(lua_State* L);
+        static int l_poke(lua_State* L);
     };
 
     class MemorySelector : public View {
     public:
-
         MemorySelector(Desktop* desktop) : View(desktop), _selected(0), _viewCount(0) {}
         virtual ~MemorySelector() {}
 
         void init();
         void add(Memory* memory);
 
+        Memory* select(char const* label, int* selected, bool button);
+
         // hc::View
         virtual char const* getTitle() override;
+        virtual void onFrame() override;
         virtual void onDraw() override;
         virtual void onGameUnloaded() override;
 

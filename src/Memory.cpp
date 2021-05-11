@@ -5,9 +5,91 @@
 #include <IconsFontAwesome4.h>
 
 #include <inttypes.h>
+#include <string.h>
 #include <algorithm>
 
 #define TAG "[MEM] "
+
+#ifdef HC_DEBUG_MEMORY_ENABLED
+namespace {
+    class DebugMemory : public hc::Memory {
+    public:
+        DebugMemory() {
+            memset(&_memory, 0, sizeof(_memory));
+            _memory.static_ = UINT64_C(0xdeadbeefbaadf00d);
+        }
+
+        // hc::Memory
+        virtual char const* name() const override { return "Debug Memory"; }
+        virtual uint64_t base() const override { return 0; }
+        virtual uint64_t size() const override { return sizeof(_memory); }
+        virtual bool readonly() const override { return false; }
+
+        virtual uint8_t peek(uint64_t address) const override {
+            return address <= sizeof(_memory) ? ((uint8_t*)&_memory)[address] : 0;
+        }
+
+        virtual void poke(uint64_t address, uint8_t value) override {
+            if (address <= sizeof(_memory)) {
+                ((uint8_t*)&_memory)[address] = value;
+            }
+        }
+
+        void tick() {
+            _memory.counter64++;
+            _memory.counter32++;
+            _memory.counter16++;
+            _memory.counter8++;
+
+            _memory.random = static_cast<uint64_t>(rand() % 0xff);
+            _memory.random |= static_cast<uint64_t>(rand() % 0xff) << 8;
+            _memory.random |= static_cast<uint64_t>(rand() % 0xff) << 16;
+            _memory.random |= static_cast<uint64_t>(rand() % 0xff) << 24;
+            _memory.random |= static_cast<uint64_t>(rand() % 0xff) << 32;
+            _memory.random |= static_cast<uint64_t>(rand() % 0xff) << 40;
+            _memory.random |= static_cast<uint64_t>(rand() % 0xff) << 48;
+            _memory.random |= static_cast<uint64_t>(rand() % 0xff) << 56;
+        }
+
+    protected:
+        struct {
+            uint64_t counter64;
+            uint32_t counter32;
+            uint16_t counter16;
+            uint8_t counter8;
+            uint64_t random;
+            uint64_t static_;
+            uint64_t custom;
+        }
+        _memory;
+    };
+}
+#endif
+
+static void formatU64(char* buffer, size_t size, uint64_t value) {
+    if (value <= UINT16_C(0xffff)) {
+        snprintf(buffer, size, "0x%04" PRIx64, value);
+    }
+    else if (value <= UINT32_C(0xffffffff)) {
+        snprintf(buffer, size, "0x%08" PRIx64, value);
+    }
+    else {
+        snprintf(buffer, size, "0x%016" PRIx64, value);
+    }
+}
+
+static int pushU64(lua_State* L, uint64_t value) {
+    const auto i = static_cast<lua_Integer>(value);
+
+    if (static_cast<uint64_t>(i) == value) {
+        lua_pushinteger(L, i);
+    }
+    else {
+        lua_pushnumber(L, value);
+    }
+
+    return 1;
+}
 
 unsigned hc::Memory::requiredDigits() {
     unsigned count = 0;
@@ -19,17 +101,101 @@ unsigned hc::Memory::requiredDigits() {
     return count;
 }
 
-void hc::MemorySelector::init() {}
+#define MEMORY_MT "Memory"
+
+hc::Memory* hc::Memory::check(lua_State* L, int index) {
+    return *static_cast<Memory**>(luaL_checkudata(L, index, MEMORY_MT));
+}
+
+bool hc::Memory::is(lua_State* L, int index) {
+    return luaL_testudata(L, index, MEMORY_MT) != nullptr;
+}
+
+int hc::Memory::push(lua_State* L) {
+    Memory** const self = static_cast<Memory**>(lua_newuserdata(L, sizeof(*self)));
+    *self = this;
+
+    if (luaL_newmetatable(L, MEMORY_MT)) {
+        static const luaL_Reg methods[] = {
+            {"name", l_name},
+            {"base", l_base},
+            {"size", l_size},
+            {"readonly", l_readonly},
+            {"peek", l_peek},
+            {"poke", l_poke},
+            {NULL, NULL}
+        };
+
+        luaL_newlib(L, methods);
+        lua_setfield(L, -2, "__index");
+    }
+
+    lua_setmetatable(L, -2);
+    return 1;
+}
+
+int hc::Memory::l_name(lua_State* L) {
+    auto self = check(L, 1);
+    lua_pushstring(L, self->name());
+    return 1;
+}
+
+int hc::Memory::l_base(lua_State* L) {
+    auto self = check(L, 1);
+    return pushU64(L, self->base());
+}
+
+int hc::Memory::l_size(lua_State* L) {
+    auto self = check(L, 1);
+    return pushU64(L, self->size());
+}
+
+int hc::Memory::l_readonly(lua_State* L) {
+    auto self = check(L, 1);
+    lua_pushboolean(L, self->readonly());
+    return 1;
+}
+
+int hc::Memory::l_peek(lua_State* L) {
+    auto self = check(L, 1);
+    size_t address = luaL_checkinteger(L, 2);
+
+    if (address - self->base() >= self->size()) {
+        char buffer[64];
+        formatU64(buffer, sizeof(buffer), address);
+        return luaL_error(L, "address out of bounds: %s", buffer);
+    }
+
+    lua_pushinteger(L, self->peek(address));
+    return 1;
+}
+
+int hc::Memory::l_poke(lua_State* L) {
+    auto self = check(L, 1);
+    size_t address = luaL_checkinteger(L, 2);
+    uint8_t value = luaL_checkinteger(L, 3);
+
+    if (address - self->base() >= self->size()) {
+        char buffer[64];
+        formatU64(buffer, sizeof(buffer), address);
+        return luaL_error(L, "address out of bounds: %s", buffer);
+    }
+
+    self->poke(address, value);
+    return 0;
+}
+
+void hc::MemorySelector::init() {
+#ifdef HC_DEBUG_MEMORY_ENABLED
+    add(new DebugMemory());
+#endif
+}
 
 void hc::MemorySelector::add(Memory* memory) {
     _regions.emplace_back(memory);
 }
 
-char const* hc::MemorySelector::getTitle() {
-    return ICON_FA_MICROCHIP " Memory";
-}
-
-void hc::MemorySelector::onDraw() {
+hc::Memory* hc::MemorySelector::select(char const* const label, int* const selected, bool const button) {
     static auto const getter = [](void* const data, int const idx, char const** const text) -> bool {
         auto const regions = static_cast<std::vector<Memory*> const*>(data);
         *text = (*regions)[idx]->name();
@@ -37,16 +203,49 @@ void hc::MemorySelector::onDraw() {
     };
 
     int const count = static_cast<int>(_regions.size());
-    ImVec2 const size = ImVec2(120.0f, 0.0f);
 
-    ImGui::Combo("##Regions", &_selected, getter, &_regions, count);
-    ImGui::SameLine();
+    ImGui::PushID(selected);
+    ImGui::Combo(button ? "##memory_selector" : label, selected, getter, &_regions, count);
 
-    if (ImGuiAl::Button(ICON_FA_EYE " View", _selected < count, size)) {
+    if (button) {
+        ImGui::SameLine();
+    }
+
+    Memory* memory = nullptr;
+
+    if (button) {
+        if (ImGuiAl::Button(label, *selected < count, ImVec2(120.0f, 0.0f))) {
+            memory = _regions[*selected];
+        }
+    }
+    else {
+        if (*selected >= 0 && *selected < count) {
+            memory = _regions[*selected];
+        }
+    }
+
+    ImGui::PopID();
+    return memory;
+}
+
+char const* hc::MemorySelector::getTitle() {
+    return ICON_FA_MICROCHIP " Memory";
+}
+
+void hc::MemorySelector::onFrame() {
+#ifdef HC_DEBUG_MEMORY_ENABLED
+    static_cast<DebugMemory*>(_regions[0])->tick();
+#endif
+}
+
+void hc::MemorySelector::onDraw() {
+    Memory* const memory = select(ICON_FA_EYE " View", &_selected, true);
+
+    if (memory != nullptr) {
         char title[128];
-        snprintf(title, sizeof(title), ICON_FA_EYE" %s##%u", _regions[_selected]->name(), _viewCount++);
+        snprintf(title, sizeof(title), ICON_FA_EYE" %s##%u", memory->name(), _viewCount++);
 
-        MemoryWatch* watch = new MemoryWatch(_desktop, title, _regions[_selected]);
+        MemoryWatch* watch = new MemoryWatch(_desktop, title, memory);
         _desktop->addView(watch, false, true);
     }
 }
