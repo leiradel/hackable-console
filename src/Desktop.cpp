@@ -199,6 +199,26 @@ void hc::Desktop::onDraw() {
             }
         }
     }
+
+    for (;;) {
+        bool done = true;
+
+        for (auto const& props : _views) {
+            if (!props->opened) {
+                if (props->free) {
+                    delete props->view;
+                }
+
+                _views.erase(props);
+                done = false;
+                break;
+            }
+        }
+
+        if (done) {
+            break;
+        }
+    }
 }
 
 void hc::Desktop::onGameUnloaded() {
