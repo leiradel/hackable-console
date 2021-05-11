@@ -179,7 +179,9 @@ void hc::Desktop::onDraw() {
         // Don't recursively draw the plugin manager
         if (view != this && props->opened) {
             if (ImGui::Begin(view->getTitle(), &props->opened)) {
+                ImGui::PushID(view);
                 view->onDraw();
+                ImGui::PopID();
                 ImGui::End();
             }
         }
