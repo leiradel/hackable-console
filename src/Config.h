@@ -17,12 +17,13 @@ extern "C" {
 namespace hc {
     class CoreMemory : public Memory {
     public:
-        CoreMemory(char const* name, bool readonly);
+        CoreMemory(char const* id, char const* name, bool readonly);
         virtual ~CoreMemory() {}
 
         bool addBlock(void* data, uint64_t offset, uint64_t base, uint64_t size);
 
         // Memory
+        virtual char const* id() const override { return _id.c_str(); }
         virtual char const* name() const override { return _name.c_str(); }
         virtual uint64_t base() const override { return _base; }
         virtual uint64_t size() const override { return _size; }
@@ -38,6 +39,7 @@ namespace hc {
             uint64_t size;
         };
 
+        std::string _id;
         std::string _name;
         uint64_t _base;
         uint64_t _size;

@@ -3,9 +3,17 @@
 
 #include <inttypes.h>
 #include <sys/time.h>
+#include <atomic>
 
 extern "C" {
     #include <lauxlib.h>
+}
+
+static std::string createId() {
+    static std::atomic<unsigned> unique(0);
+    std::string id = "snap";
+    id += unique++;
+    return id;
 }
 
 static std::string createName(char const* memory_name) {
@@ -42,7 +50,8 @@ static void* snapshot(hc::Memory* const memory) {
 hc::Snapshot::Snapshot(Memory* memory) : Snapshot(memory->base(), memory->size(), snapshot(memory), memory) {}
 
 hc::Snapshot::Snapshot(uint64_t baseAddress, uint64_t size, void const* data, Memory* memory)
-    : _name(createName(memory->name()))
+    : _id(createId())
+    , _name(createName(memory->name()))
     , _baseAddress(baseAddress)
     , _size(size)
     , _data(data)

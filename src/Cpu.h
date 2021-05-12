@@ -17,6 +17,7 @@ namespace hc {
         virtual ~DebugMemory() {}
 
         // Memory
+        virtual char const* id() const override { return _memory->v1.id; }
         virtual char const* name() const override { return _memory->v1.description; }
         unsigned alignment() const { return _memory->v1.alignment; }
         virtual uint64_t base() const override { return _memory->v1.base_address; }

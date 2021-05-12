@@ -25,6 +25,7 @@ namespace hc {
     public:
         virtual ~Memory() {}
 
+        virtual char const* id() const = 0;
         virtual char const* name() const = 0;
         virtual uint64_t base() const = 0;
         virtual uint64_t size() const = 0;
@@ -41,6 +42,7 @@ namespace hc {
         virtual int push(lua_State* L) override;
 
     protected:
+        static int l_id(lua_State* L);
         static int l_name(lua_State* L);
         static int l_base(lua_State* L);
         static int l_size(lua_State* L);
@@ -72,7 +74,7 @@ namespace hc {
         virtual int push(lua_State* L) override;
 
     protected:
-        static int l_getMemory(lua_State* const L);
+        static int l_index(lua_State* const L);
 
         HandleAllocator<Memory*> _handleAllocator;
         std::vector<Memory*> _regions;

@@ -12,8 +12,9 @@ extern "C" {
 
 #define TAG "[CFG] "
 
-hc::CoreMemory::CoreMemory(char const* name, bool readonly)
-    : _name(name)
+hc::CoreMemory::CoreMemory(char const* id, char const* name, bool readonly)
+    : _id(id)
+    , _name(name)
     , _base(0)
     , _size(0)
     , _readonly(readonly)
@@ -674,10 +675,11 @@ int hc::Config::l_getMemoryMap(lua_State* const L) {
 
 int hc::Config::l_addMemory(lua_State* const L) {
     auto const self = check(L, 1);
-    char const* const name = luaL_checkstring(L, 2);
-    int const readonly = lua_toboolean(L, 3);
+    char const* const id = luaL_checkstring(L, 2);
+    char const* const name = luaL_checkstring(L, 3);
+    int const readonly = lua_toboolean(L, 4);
 
-    CoreMemory* const memory = new CoreMemory(name, readonly);
+    CoreMemory* const memory = new CoreMemory(id, name, readonly);
 
     int const top = lua_gettop(L);
     int i = 4;

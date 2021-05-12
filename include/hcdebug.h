@@ -16,6 +16,7 @@ hc_Breakpoint;
 
 typedef struct {
     struct {
+        char const* id;
         char const* description;
         unsigned alignment; /* in bytes */
         uint64_t base_address;

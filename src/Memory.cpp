@@ -20,6 +20,7 @@ namespace {
         }
 
         // hc::Memory
+        virtual char const* id() const override { return "debug"; }
         virtual char const* name() const override { return "Debug Memory"; }
         virtual uint64_t base() const override { return 0; }
         virtual uint64_t size() const override { return sizeof(_memory); }
@@ -100,6 +101,11 @@ namespace {
         virtual ~MemoryHandle() {}
 
         // hc::Memory
+        virtual char const* id() const override {
+            Memory* const* const memptr = _selector->translate(_handle);
+            return memptr != nullptr ? (*memptr)->id() : "(invalid)";
+        }
+
         virtual char const* name() const override {
             Memory* const* const memptr = _selector->translate(_handle);
             return memptr != nullptr ? (*memptr)->name() : "(invalid)";
@@ -163,6 +169,7 @@ int hc::Memory::push(lua_State* L) {
 
     if (luaL_newmetatable(L, MEMORY_MT)) {
         static const luaL_Reg methods[] = {
+            {"id", l_id},
             {"name", l_name},
             {"base", l_base},
             {"size", l_size},
@@ -177,6 +184,12 @@ int hc::Memory::push(lua_State* L) {
     }
 
     lua_setmetatable(L, -2);
+    return 1;
+}
+
+int hc::Memory::l_id(lua_State* L) {
+    auto const self = check(L, 1);
+    lua_pushstring(L, self->id());
     return 1;
 }
 
@@ -309,12 +322,7 @@ int hc::MemorySelector::push(lua_State* const L) {
     *self = this;
 
     if (luaL_newmetatable(L, "hc::MemorySelector")) {
-        static luaL_Reg const methods[] = {
-            {"getMemory", l_getMemory},
-            {nullptr, nullptr}
-        };
-
-        luaL_newlib(L, methods);
+        lua_pushcfunction(L, l_index);
         lua_setfield(L, -2, "__index");
     }
 
@@ -326,12 +334,12 @@ hc::MemorySelector* hc::MemorySelector::check(lua_State* const L, int const inde
     return *static_cast<MemorySelector**>(luaL_checkudata(L, index, "hc::MemorySelector"));
 }
 
-int hc::MemorySelector::l_getMemory(lua_State* const L) {
+int hc::MemorySelector::l_index(lua_State* const L) {
     auto const self = check(L, 1);
-    char const* const name = luaL_checkstring(L, 2);
+    char const* const id = luaL_checkstring(L, 2);
 
     for (auto const& region : self->_regions) {
-        if (!strcmp(name, region->name())) {
+        if (!strcmp(id, region->id())) {
             Handle<Memory*> handle = self->_handleAllocator.allocate(region);
             auto memory = new MemoryHandle(handle, self);
             return memory->push(L);

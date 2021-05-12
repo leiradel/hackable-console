@@ -24,6 +24,7 @@ namespace hc {
         static bool is(lua_State* L, int index);
 
         // hc::Memory
+        virtual char const* id() const override { return _id.c_str(); }
         virtual char const* name() const override { return _name.c_str(); }
         virtual uint64_t base() const override { return _baseAddress; }
         virtual uint64_t size() const override { return _size; }
@@ -38,6 +39,7 @@ namespace hc {
         static int l_memory(lua_State* L);
         static int l_collect(lua_State* L);
 
+        std::string const _id;
         std::string const _name;
         uint64_t const _baseAddress;
         uint64_t const _size;
