@@ -291,7 +291,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
             {LUA_MATHLIBNAME, luaopen_math},
             {LUA_UTF8LIBNAME, luaopen_utf8},
             {LUA_DBLIBNAME, luaopen_debug},
-            {NULL, NULL}
+            {nullptr, nullptr}
         };
 
         for (luaL_Reg const* lib = libs; lib->func != nullptr; lib++) {
