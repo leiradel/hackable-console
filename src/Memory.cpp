@@ -156,6 +156,35 @@ unsigned hc::Memory::requiredDigits() {
     return count;
 }
 
+bool hc::Memory::find(uint64_t* start, uint8_t const* bytes, size_t length) {
+    if (length < 1 || length > size()) {
+        return false;
+    }
+
+    uint64_t const end = size() - length + 1;
+    uint8_t const first = bytes[0];
+
+    for (uint64_t i = *start; i < end; i++) {
+        if (peek(i) == first) {
+            bool found = true;
+
+            for (uint64_t j = 1; j < length; j++) {
+                if (bytes[j] != peek(i + j)) {
+                    found = false;
+                    break;
+                }
+            }
+
+            if (found) {
+                *start = i;
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 hc::Memory* hc::Memory::check(lua_State* L, int index) {
     return *static_cast<Memory**>(luaL_checkudata(L, index, MEMORY_MT));
 }
@@ -177,6 +206,7 @@ int hc::Memory::push(lua_State* L) {
             {"readonly", l_readonly},
             {"peek", l_peek},
             {"poke", l_poke},
+            {"find", l_find},
             {"snapshot", l_snapshot},
             {NULL, NULL}
         };
@@ -243,6 +273,42 @@ int hc::Memory::l_poke(lua_State* L) {
     }
 
     self->poke(address, value);
+    return 0;
+}
+
+int hc::Memory::l_find(lua_State* L) {
+    auto const self = check(L, 1);
+    uint64_t address = luaL_checkinteger(L, 2);
+
+    if (lua_type(L, 3) == LUA_TTABLE) {
+        lua_len(L, 3);
+        lua_Integer const length = lua_tointeger(L, -1);
+        lua_pop(L, 1);
+
+        uint8_t* const bytes = new uint8_t[length];
+
+        for (lua_Integer i = 0; i < length; i++) {
+            lua_geti(L, 3, i + 1);
+            bytes[i] = static_cast<lua_Integer>(lua_tonumber(L, -1));
+            lua_pop(L, 1);
+        }
+
+        if (self->find(&address, bytes, length)) {
+            delete[] bytes;
+            lua_pushinteger(L, address);
+            return 1;
+        }
+    }
+    else {
+        size_t length;
+        char const* string = luaL_checklstring(L, 3, &length);
+
+        if (self->find(&address, reinterpret_cast<uint8_t const*>(string), length)) {
+            lua_pushinteger(L, address);
+            return 1;
+        }
+    }
+
     return 0;
 }
 

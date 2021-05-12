@@ -34,6 +34,7 @@ namespace hc {
         virtual void poke(uint64_t address, uint8_t value) = 0;
 
         unsigned requiredDigits();
+        bool find(uint64_t* start, uint8_t const* bytes, size_t length);
 
         static Memory* check(lua_State* L, int index);
         static bool is(lua_State* L, int index);
@@ -49,6 +50,7 @@ namespace hc {
         static int l_readonly(lua_State* L);
         static int l_peek(lua_State* L);
         static int l_poke(lua_State* L);
+        static int l_find(lua_State* L);
         static int l_snapshot(lua_State* L);
     };
 
