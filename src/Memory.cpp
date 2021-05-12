@@ -354,7 +354,7 @@ int hc::MemorySelector::l_index(lua_State* const L) {
         }
     }
 
-    return 0;
+    return luaL_error(L, "unknown memory id \"%s\"", id);
 }
 
 hc::MemoryWatch::MemoryWatch(Desktop* desktop, Handle<Memory*> handle, MemorySelector* selector)
