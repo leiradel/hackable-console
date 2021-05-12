@@ -99,7 +99,7 @@ int hc::cheats::push(lua_State* const L) {
 
     luaL_newlib(L, functions);
 
-    int const res = luaL_loadbufferx(L, Cheats_lua, sizeof(Cheats_lua), "cheats.lua", "t");
+    int const res = luaL_loadbufferx(L, Cheats_lua, sizeof(Cheats_lua), "Cheats.lua", "t");
 
     if (res != LUA_OK) {
         //_desktop->error("%s", lua_tostring(L, -1));

@@ -68,6 +68,10 @@ LUA_OBJS=\
 	src/deps/lua/ltablib.o src/deps/lua/lutf8lib.o src/deps/lua/loadlib.o src/deps/lua/linit.o \
 	src/deps/luafilesystem/src/lfs.o
 
+# lua headers
+LUA_HEADERS=\
+	src/LuaRepl.lua.h src/cheats/Cheats.lua.h
+
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -Wall -Wpedantic -Werror -c $< -o $@
 
@@ -93,12 +97,14 @@ src/gamecontrollerdb.h: src/deps/SDL_GameControllerDB/gamecontrollerdb.txt
 
 src/main.o: src/gamecontrollerdb.h
 
+src/LuaRepl.o: src/LuaRepl.lua.h
+
 src/cheats/Cheats.o: src/cheats/Cheats.lua.h
 
 clean:
-	rm -f hackcon $(HC_OBJS)
+	rm -f hackcon $(HC_OBJS) $(LUA_HEADERS)
 
-realclean:
-	rm -f hackcon $(HC_OBJS) $(LRCPP_OBJS) $(IMGUI_OBJS) $(IMGUIEXTRA_OBJS) $(LUA_OBJS) src/gamecontrollerdb.h
+realclean: clean
+	rm -f $(LRCPP_OBJS) $(IMGUI_OBJS) $(IMGUIEXTRA_OBJS) $(LUA_OBJS) src/gamecontrollerdb.h
 
 .PHONY: clean

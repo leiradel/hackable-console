@@ -191,8 +191,8 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
         // Add controller mappings
         SDL_RWops* const ctrldb = SDL_RWFromMem(
-            const_cast<void*>(static_cast<void const*>(gamecontrollerdb)),
-            static_cast<int>(gamecontrollerdb_len)
+            const_cast<void*>(static_cast<void const*>(gamecontrollerdb_txt)),
+            static_cast<int>(sizeof(gamecontrollerdb_txt))
         );
 
         if (SDL_GameControllerAddMappingsFromRW(ctrldb, 1) < 0) {
