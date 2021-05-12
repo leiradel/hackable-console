@@ -282,6 +282,8 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
         luaL_openlibs(_L);
         push(_L);
+        lua_pushvalue(_L, -1);
+        lua_setglobal(_L, "hc");
         registerSearcher(_L);
     }
 
