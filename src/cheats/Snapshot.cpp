@@ -10,10 +10,12 @@ extern "C" {
 }
 
 static std::string createId() {
-    static std::atomic<unsigned> unique(0);
-    std::string id = "snap";
-    id += unique++;
-    return id;
+    static std::atomic<unsigned> unique(1);
+
+    char buffer[64];
+    snprintf(buffer, sizeof(buffer), "snap%u", unique++);
+
+    return buffer;
 }
 
 static std::string createName(char const* memory_name) {
