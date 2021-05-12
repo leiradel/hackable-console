@@ -29,16 +29,10 @@ namespace hc {
         };
 
         Set* fsigned(Memory const& memory, int64_t value, Operator op, Endianess endianess, size_t valueSize);
-        Set* fsigned(Memory const& memory, Snapshot const& snapshot, Operator op, Endianess endianess, size_t valueSize);
-        Set* fsigned(Snapshot const& snapshot, int64_t value, Operator op, Endianess endianess, size_t valueSize);
-        Set* fsigned(Snapshot const& snapshot, Memory const& memory, Operator op, Endianess endianess, size_t valueSize);
-        Set* fsigned(Snapshot const& snapshot1, Snapshot const& snapshot2, Operator op, Endianess endianess, size_t valueSize);
+        Set* fsigned(Memory const& memory1, Memory const& memory2, Operator op, Endianess endianess, size_t valueSize);
 
         Set* funsigned(Memory const& memory, uint64_t value, Operator op, Endianess endianess, size_t valueSize);
-        Set* funsigned(Memory const& memory, Snapshot const& snapshot, Operator op, Endianess endianess, size_t valueSize);
-        Set* funsigned(Snapshot const& snapshot, uint64_t value, Operator op, Endianess endianess, size_t valueSize);
-        Set* funsigned(Snapshot const& snapshot, Memory const& memory, Operator op, Endianess endianess, size_t valueSize);
-        Set* funsigned(Snapshot const& snapshot1, Snapshot const& snapshot2, Operator op, Endianess endianess, size_t valueSize);
+        Set* funsigned(Memory const& memory1, Memory const& memory2, Operator op, Endianess endianess, size_t valueSize);
 
         int l_Filter(lua_State* L);
     }

@@ -259,68 +259,24 @@ hc::Set* hc::filter::fsigned(Memory const& memory, int64_t value, Operator op, E
     return doFilterSigned<Memory const&, int64_t>(memory, value, op, endianess, value_size);
 }
 
-hc::Set* hc::filter::fsigned(Memory const& memory, Snapshot const& snapshot, Operator op, Endianess endianess, size_t value_size) {
-    if (snapshot.memory() != &memory) {
+hc::Set* hc::filter::fsigned(Memory const& memory1, Memory const& memory2, Operator op, Endianess endianess, size_t value_size) {
+    if (memory1.base() != memory2.base() || memory1.size() != memory2.size()) {
         return nullptr;
     }
 
-    return doFilterSigned<Memory const&, Snapshot const&>(memory, snapshot, op, endianess, value_size);
-}
-
-hc::Set* hc::filter::fsigned(Snapshot const& snapshot, int64_t value, Operator op, Endianess endianess, size_t value_size) {
-    return doFilterSigned<Snapshot const&, int64_t>(snapshot, value, op, endianess, value_size);
-}
-
-hc::Set* hc::filter::fsigned(Snapshot const& snapshot, Memory const& memory, Operator op, Endianess endianess, size_t value_size) {
-    if (snapshot.memory() != &memory) {
-        return nullptr;
-    }
-
-    return doFilterSigned<Snapshot const&, Memory const&>(snapshot, memory, op, endianess, value_size);
-}
-
-hc::Set* hc::filter::fsigned(
-    Snapshot const& snapshot1, Snapshot const& snapshot2, Operator op, Endianess endianess, size_t value_size) {
-
-    if (snapshot1.memory() != snapshot2.memory()) {
-        return nullptr;
-    }
-
-    return doFilterSigned<Snapshot const&, Snapshot const&>(snapshot1, snapshot2, op, endianess, value_size);
+    return doFilterSigned<Memory const&, Memory const&>(memory1, memory2, op, endianess, value_size);
 }
 
 hc::Set* hc::filter::funsigned(Memory const& memory, uint64_t value, Operator op, Endianess endianess, size_t value_size) {
     return doFilterUnsigned<Memory const&, uint64_t>(memory, value, op, endianess, value_size);
 }
 
-hc::Set* hc::filter::funsigned(Memory const& memory, Snapshot const& snapshot, Operator op, Endianess endianess, size_t value_size) {
-    if (snapshot.memory() != &memory) {
+hc::Set* hc::filter::funsigned(Memory const& memory1, Memory const& memory2, Operator op, Endianess endianess, size_t value_size) {
+    if (memory1.base() != memory2.base() || memory1.size() != memory2.size()) {
         return nullptr;
     }
 
-    return doFilterUnsigned<Memory const&, Snapshot const&>(memory, snapshot, op, endianess, value_size);
-}
-
-hc::Set* hc::filter::funsigned(Snapshot const& snapshot, uint64_t value, Operator op, Endianess endianess, size_t value_size) {
-    return doFilterUnsigned<Snapshot const&, uint64_t>(snapshot, value, op, endianess, value_size);
-}
-
-hc::Set* hc::filter::funsigned(Snapshot const& snapshot, Memory const& memory, Operator op, Endianess endianess, size_t value_size) {
-    if (snapshot.memory() != &memory) {
-        return nullptr;
-    }
-
-    return doFilterUnsigned<Snapshot const&, Memory const&>(snapshot, memory, op, endianess, value_size);
-}
-
-hc::Set* hc::filter::funsigned(
-    Snapshot const& snapshot1, Snapshot const& snapshot2, Operator op, Endianess endianess, size_t value_size) {
-
-    if (snapshot1.memory() != snapshot2.memory()) {
-        return nullptr;
-    }
-
-    return doFilterUnsigned<Snapshot const&, Snapshot const&>(snapshot1, snapshot2, op, endianess, value_size);
+    return doFilterUnsigned<Memory const&, Memory const&>(memory1, memory2, op, endianess, value_size);
 }
 
 int hc::filter::l_Filter(lua_State* const L) {
@@ -371,92 +327,24 @@ int hc::filter::l_Filter(lua_State* const L) {
         default: return luaL_error(L, "unknown operator %s", op_str);
     }
 
-    {
-        bool const a_is_memory = Memory::is(L, 1);
+    Set* result = nullptr;
 
-        if (a_is_memory) {
-            bool const b_is_snapshot = Snapshot::is(L, 3);
-
-            if (b_is_snapshot) {
-                Set* result = nullptr;
-
-                if (is_signed) {
-                    result = hc::filter::fsigned(*Memory::check(L, 1), *Snapshot::check(L, 3), op, endianess, value_size);
-                }
-                else {
-                    result = hc::filter::funsigned(*Memory::check(L, 1), *Snapshot::check(L, 3), op, endianess, value_size);
-                }
-
-                return result->push(L);
-            }
-
-            if (lua_isinteger(L, 3)) {
-                Set* result = nullptr;
-
-                if (is_signed) {
-                    result = hc::filter::fsigned(*Memory::check(L, 1), lua_tointeger(L, 3), op, endianess, value_size);
-                }
-                else {
-                    result = hc::filter::funsigned(*Memory::check(L, 1), lua_tointeger(L, 3), op, endianess, value_size);
-                }
-
-                return result->push(L);
-            }
-
-            return luaL_error(L, "invalid type for second operand: %s", lua_typename(L, lua_type(L, 3)));
+    if (lua_isnumber(L, 3)) {
+        if (is_signed) {
+            result = hc::filter::fsigned(*Memory::check(L, 1), lua_tointeger(L, 3), op, endianess, value_size);
+        }
+        else {
+            result = hc::filter::funsigned(*Memory::check(L, 1), lua_tointeger(L, 3), op, endianess, value_size);
+        }
+    }
+    else {
+        if (is_signed) {
+            result = hc::filter::fsigned(*Memory::check(L, 1), *Memory::check(L, 3), op, endianess, value_size);
+        }
+        else {
+            result = hc::filter::funsigned(*Memory::check(L, 1), *Memory::check(L, 3), op, endianess, value_size);
         }
     }
 
-    {
-        const bool a_is_snapshot = Snapshot::is(L, 1);
-
-        if (a_is_snapshot) {
-            bool const b_is_memory = Memory::is(L, 3);
-
-            if (b_is_memory) {
-                Set* result = nullptr;
-
-                if (is_signed) {
-                    result = hc::filter::fsigned(*Snapshot::check(L, 1), *Memory::check(L, 3), op, endianess, value_size);
-                }
-                else {
-                    result = hc::filter::funsigned(*Snapshot::check(L, 1), *Memory::check(L, 3), op, endianess, value_size);
-                }
-
-                return result->push(L);
-            }
-
-            bool const b_is_snapshot = Snapshot::is(L, 3);
-
-            if (b_is_snapshot) {
-                Set* result = nullptr;
-
-                if (is_signed) {
-                    result = hc::filter::fsigned(*Snapshot::check(L, 1), *Snapshot::check(L, 3), op, endianess, value_size);
-                }
-                else {
-                    result = hc::filter::funsigned(*Snapshot::check(L, 1), *Snapshot::check(L, 3), op, endianess, value_size);
-                }
-
-                return result->push(L);
-            }
-
-            if (lua_isinteger(L, 3)) {
-                Set* result = nullptr;
-
-                if (is_signed) {
-                    result = hc::filter::fsigned(*Snapshot::check(L, 1), lua_tointeger(L, 3), op, endianess, value_size);
-                }
-                else {
-                    result = hc::filter::funsigned(*Snapshot::check(L, 1), lua_tointeger(L, 3), op, endianess, value_size);
-                }
-
-                return result->push(L);
-            }
-
-            return luaL_error(L, "invalid type for second operand: %s", lua_typename(L, lua_type(L, 3)));
-        }
-    }
-
-    return luaL_error(L, "invalid type for first operand: %s", lua_typename(L, lua_type(L, 1)));
+    return result->push(L);
 }
