@@ -5,9 +5,9 @@ local cheats = {}
 local onframe = {}
 
 return function(M)
-    M.start = function(settings, memory)
-        cheats.settings = settings
+    M.start = function(memory, settings)
         cheats.memory = memory
+        cheats.settings = settings
         cheats.first = memory:snapshot()
         cheats.current = cheats.first
         cheats.set = M.universal()
