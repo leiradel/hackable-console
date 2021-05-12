@@ -617,7 +617,7 @@ void hc::Application::onGameUnloaded() {
 
 int hc::Application::push(lua_State* const L) {
     static struct {char const* name; char const* value;} const stringConsts[] = {
-        {"_COPYRIGHT", "Copyright (c) 2020 Andre Leiradella"},
+        {"_COPYRIGHT", "Copyright (c) 2020-2021 Andre Leiradella"},
         {"_LICENSE", "MIT"},
         {"_VERSION", "0.0.1"},
         {"_NAME", "hc"},
