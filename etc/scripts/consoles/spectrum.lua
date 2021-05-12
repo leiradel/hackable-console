@@ -17,7 +17,7 @@ hc.control:addConsole('ZX Spectrum (Fuse)', {
             hc.logger:info('    %p, %x, %d', desc.pointer, desc.start, desc.length)
         end
 
-        hc.config:addMemory('System RAM', false, table.unpack(blocks))
+        hc.config:addMemory('sram', 'System RAM', false, table.unpack(blocks))
     end
 })
 
@@ -38,6 +38,6 @@ hc.control:addConsole('ZX Spectrum (Chips)', {
             hc.logger:info('    %p, %x, %d', desc.pointer, desc.start, desc.length)
         end
 
-        hc.config:addMemory('System RAM', false, table.unpack(blocks))
+        hc.config:addMemory('sram', 'System RAM', false, table.unpack(blocks))
     end
 })
