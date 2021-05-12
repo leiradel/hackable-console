@@ -49,6 +49,7 @@ namespace hc {
         static int l_readonly(lua_State* L);
         static int l_peek(lua_State* L);
         static int l_poke(lua_State* L);
+        static int l_snapshot(lua_State* L);
     };
 
     class MemorySelector : public View, public Scriptable {

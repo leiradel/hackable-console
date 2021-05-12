@@ -1,5 +1,6 @@
 #include "Memory.h"
 #include "Logger.h"
+#include "cheats/Snapshot.h"
 
 #include <imguial_button.h>
 #include <IconsFontAwesome4.h>
@@ -176,6 +177,7 @@ int hc::Memory::push(lua_State* L) {
             {"readonly", l_readonly},
             {"peek", l_peek},
             {"poke", l_poke},
+            {"snapshot", l_snapshot},
             {NULL, NULL}
         };
 
@@ -242,6 +244,12 @@ int hc::Memory::l_poke(lua_State* L) {
 
     self->poke(address, value);
     return 0;
+}
+
+int hc::Memory::l_snapshot(lua_State* L) {
+    auto const self = check(L, 1);
+    auto const snapshot = new Snapshot(self);
+    return snapshot->push(L);
 }
 
 void hc::MemorySelector::init() {
