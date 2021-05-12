@@ -21,7 +21,7 @@ static int l_universal(lua_State* const L) {
 
 static int l_filter(lua_State* const L) {
     char const* const op_str = luaL_checkstring(L, 2);
-    char const* const settings = luaL_optstring(L, 4, "ub");
+    char const* const settings = luaL_checkstring(L, 4);
 
     bool is_signed = false;
     size_t value_size;
