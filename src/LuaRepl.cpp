@@ -12,8 +12,12 @@ extern "C" {
 hc::LuaRepl::LuaRepl(Desktop* desktop)
     : View(desktop)
     , _L(nullptr)
-    , _term([this](ImGuiAl::Terminal& self, char* const command) { Execute(command); })
-    , _repl(LUA_NOREF)
+    , _term(
+        [this](ImGuiAl::Terminal& self, char* command) { Execute(command); },
+        [this](ImGuiAl::Terminal& self, ImGuiInputTextCallbackData* data) { Callback(data); }
+    )
+    , _execute(LUA_NOREF)
+    , _history(LUA_NOREF)
 {}
 
 bool hc::LuaRepl::init(lua_State* L, Logger* logger) {
@@ -30,20 +34,21 @@ bool hc::LuaRepl::init(lua_State* L, Logger* logger) {
 
     lua_call(_L, 0, 1);
 
-    static luaL_Reg const statics[] = {
-        {"print", l_print},
-        {"green", l_green},
-        {"yellow", l_yellow},
-        {"red", l_red},
-        {nullptr, nullptr}
-    };
-
-    luaL_newlibtable(_L, statics);
     lua_pushlightuserdata(_L, this);
-    luaL_setfuncs(_L, statics, 1);
+    lua_pushcclosure(_L, l_show, 1);
 
-    lua_call(_L, 1, 1);
-    _repl = luaL_ref(_L, LUA_REGISTRYINDEX);
+    lua_pushlightuserdata(_L, this);
+    lua_pushcclosure(_L, l_green, 1);
+
+    lua_pushlightuserdata(_L, this);
+    lua_pushcclosure(_L, l_yellow, 1);
+
+    lua_pushlightuserdata(_L, this);
+    lua_pushcclosure(_L, l_red, 1);
+
+    lua_call(_L, 4, 2);
+    _history = luaL_ref(_L, LUA_REGISTRYINDEX);
+    _execute = luaL_ref(_L, LUA_REGISTRYINDEX);
     return true;
 }
 
@@ -56,7 +61,7 @@ void hc::LuaRepl::onDraw() {
 }
 
 void hc::LuaRepl::Execute(char* const command) {
-    lua_rawgeti(_L, LUA_REGISTRYINDEX, _repl);
+    lua_rawgeti(_L, LUA_REGISTRYINDEX, _execute);
     lua_pushstring(_L, command);
 
     protectedCall(_L, 1, 1, _logger);
@@ -72,31 +77,41 @@ void hc::LuaRepl::Execute(char* const command) {
     lua_pop(_L, 1);
 }
 
-int hc::LuaRepl::l_print(lua_State* L) {
+void hc::LuaRepl::Callback(ImGuiInputTextCallbackData* data) {
+    lua_rawgeti(_L, LUA_REGISTRYINDEX, _history);
+    lua_pushboolean(_L, data->EventKey == ImGuiKey_UpArrow);
+
+    protectedCall(_L, 1, 1, _logger);
+
+    if (lua_isstring(_L, -1)) {
+        data->DeleteChars(0, data->BufTextLen);
+        data->InsertChars(0, lua_tostring(_L, -1));
+    }
+
+    lua_pop(_L, 1);
+}
+
+int hc::LuaRepl::l_show(lua_State* L) {
     auto const self = static_cast<LuaRepl*>(lua_touserdata(L, lua_upvalueindex(1)));
-    self->_term.printf("%s", luaL_checkstring(L, 2));
+    self->_term.printf("%s", luaL_checkstring(L, 1));
     self->_term.scrollToBottom();
-    lua_pushvalue(L, 1);
-    return 1;
+    return 0;
 }
 
 int hc::LuaRepl::l_green(lua_State* L) {
     auto const self = static_cast<LuaRepl*>(lua_touserdata(L, lua_upvalueindex(1)));
     self->_term.setForegroundColor(ImGuiAl::Crt::CGA::BrightGreen);
-    lua_pushvalue(L, 1);
-    return 1;
+    return 0;
 }
 
 int hc::LuaRepl::l_yellow(lua_State* L) {
     auto const self = static_cast<LuaRepl*>(lua_touserdata(L, lua_upvalueindex(1)));
     self->_term.setForegroundColor(ImGuiAl::Crt::CGA::Yellow);
-    lua_pushvalue(L, 1);
-    return 1;
+    return 0;
 }
 
 int hc::LuaRepl::l_red(lua_State* L) {
     auto const self = static_cast<LuaRepl*>(lua_touserdata(L, lua_upvalueindex(1)));
     self->_term.setForegroundColor(ImGuiAl::Crt::CGA::BrightRed);
-    lua_pushvalue(L, 1);
-    return 1;
+    return 0;
 }

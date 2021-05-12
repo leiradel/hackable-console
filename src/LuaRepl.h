@@ -28,8 +28,9 @@ namespace hc {
         typedef ImGuiAl::BufferedTerminal<1024 * 1024, CommandSize> Terminal;
 
         void Execute(char* const command);
+        void Callback(ImGuiInputTextCallbackData* data);
 
-        static int l_print(lua_State* L);
+        static int l_show(lua_State* L);
         static int l_green(lua_State* L);
         static int l_yellow(lua_State* L);
         static int l_red(lua_State* L);
@@ -37,6 +38,7 @@ namespace hc {
         lua_State* _L;
         Logger* _logger;
         Terminal _term;
-        int _repl;
+        int _execute;
+        int _history;
     };
 }

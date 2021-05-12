@@ -1,5 +1,4 @@
-return function(term)
-    local term_print = term.print
+return function(show, green, yellow, red)
     local string_format = string.format
     local table_concat = table.concat
     local table_remove = table.remove
@@ -9,19 +8,19 @@ return function(term)
     local global_tostring = tostring
     local global_tonumber = tonumber
 
-    -- Patch term.print to apply tostring to all arguments
-    term.print = function(self, ...)
+    -- Rewrite show to apply tostring to all arguments
+    local original_show = show
+    show = function(...)
         local args = {...}
 
         for i = 1, #args do
             args[i] = global_tostring(args[i])
         end
 
-        term_print(self, table_concat(args, ''))
-        return self
+        original_show(table_concat(args, ''))
     end
 
-    -- Change the global print to use term.print
+    -- Change the global print to use show
     print = function(...)
         local args = {...}
 
@@ -29,51 +28,43 @@ return function(term)
             args[i] = global_tostring(args[i])
         end
 
-        term:green():print(table_concat(args, '\t'))
+        green()
+        original_show(table_concat(args, '\t'))
     end
 
-    -- Return a function that receives and runs commands typed in Lua
     local buffer = ''
     local history = {}
-    local limit = 100
+    local limit = 1000
+    local cursor = 0
 
-    return function(line)
-        if line == 'history' then
-            for i = 1, #history do
-                term:print(string_format('%3d %s', i, history[i]))
-            end
-
-            return
-        elseif line:sub(1, 1) == '!' then
-            local i = #line == 1 and #history or global_tonumber(line:sub(2, -1))
-
-            if i >= 1 and i <= #history then
-                local line = history[i]
-                table_remove(history, i)
-                return line
-            end
-
-            return
+    local add = function(line)
+        if cursor >= 1 and cursor <= #history and history[cursor] == line then
+            table_remove(history, cursor)
         end
 
+        history[#history + 1] = line
+
+        while #history > limit do
+            table_remove(history, 1)
+        end
+    end
+
+    local execute = function(line)
         buffer = buffer .. (#buffer == 0 and '' or '; ') .. line
         local chunk, err = global_load('return ' .. buffer .. ';', '=stdin', 't')
 
         if chunk then
-            term:green():print('> ', line)
+            green()
+            show('> ', line)
             local res = {global_xpcall(chunk, debug_traceback)}
 
             if res[1] then
                 table_remove(res, 1)
-                term:green():print(table.unpack(res))
+                green()
+                show(table.unpack(res))
 
+                add(line)
                 buffer = ''
-                history[#history + 1] = line
-
-                while #history > limit do
-                    table_remove(history, 1)
-                end
-
                 return
             end
         end
@@ -82,27 +73,55 @@ return function(term)
 
         if not chunk then
             if err:sub(-5, -1) ~= '<eof>' then
-                term:red():print(err)
+                red()
+                show(err)
                 buffer = ''
                 return
             end
 
-            term:yellow():print('>> ', line)
+            yellow()
+            show('>> ', line)
             return
         end
 
-        history[#history + 1] = buffer
-
-        while #history > limit do
-            table_remove(history, 1)
-        end
-
+        add(buffer)
         buffer = ''
-        term:green():print('> ', line)
+        green()
+        show('> ', line)
+
         local ok, err = global_xpcall(chunk, debug_traceback)
 
         if not ok then
-            term:red():print(err)
+            red()
+            show(err)
         end
     end
+
+    local hist = function(up)
+        if #history == 0 then
+            return
+        end
+
+        if up then
+            if cursor == 0 then
+                cursor = #history
+            elseif cursor > 1 then
+                cursor = cursor - 1
+            else
+                cursor = #history
+            end
+        else
+            if cursor == 0 then
+                cursor = 1
+            elseif cursor < #history then
+                cursor = cursor + 1
+            else
+                cursor = 1
+            end
+        end
+
+        return history[cursor]
+    end
+
+    return execute, hist
 end
