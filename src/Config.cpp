@@ -682,7 +682,7 @@ int hc::Config::l_addMemory(lua_State* const L) {
     CoreMemory* const memory = new CoreMemory(id, name, readonly);
 
     int const top = lua_gettop(L);
-    int i = 4;
+    int i = 5;
 
     do {
         luaL_argexpected(L, lua_type(L, i) == LUA_TTABLE, i, "table");
