@@ -74,6 +74,7 @@ hc::Application::Application()
     , _control(this)
     , _memorySelector(this)
     , _devices(this)
+    , _repl(this)
     , _debugger(this, &_config, &_memorySelector)
 {}
 
@@ -270,6 +271,21 @@ bool hc::Application::init(std::string const& title, int const width, int const 
     }
 
     {
+        // Initialize Lua
+        _L = luaL_newstate();
+
+        if (_L == nullptr) {
+            return false;
+        }
+
+        undo.add([this]() { lua_close(_L); });
+
+        luaL_openlibs(_L);
+        push(_L);
+        registerSearcher(_L);
+    }
+
+    {
         // Initialize components (logger has already been initialized)
         lrcpp::Frontend& frontend = lrcpp::Frontend::getInstance();
 
@@ -283,6 +299,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         addView(&_control, true, false);
         addView(&_memorySelector, true, false);
         addView(&_devices, true, false);
+        addView(&_repl, true, false);
         addView(&_debugger, true, false);
 
         if (!_config.init()) {
@@ -298,6 +315,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         _control.init(&_fsm, &_logger);
         _memorySelector.init();
         _devices.init(&_video);
+        _repl.init(_L, &_logger);
         _debugger.init();
 
         _devices.addListener(&_input);
@@ -312,19 +330,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
     }
 
     {
-        // Initialize Lua
-        _L = luaL_newstate();
-
-        if (_L == nullptr) {
-            return false;
-        }
-
-        undo.add([this]() { lua_close(_L); });
-
-        luaL_openlibs(_L);
-        push(_L);
-        registerSearcher(_L);
-
+        // Run the autorun script
         static auto const main = [](lua_State* const L) -> int {
             char const* const path = luaL_checkstring(L, 1);
 

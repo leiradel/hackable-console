@@ -16,6 +16,7 @@
 #include "Control.h"
 #include "Memory.h"
 #include "Devices.h"
+#include "LuaRepl.h"
 #include "Debugger.h"
 
 #include "Fifo.h"
@@ -87,6 +88,7 @@ namespace hc {
         Control _control;
         MemorySelector _memorySelector;
         Devices _devices;
+        LuaRepl _repl;
         Debugger _debugger;
 
         Timer _runningTime;
