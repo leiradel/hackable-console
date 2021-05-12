@@ -38,7 +38,7 @@ HC_OBJS=\
 	src/Led.o src/Input.o src/Perf.o src/Desktop.o src/Timer.o src/Devices.o \
 	src/dynlib/dynlib.o src/fnkdat/fnkdat.o src/speex/resample.o src/Debugger.o \
 	src/Cpu.o src/cpus/Z80.o src/cpus/M6502.o \
-	src/cheats/Set.o src/cheats/Snapshot.o src/cheats/Filter.o
+	src/cheats/Set.o src/cheats/Snapshot.o src/cheats/Filter.o src/cheats/Cheats.o
 
 # lrcpp
 LRCPP_OBJS=\
@@ -74,6 +74,9 @@ LUA_OBJS=\
 %.o: %.c
 	$(CC) $(CFLAGS) -Wall -Wpedantic -Werror -c $< -o $@
 
+%.lua.h: %.lua
+	echo "static char const `basename "$<" | sed 's/\./_/'`[] = {\n`cat "$<" | xxd -i`\n};" > "$@"
+
 src/deps/lua/%.o: src/deps/lua/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
@@ -86,11 +89,11 @@ hackcon: $(HC_OBJS) $(LRCPP_OBJS) $(IMGUI_OBJS) $(IMGUIEXTRA_OBJS) $(LUA_OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $+ $(LIBS)
 
 src/gamecontrollerdb.h: src/deps/SDL_GameControllerDB/gamecontrollerdb.txt
-	xxd -i $< | sed "s/unsigned char/static char const/" \
-		| sed "s/unsigned int/static size_t const/" \
-		| sed "s/src_deps_SDL_GameControllerDB_gamecontrollerdb_txt/gamecontrollerdb/" > $@
+	echo "static char const `basename "$<" | sed 's/\./_/'`[] = {\n`cat "$<" | xxd -i`\n};" > "$@"
 
-src/main.cpp: src/gamecontrollerdb.h
+src/main.o: src/gamecontrollerdb.h
+
+src/cheats/Cheats.o: src/cheats/Cheats.lua.h
 
 clean:
 	rm -f hackcon $(HC_OBJS)

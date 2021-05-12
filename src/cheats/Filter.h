@@ -33,7 +33,5 @@ namespace hc {
 
         Set* funsigned(Memory const& memory, uint64_t value, Operator op, Endianess endianess, size_t valueSize);
         Set* funsigned(Memory const& memory1, Memory const& memory2, Operator op, Endianess endianess, size_t valueSize);
-
-        int l_Filter(lua_State* L);
     }
 }

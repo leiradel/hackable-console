@@ -1,6 +1,7 @@
 #include "Application.h"
 #include "Control.h"
 #include "LuaUtil.h"
+#include "cheats/Cheats.h"
 
 #include "gamecontrollerdb.h"
 
@@ -672,6 +673,9 @@ int hc::Application::push(lua_State* const L) {
 
     _memorySelector.push(L);
     lua_setfield(L, -2, "memory");
+
+    hc::cheats::push(_L);
+    lua_setfield(L, -2, "cheats");
 
     for (size_t i = 0; i < stringCount; i++) {
         lua_pushstring(L, stringConsts[i].value);
