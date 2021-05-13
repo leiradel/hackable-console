@@ -9,46 +9,18 @@ extern "C" {
     #include <lauxlib.h>
 }
 
-hc::LuaRepl::LuaRepl(Desktop* desktop)
+hc::LuaRepl::LuaRepl(Desktop* desktop, Logger* logger)
     : View(desktop)
-    , _L(nullptr)
+    , _logger(logger)
     , _term(
-        [this](ImGuiAl::Terminal& self, char* command) { Execute(command); },
-        [this](ImGuiAl::Terminal& self, ImGuiInputTextCallbackData* data) { Callback(data); }
+        [this](ImGuiAl::Terminal& self, char* command) { execute(command); },
+        [this](ImGuiAl::Terminal& self, ImGuiInputTextCallbackData* data) { callback(data); }
     )
     , _execute(LUA_NOREF)
     , _history(LUA_NOREF)
 {}
 
-bool hc::LuaRepl::init(lua_State* L, Logger* logger) {
-    _L = L;
-    _logger = logger;
-
-    int const res = luaL_loadbufferx(_L, LuaRepl_lua, sizeof(LuaRepl_lua), "LuaRepl.lua", "t");
-
-    if (res != LUA_OK) {
-        _desktop->error("%s", lua_tostring(_L, -1));
-        lua_pop(_L, 1);
-        return false;
-    }
-
-    lua_call(_L, 0, 1);
-
-    lua_pushlightuserdata(_L, this);
-    lua_pushcclosure(_L, l_show, 1);
-
-    lua_pushlightuserdata(_L, this);
-    lua_pushcclosure(_L, l_green, 1);
-
-    lua_pushlightuserdata(_L, this);
-    lua_pushcclosure(_L, l_yellow, 1);
-
-    lua_pushlightuserdata(_L, this);
-    lua_pushcclosure(_L, l_red, 1);
-
-    lua_call(_L, 4, 2);
-    _history = luaL_ref(_L, LUA_REGISTRYINDEX);
-    _execute = luaL_ref(_L, LUA_REGISTRYINDEX);
+bool hc::LuaRepl::init() {
     return true;
 }
 
@@ -60,7 +32,47 @@ void hc::LuaRepl::onDraw() {
     _term.draw();
 }
 
-void hc::LuaRepl::Execute(char* const command) {
+int hc::LuaRepl::push(lua_State* L) {
+    auto const self = static_cast<LuaRepl**>(lua_newuserdata(L, sizeof(LuaRepl*)));
+    *self = this;
+
+    if (luaL_newmetatable(L, "hc::LuaRepl")) {
+        static luaL_Reg const methods[] = {
+            {"show", l_show},
+            {"green", l_green},
+            {"yellow", l_yellow},
+            {"red", l_red},
+            {nullptr, nullptr}
+        };
+
+        luaL_newlibtable(L, methods);
+        lua_pushlightuserdata(L, this);
+        luaL_setfuncs(L, methods, 1);
+
+        int const res = luaL_loadbufferx(L, LuaRepl_lua, sizeof(LuaRepl_lua), "LuaRepl.lua", "t");
+
+        if (res != LUA_OK) {
+            _desktop->error("%s", lua_tostring(L, -1));
+            lua_pop(L, 1);
+        }
+        else {
+            protectedCall(L, 0, 1, _logger);
+            lua_pushvalue(L, -2);
+            protectedCall(L, 1, 2, _logger);
+
+            _history = luaL_ref(L, LUA_REGISTRYINDEX);
+            _execute = luaL_ref(L, LUA_REGISTRYINDEX);
+            _L = L;
+        }
+
+        lua_setfield(L, -2, "__index");
+    }
+
+    lua_setmetatable(L, -2);
+    return 1;
+}
+
+void hc::LuaRepl::execute(char* const command) {
     lua_rawgeti(_L, LUA_REGISTRYINDEX, _execute);
     lua_pushstring(_L, command);
 
@@ -77,7 +89,7 @@ void hc::LuaRepl::Execute(char* const command) {
     lua_pop(_L, 1);
 }
 
-void hc::LuaRepl::Callback(ImGuiInputTextCallbackData* data) {
+void hc::LuaRepl::callback(ImGuiInputTextCallbackData* data) {
     lua_rawgeti(_L, LUA_REGISTRYINDEX, _history);
     lua_pushboolean(_L, data->EventKey == ImGuiKey_UpArrow);
 

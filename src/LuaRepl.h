@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Desktop.h"
+#include "Scriptable.h"
 
 #include <imguial_term.h>
 
@@ -9,16 +10,19 @@ extern "C" {
 }
 
 namespace hc {
-    class LuaRepl : public View {
+    class LuaRepl : public View, public Scriptable {
     public:
-        LuaRepl(Desktop* desktop);
+        LuaRepl(Desktop* desktop, Logger* logger);
         virtual ~LuaRepl() {}
 
-        bool init(lua_State* L, Logger* logger);
+        bool init();
 
         // hc::View
         virtual char const* getTitle() override;
         virtual void onDraw() override;
+
+        // hc::Scriptable
+        virtual int push(lua_State* L) override;
 
     protected:
         enum {
@@ -27,16 +31,16 @@ namespace hc {
 
         typedef ImGuiAl::BufferedTerminal<1024 * 1024, CommandSize> Terminal;
 
-        void Execute(char* const command);
-        void Callback(ImGuiInputTextCallbackData* data);
+        void execute(char* const command);
+        void callback(ImGuiInputTextCallbackData* data);
 
         static int l_show(lua_State* L);
         static int l_green(lua_State* L);
         static int l_yellow(lua_State* L);
         static int l_red(lua_State* L);
 
-        lua_State* _L;
         Logger* _logger;
+        lua_State* _L;
         Terminal _term;
         int _execute;
         int _history;

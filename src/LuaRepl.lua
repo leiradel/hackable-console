@@ -1,4 +1,4 @@
-return function(show, green, yellow, red)
+return function(M)
     local string_format = string.format
     local table_concat = table.concat
     local table_remove = table.remove
@@ -9,8 +9,8 @@ return function(show, green, yellow, red)
     local global_tonumber = tonumber
 
     -- Rewrite show to apply tostring to all arguments
-    local original_show = show
-    show = function(...)
+    local original_show = M.show
+    M.show = function(...)
         local args = {...}
 
         for i = 1, #args do
@@ -28,8 +28,20 @@ return function(show, green, yellow, red)
             args[i] = global_tostring(args[i])
         end
 
-        green()
+        M.green()
         original_show(table_concat(args, '\t'))
+    end
+
+    -- Add a function to allow other modules to register special commands
+    local commands = {}
+
+    M.register = function(command, executor)
+        if commands[command] then
+            hc.logger:warn('Command "%s" already exists, overwriting', command)
+        end
+
+        commands[command] = executor
+        hc.logger:info('Command "%s" registered', command)
     end
 
     local buffer = ''
@@ -52,18 +64,43 @@ return function(show, green, yellow, red)
     end
 
     local execute = function(line)
+        if line:sub(1, 1) == '!' then
+            -- Registered command
+            local command, args = line:match('!%s*([^%s]+)%s*(.*)')
+
+            if not command then
+                command, args = line:match('!%s*(.*)')
+            end
+
+            local executor = command and commands[command]
+
+            if not executor then
+                M.red()
+                M.show('unknown command')
+                return
+            end
+
+            local argtable = {}
+
+            for arg in args:gmatch('([^,]+)') do
+                argtable[#argtable + 1] = arg
+            end
+
+            return executor(table.unpack(argtable))
+        end
+
         buffer = buffer .. (#buffer == 0 and '' or '; ') .. line
         local chunk, err = global_load('return ' .. buffer .. ';', '=stdin', 't')
 
         if chunk then
-            green()
-            show('> ', line)
+            M.green()
+            M.show('> ', line)
             local res = {global_xpcall(chunk, debug_traceback)}
 
             if res[1] then
                 table_remove(res, 1)
-                green()
-                show(table.unpack(res))
+                M.green()
+                M.show(table.unpack(res))
 
                 add(line)
                 buffer = ''
@@ -75,27 +112,27 @@ return function(show, green, yellow, red)
 
         if not chunk then
             if err:sub(-5, -1) ~= '<eof>' then
-                red()
-                show(err)
+                M.red()
+                M.show(err)
                 buffer = ''
                 return
             end
 
-            yellow()
-            show('>> ', line)
+            M.yellow()
+            M.show('>> ', line)
             return
         end
 
         add(buffer)
         buffer = ''
-        green()
-        show('> ', line)
+        M.green()
+        M.show('> ', line)
 
         local ok, err = global_xpcall(chunk, debug_traceback)
 
         if not ok then
-            red()
-            show(err)
+            M.red()
+            M.show(err)
         end
     end
 

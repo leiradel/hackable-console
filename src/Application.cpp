@@ -75,7 +75,7 @@ hc::Application::Application()
     , _control(this)
     , _memorySelector(this)
     , _devices(this)
-    , _repl(this)
+    , _repl(this, &_logger)
     , _debugger(this, &_config, &_memorySelector)
 {}
 
@@ -336,7 +336,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
         _control.init(&_fsm, &_logger);
         _memorySelector.init();
         _devices.init(&_video);
-        _repl.init(_L, &_logger);
+        _repl.init();
         _debugger.init();
 
         _devices.addListener(&_input);
@@ -673,6 +673,9 @@ int hc::Application::push(lua_State* const L) {
 
     _memorySelector.push(L);
     lua_setfield(L, -2, "memory");
+
+    _repl.push(L);
+    lua_setfield(L, -2, "repl");
 
     hc::cheats::push(_L);
     lua_setfield(L, -2, "cheats");
