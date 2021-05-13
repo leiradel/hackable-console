@@ -47,6 +47,8 @@ return function(show, green, yellow, red)
         while #history > limit do
             table_remove(history, 1)
         end
+
+        cursor = 0
     end
 
     local execute = function(line)
