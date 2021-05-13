@@ -32,11 +32,7 @@ void hc::Desktop::addView(View* const view, bool const top, bool const free) {
 void hc::Desktop::removeView(View const* const view) {
     for (auto const& props : _views) {
         if (props->view == view) {
-            if (props->free) {
-                delete view;
-            }
-
-            _views.erase(props);
+            props->opened = false;
             return;
         }
     }
