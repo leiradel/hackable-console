@@ -44,7 +44,7 @@ void hc::Led::onGameUnloaded() {
 }
 
 void hc::Led::setState(int led, int state) {
-    _desktop->info(TAG "Set LED %d to %s", led, state ? "on" : "off");
+    _desktop->debug(TAG "Set LED %d to %s", led, state ? "on" : "off");
     _states.resize(led + 1);
     _states[led] = state;
 }
