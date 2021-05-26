@@ -4,7 +4,7 @@ Hackable Console is a pretentious project to add debugging capabilities to [Libr
 
 ![Hackable Console screenshot](https://raw.githubusercontent.com/leiradel/hackable-console/master/hc.png)
 
-## Why Libretro
+## Why Libretro?
 
 The Libretro API provides a common interface that can be used to write multi-media applications in a multi-platform way. Programs implementing the API as a producer of media are called Libretro cores, and programs that can run those cores are called front-ends.
 
@@ -12,7 +12,7 @@ By creating a Libretro front-end, it's possible to load and run most of the [50+
 
 I believe that this will be much easier than trying to integrate debugging capabilities into stand-alone emulators.
 
-## Goals
+## Goals?
 
 Hackable Console aims to:
 
