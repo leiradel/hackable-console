@@ -32,6 +32,8 @@ return function(M)
         for _, addr in cheats.set:elements() do
             print(string_format('%08x %02x %02x', addr, cheats.first:peek(addr), cheats.current:peek(addr)))
         end
+
+        return cheats.set
     end
 
     return function()
