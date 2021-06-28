@@ -1,12 +1,5 @@
 return function(M)
-    local string_format = string.format
-    local table_concat = table.concat
-    local table_remove = table.remove
-    local global_load = load
-    local global_xpcall = xpcall
-    local debug_traceback = debug.traceback
-    local global_tostring = tostring
-    local global_tonumber = tonumber
+    local tonumber = tonumber
 
     -- Rewrite show to apply tostring to all arguments
     local original_show = M.show
@@ -14,10 +7,10 @@ return function(M)
         local args = {...}
 
         for i = 1, #args do
-            args[i] = global_tostring(args[i])
+            args[i] = tostring(args[i])
         end
 
-        original_show(table_concat(args, ''))
+        original_show(table.concat(args, ''))
     end
 
     -- Change the global print to use show
@@ -25,11 +18,11 @@ return function(M)
         local args = {...}
 
         for i = 1, #args do
-            args[i] = global_tostring(args[i])
+            args[i] = tostring(args[i])
         end
 
         M.green()
-        original_show(table_concat(args, '\t'))
+        original_show(table.concat(args, '\t'))
     end
 
     -- Add a function to allow other modules to register special commands
@@ -51,88 +44,116 @@ return function(M)
 
     local add = function(line)
         if cursor >= 1 and cursor <= #history and history[cursor] == line then
-            table_remove(history, cursor)
+            table.remove(history, cursor)
         end
 
         history[#history + 1] = line
 
         while #history > limit do
-            table_remove(history, 1)
+            table.remove(history, 1)
         end
 
         cursor = 0
     end
 
-    local execute = function(line)
-        if line:sub(1, 1) == '!' then
-            -- Registered command
-            local command, args = line:match('!%s*([^%s]+)%s*(.*)')
+    local run_command = function(line)
+        local command, args = line:match('!%s*([^%s]+)%s*(.*)')
 
-            if not command then
-                command, args = line:match('!%s*(.*)')
-            end
-
-            local executor = command and commands[command]
-
-            if not executor then
-                M.red()
-                M.show('unknown command')
-                return
-            end
-
-            local argtable = {}
-
-            for arg in args:gmatch('([^,]+)') do
-                argtable[#argtable + 1] = arg
-            end
-
-            return executor(table.unpack(argtable))
+        if not command then
+            command, args = line:match('!%s*(.*)')
         end
 
-        buffer = buffer .. (#buffer == 0 and '' or '; ') .. line
-        local chunk, err = global_load('return ' .. buffer .. ';', '=stdin', 't')
+        local chunk = command and commands[command]
+
+        if not chunk then
+            M.red()
+            M.show('unknown command')
+            return
+        end
+
+        local argtable = {}
+
+        for arg in args:gmatch('([^,]+)') do
+            argtable[#argtable + 1] = arg:match("^%s*(.-)%s*$")
+        end
+
+        hc.logger:debug('Running command: %s(%s)', command, table.concat(argtable, ', '))
+
+        M.green()
+        M.show('> ', line)
+
+        local res = {xpcall(chunk, debug.traceback, table.unpack(argtable))}
+
+        if res[1] then
+            table.remove(res, 1)
+            M.green()
+            M.show(#res == 0 and 'nil' or table.unpack(res))
+            add(line)
+        else
+            M.red()
+            M.show(res[2])
+        end
+    end
+
+    local try_expression = function(line)
+        local expr = buffer .. (#buffer == 0 and '' or '; ') .. line
+        local chunk, err = load('return ' .. expr .. ';', '=stdin', 't')
 
         if chunk then
             M.green()
             M.show('> ', line)
-            local res = {global_xpcall(chunk, debug_traceback)}
+            local res = {xpcall(chunk, debug.traceback)}
 
             if res[1] then
-                table_remove(res, 1)
+                table.remove(res, 1)
                 M.green()
-                M.show(table.unpack(res))
-
-                add(line)
+                M.show(#res == 0 and 'nil' or table.unpack(res))
+                add(expr)
                 buffer = ''
-                return
+                return true
             end
         end
 
-        local chunk, err = global_load(buffer, '=stdin', 't')
+        return false
+    end
 
-        if not chunk then
+    local run_statement = function(line)
+        local stmt = buffer .. (#buffer == 0 and '' or '; ') .. line
+        local chunk, err = load(stmt, '=stdin', 't')
+
+        if chunk then
+            M.green()
+            M.show('> ', line)
+            local ok, err = xpcall(chunk, debug.traceback)
+
+            if ok then
+                add(stmt)
+                buffer = ''
+                return true
+            else
+                M.red()
+                M.show(err)
+            end
+        else
             if err:sub(-5, -1) ~= '<eof>' then
                 M.red()
                 M.show(err)
                 buffer = ''
-                return
+            else
+                M.yellow()
+                M.show('>> ', line)
+                buffer = stmt
             end
-
-            M.yellow()
-            M.show('>> ', line)
-            return
         end
 
-        add(buffer)
-        buffer = ''
-        M.green()
-        M.show('> ', line)
+        return false
+    end
 
-        local ok, err = global_xpcall(chunk, debug_traceback)
-
-        if not ok then
-            M.red()
-            M.show(err)
+    local execute = function(line)
+        if line:sub(1, 1) == '!' then
+            run_command(line)
+        elseif not try_expression(line) then
+            run_statement(line)
         end
     end
 
