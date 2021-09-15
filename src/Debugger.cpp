@@ -136,6 +136,7 @@ char const* hc::Debugger::getTitle() {
 void hc::Debugger::onGameLoaded() {
     static hc_DebuggerIf const templ = {
         1,
+        0,
         {NULL}
     };
 
