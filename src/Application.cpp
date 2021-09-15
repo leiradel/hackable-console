@@ -648,7 +648,7 @@ int hc::Application::push(lua_State* const L) {
 #elif __linux__
         {"soExtension", "so"}
 #elif __APPLE__
-		{"soExtension", "dylib"}
+        {"soExtension", "dylib"}
 #else
         #error Unsupported platform
 #endif
