@@ -3,6 +3,8 @@ ifeq ($(shell uname -a),)
 	LIBS=-lOpenGL32
 else ifneq ($(findstring MINGW,$(shell uname -a)),)
 	LIBS=-lOpenGL32
+else ifneq ($(findstring Darwin,$(shell uname -a)),)
+	LIBS=-framework OpenGL
 else
 	LIBS=-lGL -ldl
 endif

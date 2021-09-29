@@ -29,7 +29,11 @@ static std::string createName(char const* memory_name) {
     strftime(ts1, sizeof(ts1), "%Y-%m-%dT%H:%M:%S", &tm);
 
     char ts2[64];
+#ifdef __APPLE__
+    snprintf(ts2, sizeof(ts2), "%s.%06dZ", ts1, tv.tv_usec);
+#else
     snprintf(ts2, sizeof(ts2), "%s.%06ldZ", ts1, tv.tv_usec);
+#endif
 
     std::string name("Snapshot of ");
     name += std::string(memory_name);
