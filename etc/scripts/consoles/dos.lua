@@ -20,7 +20,7 @@ hc.control:addConsole('DOS (DOSBox Pure)', {
         hc.logger:info('    %p, %x, %d', map[2].pointer, map[2].start, map[2].length)
         hc.logger:info('    %p, %x, %d', map[3].pointer, map[3].start, map[3].length)
 
-        hc.memory:addMemory('sram', 'System RAM', false,
+        hc.config:addMemory('sram', 'System RAM', false,
             {map[1].pointer, map[1].start, map[1].length},
             {map[2].pointer, map[2].start, map[2].length},
             {map[3].pointer, map[3].start, map[3].length}
