@@ -13,7 +13,7 @@ extern "C" {
 #define KEYBOARD_ID -2
 #define TAG "[INP] "
 
-hc::Input::Input(Desktop* desktop) : View(desktop), _frontend(nullptr) {}
+hc::Input::Input(Desktop* desktop) : View(desktop), _frontend(nullptr), _keyboardState{false} {}
 
 void hc::Input::init(lrcpp::Frontend* const frontend) {
     _frontend = frontend;
@@ -177,8 +177,8 @@ bool hc::Input::setInputDescriptors(retro_input_descriptor const* descriptors) {
 }
 
 bool hc::Input::setKeyboardCallback(retro_keyboard_callback const* callback) {
-    (void)callback;
-    return false;
+    _keyboardCallback = *callback;
+    return true;
 }
 
 bool hc::Input::getInputDeviceCapabilities(uint64_t* capabilities) {
@@ -290,4 +290,15 @@ int16_t hc::Input::state(unsigned portIndex, unsigned deviceId, unsigned index, 
     return 0;
 }
 
-void hc::Input::poll() {}
+void hc::Input::poll() {
+    if (_keyboardCallback.callback != nullptr && _keyboard != nullptr) {
+        bool const* const state = _keyboard->getState();
+
+        for (unsigned i = RETROK_FIRST; i < RETROK_LAST; i++) {
+            if (state[i] != _keyboardState[i]) {
+                _keyboardCallback.callback(state[i], i, 0, 0);
+                _keyboardState[i] = state[i];
+            }
+        }
+    }
+}

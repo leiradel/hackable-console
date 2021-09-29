@@ -83,6 +83,7 @@ namespace hc {
         virtual ~Keyboard() {}
 
         bool getKey(unsigned id) const;
+        bool const* getState() const;
 
         // Device
         virtual char const* getName() const override;

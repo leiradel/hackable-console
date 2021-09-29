@@ -82,5 +82,9 @@ namespace hc {
         // Last mouse positions to calculate the deltas
         int _lastX;
         int _lastY;
+
+        // The keyboard callback set by the core
+        retro_keyboard_callback _keyboardCallback;
+        bool _keyboardState[RETROK_LAST];
     };
 }

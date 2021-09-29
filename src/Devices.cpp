@@ -359,6 +359,10 @@ bool hc::Keyboard::getKey(unsigned id) const {
     return _keyState[id] || (now - _virtualState[id]) < DurationKeepPressedUs || lshift || rshift || lcontrol || rcontrol;
 }
 
+bool const* hc::Keyboard::getState() const {
+    return _keyState;
+}
+
 // Device
 char const* hc::Keyboard::getName() const {
     return "Keyboard";
