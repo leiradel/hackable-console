@@ -5,7 +5,7 @@
 
 #define HC_API_VERSION 1
 
-typedef struct {
+typedef struct hc_Breakpoint {
     struct {
         char const* description;
         unsigned (*enable)(void* ud, int yes);
@@ -14,7 +14,7 @@ typedef struct {
 }
 hc_Breakpoint;
 
-typedef struct {
+typedef struct hc_Memory {
     struct {
         char const* id;
         char const* description;
@@ -38,7 +38,7 @@ typedef struct {
 }
 hc_Memory;
 
-typedef struct {
+typedef struct hc_Cpu {
     struct {
         /* CPU info */
         char const* description;
@@ -75,7 +75,7 @@ typedef struct {
 }
 hc_Cpu;
 
-typedef struct {
+typedef struct hc_System {
     struct {
         char const* description;
 
@@ -95,7 +95,7 @@ typedef struct {
 }
 hc_System;
 
-typedef struct {
+typedef struct hc_DebuggerIf {
     unsigned const frontend_api_version;
     unsigned core_api_version;
 
