@@ -41,7 +41,7 @@ However, as the project is just starting, the current goal is to implement somet
 
 ## The API
 
-The API consists of just one function that cores must support via `retro_get_proc_address_interface`: `hc_set_debuggger`. This function will receive a pointer to a `hc_Debugger` structure, which the core must then fill with the information necessary for the front-end to implement the debugging functionality.
+The API consists of just one function that cores must support via `retro_get_proc_address_interface`: `hc_set_debugger`. This function will receive a pointer to a `hc_Debugger` structure, which the core must then fill with the information necessary for the front-end to implement the debugging functionality.
 
 ```c
 typedef void* (*hc_Set)(hc_DebuggerIf* const debugger_if);

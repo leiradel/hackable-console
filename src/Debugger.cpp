@@ -140,7 +140,7 @@ void hc::Debugger::onGameLoaded() {
         {NULL}
     };
 
-    hc_Set setDebugger = (hc_Set)_config->getExtension("hc_set_debuggger");
+    hc_Set setDebugger = (hc_Set)_config->getExtension("hc_set_debugger");
 
     if (setDebugger != nullptr) {
         _debuggerIf = (hc_DebuggerIf*)malloc(sizeof(*_debuggerIf));
