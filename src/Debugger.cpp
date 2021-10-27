@@ -115,7 +115,7 @@ void hc::Disasm::onDraw() {
 
         ImGui::Text(format, addr, opcodes, buffer);
 
-        if (ImGui::IsItemHovered()) {
+        if (*tooltip != 0 && ImGui::IsItemHovered()) {
             ImGui::BeginTooltip();
             ImGui::Text("%s", tooltip);
             ImGui::EndTooltip();
