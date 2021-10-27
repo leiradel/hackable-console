@@ -133,7 +133,7 @@ typedef struct hc_DebuggerIf {
         loops like the CPU core emulator loop. This function will block the thread, as guarantees that the entire emulation enters
         a pause state when the front-end needs to pause it.
         */
-        void (* const tick_cb)(void* ud, uint64_t thread_id);
+        void (* const tick_cb)(void* ud);
 
         /* Informs the front-end that a watchpoint was triggered */
         void (* const mem_watchpoint_cb)(void* ud, unsigned id, hc_Memory const* memory, uint64_t address, unsigned event);

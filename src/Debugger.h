@@ -50,7 +50,7 @@ namespace hc {
         virtual void onDraw() override;
 
     protected:
-        void tick(uint64_t thread_id);
+        void tick();
         void memoryWatchpoint(unsigned id, hc_Memory const* memory, uint64_t address, unsigned event);
         void registerWatchpoint(unsigned id, hc_Cpu const* cpu, unsigned reg, uint64_t old_value);
         void executionBreakpoint(unsigned id, hc_Cpu const* cpu, uint64_t address);
@@ -58,7 +58,7 @@ namespace hc {
         void interruptBreakpoint(unsigned id, hc_Cpu const* cpu, unsigned type, uint64_t address);
         void genericBreakpoint(unsigned id, hc_Breakpoint const* break_point, uint64_t arg1, uint64_t arg2);
 
-        static void tick(void* ud, uint64_t thread_id);
+        static void tick(void* ud);
         static void memoryWatchpoint(void* ud, unsigned id, hc_Memory const* memory, uint64_t address, unsigned event);
         static void registerWatchpoint(void* ud, unsigned id, hc_Cpu const* cpu, unsigned reg, uint64_t old_value);
         static void executionBreakpoint(void* ud, unsigned id, hc_Cpu const* cpu, uint64_t address);

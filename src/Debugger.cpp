@@ -210,7 +210,7 @@ void hc::Debugger::onGameUnloaded() {
     _selectedCpu = 0;
 }
 
-void hc::Debugger::tick(uint64_t thread_id) {
+void hc::Debugger::tick() {
 }
 
 void hc::Debugger::memoryWatchpoint(unsigned id, hc_Memory const* memory, uint64_t address, unsigned event) {
@@ -231,8 +231,8 @@ void hc::Debugger::interruptBreakpoint(unsigned id, hc_Cpu const* cpu, unsigned 
 void hc::Debugger::genericBreakpoint(unsigned id, hc_Breakpoint const* break_point, uint64_t arg1, uint64_t arg2) {
 }
 
-void hc::Debugger::tick(void* ud, uint64_t thread_id) {
-    static_cast<Debugger*>(ud)->tick(thread_id);
+void hc::Debugger::tick(void* ud) {
+    static_cast<Debugger*>(ud)->tick();
 }
 
 void hc::Debugger::memoryWatchpoint(void* ud, unsigned id, hc_Memory const* memory, uint64_t address, unsigned event) {
