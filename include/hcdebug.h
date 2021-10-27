@@ -5,10 +5,21 @@
 
 #define HC_API_VERSION 1
 
+/* Watchpoint events */
+#define HC_MEMORY_READ (1 << 0)
+#define HC_MEMORY_WRITE (1 << 1)
+
+/* IO watchpoint events */
+#define HC_IO_READ (1 << 0)
+#define HC_IO_WRITE (1 << 1)
+
 typedef struct hc_Breakpoint {
     struct {
+        /* Breakpoint info */
         char const* description;
-        unsigned (*enable)(void* ud, int yes);
+
+        /* Enable this breakpoint */
+        unsigned (*enable)(void);
     }
     v1;
 }
@@ -16,19 +27,23 @@ hc_Breakpoint;
 
 typedef struct hc_Memory {
     struct {
+        /* Memory info */
         char const* id;
         char const* description;
         unsigned alignment; /* in bytes */
         uint64_t base_address;
         uint64_t size;
-        uint8_t (*peek)(void* ud, uint64_t address);
+        uint8_t (*peek)(uint64_t address);
 
-        /* poke can be null for read-only memory but all memory should be writeable to allow patching */
-        /* poke can be non-null and still don't change the value, i.e. for the main memory region when the address is in rom */
-        void (*poke)(void* ud, uint64_t address, uint8_t value);
+        /*
+        poke can be null for read-only memory but all memory should be writeable to allow patching. poke can be non-null and still
+        don't change the value, i.e. for the main memory region when the address is in ROM. If poke succeeds to write to the given
+        address, it returns a value different from 0 (true).
+        */
+        int (*poke)(uint64_t address, uint8_t value);
 
-        /* set_watch_point can be null when not supported */
-        unsigned (*set_watchpoint)(void* ud, uint64_t address, uint64_t length, int read, int write);
+        /* set_watch_point can be null when not supported; event is HC_MEMORY_READ or HC_MEMORY_WRITE or both or'ed together */
+        unsigned (*set_watchpoint)(uint64_t address, uint64_t length, unsigned event);
 
         /* Supported breakpoints not covered by specific functions */
         hc_Breakpoint const* const* break_points;
@@ -43,29 +58,32 @@ typedef struct hc_Cpu {
         /* CPU info */
         char const* description;
         unsigned type;
-        int is_main;
+        int is_main; /* only one CPU can be the main CPU */
 
         /* Memory region that is CPU addressable */
         hc_Memory const* memory_region;
 
         /* Registers */
-        uint64_t (*get_register)(void* ud, unsigned reg);
-        void (*set_register)(void* ud, unsigned reg, uint64_t value);
-        unsigned (*set_reg_breakpoint)(void* ud, unsigned reg);
+        uint64_t (*get_register)(unsigned reg);
+        void (*set_register)(unsigned reg, uint64_t value);
+        int (*set_reg_watchpoint)(unsigned reg);
 
         /* Any one of these can be null if the cpu doesn't support the functionality */
-        void (*step_into)(void* ud); /* step_into is also used to step a single instruction */
-        void (*step_over)(void* ud);
-        void (*step_out)(void* ud);
+        void (*step_into)(void); /* step_into is also used to step a single instruction */
+        void (*step_over)(void);
+        void (*step_out)(void);
 
         /* set_break_point can be null when not supported */
-        unsigned (*set_exec_breakpoint)(void* ud, uint64_t address);
+        unsigned (*set_exec_breakpoint)(uint64_t address);
 
-        /* Breaks on read and writes to the input/output address space */
-        unsigned (*set_io_watchpoint)(void* ud, uint64_t address, uint64_t length, int read, int write);
+        /*
+        Breaks on read and writes to the input/output address space. event is HC_IO_READ or HC_IO_WRITE or both or'ed together.
+        set_io_watchpoint can be null when not supported.
+        */
+        unsigned (*set_io_watchpoint)(uint64_t address, uint64_t length, unsigned event);
 
-        /* Breaks when an interrupt occurs */
-        unsigned (*set_int_breakpoint)(void* ud, unsigned type);
+        /* Breaks when an interrupt occurs; type is the particular interrupt type i.e. HC_Z80_NMI */
+        unsigned (*set_int_breakpoint)(unsigned type);
 
         /* Supported breakpoints not covered by specific functions */
         hc_Breakpoint const* const* break_points;
@@ -77,9 +95,10 @@ hc_Cpu;
 
 typedef struct hc_System {
     struct {
+        /* System info */
         char const* description;
 
-        /* CPUs */
+        /* CPUs available in the system */
         hc_Cpu const* const* cpus;
         unsigned num_cpus;
 
@@ -90,6 +109,9 @@ typedef struct hc_System {
         /* Supported breakpoints not covered by specific functions */
         hc_Breakpoint const* const* break_points;
         unsigned num_break_points;
+
+        /* Removes a breakpoint or watchpoint */
+        void (*remove_breakpoint)(unsigned id);
     }
     v1;
 }
@@ -99,18 +121,43 @@ typedef struct hc_DebuggerIf {
     unsigned const frontend_api_version;
     unsigned core_api_version;
 
-    struct {
-        /* Informs the front-end that a breakpoint occurred */
-        void (* const breakpoint_cb)(unsigned id);
+    /* The emulated system */
+    hc_System const* system;
 
-        /* The emulated system */
-        hc_System const* system;
+    /* A front-end user-defined data */
+    void* const user_data;
+
+    struct {
+        /*
+        This callback should be called from all threads in the core that are related to the emulation, from their innermost
+        loops like the CPU core emulator loop. This function will block the thread, as guarantees that the entire emulation enters
+        a pause state when the front-end needs to pause it.
+        */
+        void (* const tick_cb)(void* ud, uint64_t thread_id);
+
+        /* Informs the front-end that a watchpoint was triggered */
+        void (* const mem_watchpoint_cb)(void* ud, unsigned id, hc_Memory const* memory, uint64_t address, unsigned event);
+
+        /* Informs the front-end that a register had its value changed */
+        void (* const reg_watchpoint_cb)(void* ud, unsigned id, hc_Cpu const* cpu, unsigned reg, uint64_t old_value);
+
+        /* Informs the front-end that a breakpoint occurred */
+        void (* const exec_breakpoint_cb)(void* ud, unsigned id, hc_Cpu const* cpu, uint64_t address);
+
+        /* Informs the front-end that an IO port was accessed */
+        void (* const io_watchpoint_cb)(void* ud, unsigned id, hc_Cpu const* cpu, uint64_t address, unsigned event, uint64_t value);
+
+        /* Informs the front-end that an interrupt was served */
+        void (* const int_breakpoint_cb)(void* ud, unsigned id, hc_Cpu const* cpu, unsigned type, uint64_t address);
+
+        /* Informs the front-end that a generic breakpoint was hit */
+        void (* const gen_breakpoint_cb)(void* ud, unsigned id, hc_Breakpoint const* break_point, uint64_t arg1, uint64_t arg2);
     }
     v1;
 }
 hc_DebuggerIf;
 
-typedef void* (*hc_Set)(hc_DebuggerIf* const debugger_if);
+typedef void (*hc_Set)(hc_DebuggerIf* const debugger_if);
 
 #define HC_MAKE_CPU_TYPE(id, version) ((id) << 16 | (version))
 #define HC_CPU_API_VERSION(type) ((type) & 0xffffU)
