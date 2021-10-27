@@ -50,11 +50,26 @@ namespace hc {
         virtual void onDraw() override;
 
     protected:
+        void tick(uint64_t thread_id);
+        void memoryWatchpoint(unsigned id, hc_Memory const* memory, uint64_t address, unsigned event);
+        void registerWatchpoint(unsigned id, hc_Cpu const* cpu, unsigned reg, uint64_t old_value);
+        void executionBreakpoint(unsigned id, hc_Cpu const* cpu, uint64_t address);
+        void ioWatchpoint(unsigned id, hc_Cpu const* cpu, uint64_t address, unsigned event, uint64_t value);
+        void interruptBreakpoint(unsigned id, hc_Cpu const* cpu, unsigned type, uint64_t address);
+        void genericBreakpoint(unsigned id, hc_Breakpoint const* break_point, uint64_t arg1, uint64_t arg2);
+
+        static void tick(void* ud, uint64_t thread_id);
+        static void memoryWatchpoint(void* ud, unsigned id, hc_Memory const* memory, uint64_t address, unsigned event);
+        static void registerWatchpoint(void* ud, unsigned id, hc_Cpu const* cpu, unsigned reg, uint64_t old_value);
+        static void executionBreakpoint(void* ud, unsigned id, hc_Cpu const* cpu, uint64_t address);
+        static void ioWatchpoint(void* ud, unsigned id, hc_Cpu const* cpu, uint64_t address, unsigned event, uint64_t value);
+        static void interruptBreakpoint(void* ud, unsigned id, hc_Cpu const* cpu, unsigned type, uint64_t address);
+        static void genericBreakpoint(void* ud, unsigned id, hc_Breakpoint const* break_point, uint64_t arg1, uint64_t arg2);
+
         Config* _config;
         MemorySelector* _memorySelector;
 
         hc_DebuggerIf* _debuggerIf;
-        void* _userdata;
 
         std::vector<hc_Cpu const*> _cpus;
         int _selectedCpu;

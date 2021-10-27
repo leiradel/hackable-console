@@ -13,7 +13,7 @@ extern "C" {
 namespace hc {
     class DebugMemory : public Memory {
     public:
-        DebugMemory(hc_Memory const* memory, void* userdata) : _memory(memory), _userdata(userdata) {}
+        DebugMemory(hc_Memory const* memory) : _memory(memory) {}
         virtual ~DebugMemory() {}
 
         // Memory
@@ -22,24 +22,23 @@ namespace hc {
         unsigned alignment() const { return _memory->v1.alignment; }
         virtual uint64_t base() const override { return _memory->v1.base_address; }
         virtual uint64_t size() const override { return _memory->v1.size; }
-        virtual uint8_t peek(uint64_t address) const override { return _memory->v1.peek(_userdata, address); }
+        virtual uint8_t peek(uint64_t address) const override { return _memory->v1.peek(address); }
 
         virtual void poke(uint64_t address, uint8_t value) override {
-            if (!readonly()) _memory->v1.poke(_userdata, address, value);
+            if (!readonly()) { _memory->v1.poke(address, value); }
         }
 
         virtual bool readonly() const override { return _memory->v1.poke == nullptr; }
 
     protected:
         hc_Memory const* const _memory;
-        void* const _userdata;
     };
 
     class Cpu : public View {
     public:
         ~Cpu() {}
         
-        static Cpu* create(Desktop* desktop, hc_Cpu const* cpu, void* userdata);
+        static Cpu* create(Desktop* desktop, hc_Cpu const* cpu);
 
         char const* name() const { return _cpu->v1.description; }
         unsigned type() const { return _cpu->v1.type; }
@@ -47,11 +46,11 @@ namespace hc {
 
         Memory* mainMemory() const { return _memory; }
 
-        uint64_t getRegister(unsigned reg) const { return _cpu->v1.get_register(_userdata, reg); }
+        uint64_t getRegister(unsigned reg) const { return _cpu->v1.get_register(reg); }
 
-        void stepInto() const { if (canStepInto()) _cpu->v1.step_into(_userdata); }
-        void stepOver() const { if (canStepOver()) _cpu->v1.step_over(_userdata); }
-        void stepOut() const { if (canStepOut()) _cpu->v1.step_out(_userdata); }
+        void stepInto() const { if (canStepInto()) _cpu->v1.step_into(); }
+        void stepOver() const { if (canStepOver()) _cpu->v1.step_over(); }
+        void stepOut() const { if (canStepOut()) _cpu->v1.step_out(); }
 
         bool canStepInto() const { return _cpu->v1.step_into != nullptr; }
         bool canStepOver() const { return _cpu->v1.step_over != nullptr; }
@@ -72,10 +71,9 @@ namespace hc {
         virtual void onGameUnloaded() override;
 
     protected:
-        Cpu(Desktop* desktop, hc_Cpu const* cpu, void* userdata);
+        Cpu(Desktop* desktop, hc_Cpu const* cpu);
 
         hc_Cpu const* const _cpu;
-        void* const _userdata;
         bool _valid;
         std::string _title;
         Memory* _memory;

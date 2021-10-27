@@ -7,7 +7,7 @@
 namespace hc {
     class M6502 : public Cpu {
     public:
-        M6502(Desktop* desktop, hc_Cpu const* cpu, void* userdata);
+        M6502(Desktop* desktop, hc_Cpu const* cpu);
         ~M6502() {}
 
         // hc::Cpu
