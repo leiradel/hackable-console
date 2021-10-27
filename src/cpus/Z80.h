@@ -19,6 +19,8 @@ namespace hc {
         virtual void onDraw() override;
 
     protected:
+        static uint64_t disasm(uint64_t address, Memory const* memory, char* buffer, size_t size);
+
         uint32_t _hasChanged;
         uint16_t _previousValue[HC_Z80_NUM_REGISTERS];
     };
