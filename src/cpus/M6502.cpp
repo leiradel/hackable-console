@@ -8,36 +8,6 @@
 #include <imgui.h>
 #include <imguial_button.h>
 
-static uint64_t disasm(uint64_t address, hc::Memory const* memory, char* buffer, size_t size) {
-    struct Userdata {
-        hc::Memory const* memory;
-        uint64_t address;
-
-        char* buffer;
-        size_t position;
-        size_t size;
-    };
-
-    static auto const inCallback = [](void* user_data) -> uint8_t {
-        auto const ud = static_cast<Userdata*>(user_data);
-        return ud->memory->peek(ud->address++);
-    };
-
-    static auto const outCallback = [](char c, void* user_data) -> void {
-        auto const ud = static_cast<Userdata*>(user_data);
-
-        if (ud->position < ud->size) {
-            ud->buffer[ud->position++] = c;
-        }
-    };
-
-    Userdata ud = {memory, address, buffer, 0, size - 1};
-    uint64_t const next_pc = m6502dasm_op(static_cast<uint16_t>(address), inCallback, outCallback, &ud);
-    ud.buffer[ud.position] = 0;
-
-    return (next_pc - address) & 0xffffU;
-}
-
 hc::M6502::M6502(Desktop* desktop, hc_Cpu const* cpu, void* userdata) : Cpu(desktop, cpu, userdata), _hasChanged(0) {
     for (unsigned i = 0; i < HC_6502_NUM_REGISTERS; i++) {
         _previousValue[i] = _cpu->v1.get_register(_userdata, i);
@@ -46,13 +16,14 @@ hc::M6502::M6502(Desktop* desktop, hc_Cpu const* cpu, void* userdata) : Cpu(desk
 
 uint64_t hc::M6502::instructionLength(uint64_t address, Memory const* memory) {
     char buffer[32];
-    return ::disasm(address, memory, buffer, sizeof(buffer));
+    return disasm(address, memory, buffer, sizeof(buffer));
 }
 
 void hc::M6502::disasm(uint64_t address, Memory const* memory, char* buffer, size_t size, char* tooltip, size_t ttsz) {
     (void)ttsz;
+
+    disasm(address, memory, buffer, size);
     *tooltip = 0;
-    ::disasm(address, memory, buffer, size);
 }
 
 void hc::M6502::onFrame() {
@@ -100,4 +71,34 @@ void hc::M6502::onDraw() {
         _hasChanged = 0;
         stepInto();
     }
+}
+
+uint64_t hc::M6502::disasm(uint64_t address, hc::Memory const* memory, char* buffer, size_t size) {
+    struct Userdata {
+        hc::Memory const* memory;
+        uint64_t address;
+
+        char* buffer;
+        size_t position;
+        size_t size;
+    };
+
+    static auto const inCallback = [](void* user_data) -> uint8_t {
+        auto const ud = static_cast<Userdata*>(user_data);
+        return ud->memory->peek(ud->address++);
+    };
+
+    static auto const outCallback = [](char c, void* user_data) -> void {
+        auto const ud = static_cast<Userdata*>(user_data);
+
+        if (ud->position < ud->size) {
+            ud->buffer[ud->position++] = c;
+        }
+    };
+
+    Userdata ud = {memory, address, buffer, 0, size - 1};
+    m6502dasm_op(static_cast<uint16_t>(address), inCallback, outCallback, &ud);
+    ud.buffer[ud.position] = 0;
+
+    return ud.address - address;
 }
