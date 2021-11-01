@@ -59,7 +59,7 @@ namespace hc {
         void memoryWatchpoint(hc_MemoryWatchpoint const* event);
         void registerWatchpoint(hc_RegisterWatchpoint const* event);
         void ioWatchpoint(hc_IoWatchpoint const* event);
-        void genericBreakpoint(hc_GenericBreakpoint const* event);
+        void genericBreakpoint(hc_Breakpoint const* event);
 
         static void handleEvent(void* frontend_user_data, hc_Event const* event);
 

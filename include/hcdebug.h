@@ -22,14 +22,14 @@
 #define HC_EVENT_IO 5
 #define HC_EVENT_GENERIC 6
 
-typedef struct hc_Breakpoint {
+typedef struct hc_GenericBreakpoint {
     struct {
         /* Breakpoint info */
         char const* description;
     }
     v1;
 }
-hc_Breakpoint;
+hc_GenericBreakpoint;
 
 typedef struct hc_Memory {
     struct {
@@ -41,7 +41,7 @@ typedef struct hc_Memory {
         uint64_t size;
 
         /* Supported breakpoints not covered by specific functions */
-        hc_Breakpoint const* const* break_points;
+        hc_GenericBreakpoint const* const* break_points;
         unsigned num_break_points;
 
         /* Reads a byte from an address */
@@ -70,7 +70,7 @@ typedef struct hc_Cpu {
         hc_Memory const* memory_region;
 
         /* Supported breakpoints not covered by specific functions */
-        hc_Breakpoint const* const* break_points;
+        hc_GenericBreakpoint const* const* break_points;
         unsigned num_break_points;
 
         /* Registers, return true on set_register to signal a successful write */
@@ -95,7 +95,7 @@ typedef struct hc_System {
         unsigned num_memory_regions;
 
         /* Supported breakpoints not covered by specific functions */
-        hc_Breakpoint const* const* break_points;
+        hc_GenericBreakpoint const* const* break_points;
         unsigned num_break_points;
     }
     v1;
@@ -144,11 +144,11 @@ typedef struct hc_IoWatchpoint {
 hc_IoWatchpoint;
 
 /* Informs the front-end that a generic breakpoint was hit */
-typedef struct hc_GenericBreakpoint {
-    hc_Breakpoint const* breakpoint;
+typedef struct hc_Breakpoint {
+    hc_GenericBreakpoint const* breakpoint;
     uint64_t args[4];
 }
-hc_GenericBreakpoint;
+hc_Breakpoint;
 
 typedef struct hc_Event {
     unsigned type;
@@ -160,7 +160,7 @@ typedef struct hc_Event {
         hc_MemoryWatchpoint memory;
         hc_RegisterWatchpoint reg;
         hc_IoWatchpoint io;
-        hc_GenericBreakpoint generic;
+        hc_Breakpoint generic;
     }
     event;
 }

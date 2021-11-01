@@ -225,7 +225,7 @@ void hc::Debugger::registerWatchpoint(hc_RegisterWatchpoint const* event) {}
 
 void hc::Debugger::ioWatchpoint(hc_IoWatchpoint const* event) {}
 
-void hc::Debugger::genericBreakpoint(hc_GenericBreakpoint const* event) {}
+void hc::Debugger::genericBreakpoint(hc_Breakpoint const* event) {}
 
 void hc::Debugger::handleEvent(void* frontend_user_data, hc_Event const* event) {
     switch (event->type) {
