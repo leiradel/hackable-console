@@ -10,6 +10,8 @@ extern "C" {
 }
 
 #include <vector>
+#include <mutex>
+#include <condition_variable>
 
 namespace hc {
     class Disasm : public View {
@@ -37,6 +39,7 @@ namespace hc {
             , _memorySelector(memorySelector)
             , _debuggerIf(nullptr)
             , _selectedCpu(0)
+            , _paused(true)
         {}
 
         virtual ~Debugger() {}
@@ -51,20 +54,14 @@ namespace hc {
 
     protected:
         void tick();
-        void memoryWatchpoint(unsigned id, hc_Memory const* memory, uint64_t address, unsigned event);
-        void registerWatchpoint(unsigned id, hc_Cpu const* cpu, unsigned reg, uint64_t old_value);
-        void executionBreakpoint(unsigned id, hc_Cpu const* cpu, uint64_t address);
-        void ioWatchpoint(unsigned id, hc_Cpu const* cpu, uint64_t address, unsigned event, uint64_t value);
-        void interruptBreakpoint(unsigned id, hc_Cpu const* cpu, unsigned type, uint64_t address);
-        void genericBreakpoint(unsigned id, hc_Breakpoint const* break_point, uint64_t arg1, uint64_t arg2);
+        void executionBreakpoint(hc_ExecutionBreakpoint const* event);
+        void interruptBreakpoint(hc_InterruptBreakpoint const* event);
+        void memoryWatchpoint(hc_MemoryWatchpoint const* event);
+        void registerWatchpoint(hc_RegisterWatchpoint const* event);
+        void ioWatchpoint(hc_IoWatchpoint const* event);
+        void genericBreakpoint(hc_GenericBreakpoint const* event);
 
-        static void tick(void* ud);
-        static void memoryWatchpoint(void* ud, unsigned id, hc_Memory const* memory, uint64_t address, unsigned event);
-        static void registerWatchpoint(void* ud, unsigned id, hc_Cpu const* cpu, unsigned reg, uint64_t old_value);
-        static void executionBreakpoint(void* ud, unsigned id, hc_Cpu const* cpu, uint64_t address);
-        static void ioWatchpoint(void* ud, unsigned id, hc_Cpu const* cpu, uint64_t address, unsigned event, uint64_t value);
-        static void interruptBreakpoint(void* ud, unsigned id, hc_Cpu const* cpu, unsigned type, uint64_t address);
-        static void genericBreakpoint(void* ud, unsigned id, hc_Breakpoint const* break_point, uint64_t arg1, uint64_t arg2);
+        static void handleEvent(void* frontend_user_data, hc_Event const* event);
 
         Config* _config;
         MemorySelector* _memorySelector;
@@ -73,5 +70,9 @@ namespace hc {
 
         std::vector<hc_Cpu const*> _cpus;
         int _selectedCpu;
+
+        std::mutex _mutex;
+        std::condition_variable _gate;
+        volatile bool _paused;
     };
 }

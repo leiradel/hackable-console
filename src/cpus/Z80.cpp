@@ -8,9 +8,12 @@
 #include <imgui.h>
 #include <imguial_button.h>
 
-hc::Z80::Z80(Desktop* desktop, hc_Cpu const* cpu) : Cpu(desktop, cpu), _hasChanged(0) {
+hc::Z80::Z80(Desktop* desktop, hc_DebuggerIf const* debuggerIf, hc_Cpu const* cpu)
+    : Cpu(desktop, debuggerIf, cpu)
+    , _hasChanged(0) {
+
     for (unsigned i = 0; i < HC_Z80_NUM_REGISTERS; i++) {
-        _previousValue[i] = _cpu->v1.get_register(i);
+        _previousValue[i] = _debuggerIf->v1.get_register(_cpu, i);
     }
 }
 
@@ -47,7 +50,7 @@ void hc::Z80::onDraw() {
         uint32_t const regBit = UINT32_C(1) << i;
 
         if ((_hasChanged & regBit) == 0) {
-            uint64_t const value = _cpu->v1.get_register(i);
+            uint64_t const value = _debuggerIf->v1.get_register(_cpu, i);
             _hasChanged |= ((value == _previousValue[i]) - 1) & regBit;
             _previousValue[i] = value;
         }
@@ -69,11 +72,6 @@ void hc::Z80::onDraw() {
 
     if (ImGui::Button(ICON_FA_CODE " Disassembly")) {
         _desktop->addView(new Disasm(_desktop, this, mainMemory(), HC_Z80_PC), false, true);
-    }
-
-    if (ImGuiAl::Button(ICON_FA_EYE " Step", canStepInto())) {
-        _hasChanged = 0;
-        stepInto();
     }
 }
 

@@ -14,20 +14,25 @@ static void renderFrame(ImVec2 const min, ImVec2 const max, ImU32 const color) {
     draw_list->AddRectFilled(min, max, color, false);
 }
 
-hc::Cpu* hc::Cpu::create(Desktop* desktop, hc_Cpu const* cpu) {
+hc::Cpu* hc::Cpu::create(Desktop* desktop, hc_DebuggerIf const* debuggerIf, hc_Cpu const* cpu) {
     switch (cpu->v1.type) {
-        case HC_CPU_Z80: return new Z80(desktop, cpu);
-        case HC_CPU_6502: return new M6502(desktop, cpu);
+        case HC_CPU_Z80: return new Z80(desktop, debuggerIf, cpu);
+        case HC_CPU_6502: return new M6502(desktop, debuggerIf, cpu);
     }
 
     return nullptr;
 }
 
-hc::Cpu::Cpu(Desktop* desktop, hc_Cpu const* cpu) : View(desktop), _cpu(cpu), _valid(true) {
+hc::Cpu::Cpu(Desktop* desktop, hc_DebuggerIf const* debuggerIf, hc_Cpu const* cpu)
+    : View(desktop)
+    , _debuggerIf(debuggerIf)
+    , _cpu(cpu)
+    , _valid(true) {
+
     _title = ICON_FA_MICROCHIP " ";
     _title += _cpu->v1.description;
 
-    _memory = new DebugMemory(_cpu->v1.memory_region);
+    _memory = new DebugMemory(_debuggerIf, _cpu->v1.memory_region);
 }
 
 void hc::Cpu::drawRegister(unsigned const reg, char const* const name, unsigned const width, bool const highlight) {
@@ -53,7 +58,7 @@ void hc::Cpu::drawRegister(unsigned const reg, char const* const name, unsigned 
     snprintf(format, sizeof(format), "0x%%0%d" PRIx64, (width + 3) / 4);
 
     char buffer[64];
-    snprintf(buffer, sizeof(buffer), format, _cpu->v1.get_register(reg));
+    snprintf(buffer, sizeof(buffer), format, _debuggerIf->v1.get_register(_cpu, reg));
 
     ImGuiInputTextFlags const flagsHex = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsHexadecimal;
 
@@ -63,7 +68,7 @@ void hc::Cpu::drawRegister(unsigned const reg, char const* const name, unsigned 
         uint64_t value = 0;
 
         if (sscanf(buffer, "0x%" SCNx64, &value) == 1) {
-            _cpu->v1.set_register(reg, value);
+            _debuggerIf->v1.set_register(_cpu, reg, value);
         }
     }
 
@@ -71,7 +76,7 @@ void hc::Cpu::drawRegister(unsigned const reg, char const* const name, unsigned 
     ImGui::SameLine();
 
     snprintf(label, sizeof(label), "##%udec", reg);
-    snprintf(buffer, sizeof(buffer), "%" PRIu64, _cpu->v1.get_register(reg));
+    snprintf(buffer, sizeof(buffer), "%" PRIu64, _debuggerIf->v1.get_register(_cpu, reg));
     ImGuiInputTextFlags const flagsDec = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsDecimal;
 
     ImGui::PushItemWidth(inputWidth);
@@ -80,7 +85,7 @@ void hc::Cpu::drawRegister(unsigned const reg, char const* const name, unsigned 
         uint64_t value = 0;
 
         if (sscanf(buffer, "%" SCNu64, &value) == 1) {
-            _cpu->v1.set_register(reg, value);
+            _debuggerIf->v1.set_register(_cpu, reg, value);
         }
     }
 
@@ -93,7 +98,7 @@ void hc::Cpu::drawFlags(unsigned reg, char const* name, char const* const* flags
     ImGui::PopItemWidth();
     ImGui::SameLine();
 
-    uint64_t const value = _cpu->v1.get_register(reg);
+    uint64_t const value = _debuggerIf->v1.get_register(_cpu, reg);
     uint64_t newValue = 0;
     int f = 0;
 
@@ -107,7 +112,7 @@ void hc::Cpu::drawFlags(unsigned reg, char const* name, char const* const* flags
         }
     }
 
-    _cpu->v1.set_register(reg, value);
+    _debuggerIf->v1.set_register(_cpu, reg, value);
     ImGui::NewLine();
 }
 

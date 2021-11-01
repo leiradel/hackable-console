@@ -137,15 +137,15 @@ void hc::Debugger::onGameLoaded() {
     hc_DebuggerIf const templ = {
         1,
         0,
-        {NULL},
+        nullptr,
         this,
-        tick,
-        memoryWatchpoint,
-        registerWatchpoint,
-        executionBreakpoint,
-        ioWatchpoint,
-        interruptBreakpoint,
-        genericBreakpoint
+        {
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            handleEvent
+        }
     };
 
     hc_Set setDebugger = (hc_Set)_config->getExtension("hc_set_debugger");
@@ -155,9 +155,10 @@ void hc::Debugger::onGameLoaded() {
 
         if (_debuggerIf != nullptr) {
             memcpy(static_cast<void*>(_debuggerIf), &templ, sizeof(*_debuggerIf));
+            setDebugger(_debuggerIf);
 
             for (unsigned i = 0; i < _debuggerIf->system->v1.num_memory_regions; i++) {
-                DebugMemory* memory = new DebugMemory(_debuggerIf->system->v1.memory_regions[i]);
+                DebugMemory* memory = new DebugMemory(_debuggerIf, _debuggerIf->system->v1.memory_regions[i]);
                 _memorySelector->add(memory);
             }
 
@@ -167,7 +168,7 @@ void hc::Debugger::onGameLoaded() {
                 if (HC_CPU_API_VERSION(_debuggerIf->system->v1.cpus[i]->v1.type) <= HC_API_VERSION) {
                     _cpus.emplace_back(cpu);
 
-                    DebugMemory* memory = new DebugMemory(cpu->v1.memory_region);
+                    DebugMemory* memory = new DebugMemory(_debuggerIf, cpu->v1.memory_region);
                     _memorySelector->add(memory);
                 }
                 else {
@@ -199,7 +200,7 @@ void hc::Debugger::onDraw() {
     ImVec2 const rest = ImVec2(ImGui::GetContentRegionAvail().x, 0.0f);
 
     if (ImGui::Button(ICON_FA_EYE " View", rest)) {
-        Cpu* const cpu = Cpu::create(_desktop, _debuggerIf->system->v1.cpus[_selectedCpu]);
+        Cpu* const cpu = Cpu::create(_desktop, _debuggerIf, _debuggerIf->system->v1.cpus[_selectedCpu]);
         _desktop->addView(cpu, false, true);
     }
 }
@@ -208,53 +209,36 @@ void hc::Debugger::onGameUnloaded() {
     _debuggerIf = nullptr;
     _cpus.clear();
     _selectedCpu = 0;
+    _paused = true;
 }
 
 void hc::Debugger::tick() {
+    if (_paused) {
+        std::unique_lock<std::mutex> lock(_mutex);
+        _gate.wait(lock, [this]{return !_paused;});
+    }
 }
 
-void hc::Debugger::memoryWatchpoint(unsigned id, hc_Memory const* memory, uint64_t address, unsigned event) {
-}
+void hc::Debugger::executionBreakpoint(hc_ExecutionBreakpoint const* event) {}
 
-void hc::Debugger::registerWatchpoint(unsigned id, hc_Cpu const* cpu, unsigned reg, uint64_t old_value) {
-}
+void hc::Debugger::interruptBreakpoint(hc_InterruptBreakpoint const* event) {}
 
-void hc::Debugger::executionBreakpoint(unsigned id, hc_Cpu const* cpu, uint64_t address) {
-}
+void hc::Debugger::memoryWatchpoint(hc_MemoryWatchpoint const* event) {}
 
-void hc::Debugger::ioWatchpoint(unsigned id, hc_Cpu const* cpu, uint64_t address, unsigned event, uint64_t value) {
-}
+void hc::Debugger::registerWatchpoint(hc_RegisterWatchpoint const* event) {}
 
-void hc::Debugger::interruptBreakpoint(unsigned id, hc_Cpu const* cpu, unsigned type, uint64_t address) {
-}
+void hc::Debugger::ioWatchpoint(hc_IoWatchpoint const* event) {}
 
-void hc::Debugger::genericBreakpoint(unsigned id, hc_Breakpoint const* break_point, uint64_t arg1, uint64_t arg2) {
-}
+void hc::Debugger::genericBreakpoint(hc_GenericBreakpoint const* event) {}
 
-void hc::Debugger::tick(void* ud) {
-    static_cast<Debugger*>(ud)->tick();
-}
-
-void hc::Debugger::memoryWatchpoint(void* ud, unsigned id, hc_Memory const* memory, uint64_t address, unsigned event) {
-    static_cast<Debugger*>(ud)->memoryWatchpoint(id, memory, address, event);
-}
-
-void hc::Debugger::registerWatchpoint(void* ud, unsigned id, hc_Cpu const* cpu, unsigned reg, uint64_t old_value) {
-    static_cast<Debugger*>(ud)->registerWatchpoint(id, cpu, reg, old_value);
-}
-
-void hc::Debugger::executionBreakpoint(void* ud, unsigned id, hc_Cpu const* cpu, uint64_t address) {
-    static_cast<Debugger*>(ud)->executionBreakpoint(id, cpu, address);
-}
-
-void hc::Debugger::ioWatchpoint(void* ud, unsigned id, hc_Cpu const* cpu, uint64_t address, unsigned event, uint64_t value) {
-    static_cast<Debugger*>(ud)->ioWatchpoint(id, cpu, address, event, value);
-}
-
-void hc::Debugger::interruptBreakpoint(void* ud, unsigned id, hc_Cpu const* cpu, unsigned type, uint64_t address) {
-    static_cast<Debugger*>(ud)->interruptBreakpoint(id, cpu, type, address);
-}
-
-void hc::Debugger::genericBreakpoint(void* ud, unsigned id, hc_Breakpoint const* break_point, uint64_t arg1, uint64_t arg2) {
-    static_cast<Debugger*>(ud)->genericBreakpoint(id, break_point, arg1, arg2);
+void hc::Debugger::handleEvent(void* frontend_user_data, hc_Event const* event) {
+    switch (event->type) {
+        case HC_EVENT_TICK: static_cast<Debugger*>(frontend_user_data)->tick(); break;
+        case HC_EVENT_EXECUTION: static_cast<Debugger*>(frontend_user_data)->executionBreakpoint(&event->event.execution); break;
+        case HC_EVENT_INTERRUPT: static_cast<Debugger*>(frontend_user_data)->interruptBreakpoint(&event->event.interrupt); break;
+        case HC_EVENT_MEMORY: static_cast<Debugger*>(frontend_user_data)->memoryWatchpoint(&event->event.memory); break;
+        case HC_EVENT_REG: static_cast<Debugger*>(frontend_user_data)->registerWatchpoint(&event->event.reg); break;
+        case HC_EVENT_IO: static_cast<Debugger*>(frontend_user_data)->ioWatchpoint(&event->event.io); break;
+        case HC_EVENT_GENERIC: static_cast<Debugger*>(frontend_user_data)->genericBreakpoint(&event->event.generic); break;
+    }
 }
