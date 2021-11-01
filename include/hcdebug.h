@@ -43,6 +43,16 @@ typedef struct hc_Memory {
         /* Supported breakpoints not covered by specific functions */
         hc_Breakpoint const* const* break_points;
         unsigned num_break_points;
+
+        /* Reads a byte from an address */
+        uint8_t (*peek)(uint64_t address);
+
+        /*
+        poke can be null for read-only memory but all memory should be writeable to allow patching. poke can be non-null and still
+        don't change the value, i.e. for the main memory region when the address is in ROM. If poke succeeds to write to the given
+        address, it returns a value different from 0 (true).
+        */
+        int (*poke)(uint64_t address, uint8_t value);
     }
     v1;
 }
@@ -62,6 +72,10 @@ typedef struct hc_Cpu {
         /* Supported breakpoints not covered by specific functions */
         hc_Breakpoint const* const* break_points;
         unsigned num_break_points;
+
+        /* Registers, return true on set_register to signal a successful write */
+        uint64_t (*get_register)(unsigned reg);
+        int (*set_register)(unsigned reg, uint64_t value);
     }
     v1;
 }
@@ -156,36 +170,14 @@ typedef struct hc_DebuggerIf {
     unsigned const frontend_api_version;
     unsigned core_api_version;
 
-    /* The emulated system */
-    hc_System const* system;
-
-    /* A front-end user-defined data */
-    void* const user_data;
-
     struct {
-        /*********************************************************************\
-        | Memory Interface, front-end -> core                                 |
-        \*********************************************************************/
-        /* Reads a byte from an address */
-        uint8_t (*peek)(hc_Memory const* memory, uint64_t address);
+        /* The emulated system */
+        hc_System const* system;
 
-        /*
-        poke can be null for read-only memory but all memory should be writeable to allow patching. poke can be non-null and still
-        don't change the value, i.e. for the main memory region when the address is in ROM. If poke succeeds to write to the given
-        address, it returns a value different from 0 (true).
-        */
-        int (*poke)(hc_Memory const* memory, uint64_t address, uint8_t value);
+        /* A front-end user-defined data */
+        void* const user_data;
 
-        /*********************************************************************\
-        | CPU Interface, front-end -> core                                    |
-        \*********************************************************************/
-        /* Registers */
-        uint64_t (*get_register)(hc_Cpu const* cpu, unsigned reg);
-        void (*set_register)(hc_Cpu const* cpu, unsigned reg, uint64_t value);
-
-        /*********************************************************************\
-        | Events Interface, core -> front-end                                 |
-        \*********************************************************************/
+        /* Handles an event from the core */
         void (* const handle_event)(void* frontend_user_data, hc_Event const* event);
     }
     v1;

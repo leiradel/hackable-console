@@ -137,13 +137,9 @@ void hc::Debugger::onGameLoaded() {
     hc_DebuggerIf const templ = {
         1,
         0,
-        nullptr,
-        this,
         {
             nullptr,
-            nullptr,
-            nullptr,
-            nullptr,
+            this,
             handleEvent
         }
     };
@@ -157,18 +153,18 @@ void hc::Debugger::onGameLoaded() {
             memcpy(static_cast<void*>(_debuggerIf), &templ, sizeof(*_debuggerIf));
             setDebugger(_debuggerIf);
 
-            for (unsigned i = 0; i < _debuggerIf->system->v1.num_memory_regions; i++) {
-                DebugMemory* memory = new DebugMemory(_debuggerIf, _debuggerIf->system->v1.memory_regions[i]);
+            for (unsigned i = 0; i < _debuggerIf->v1.system->v1.num_memory_regions; i++) {
+                DebugMemory* memory = new DebugMemory(_debuggerIf->v1.system->v1.memory_regions[i]);
                 _memorySelector->add(memory);
             }
 
-            for (unsigned i = 0; i < _debuggerIf->system->v1.num_cpus; i++) {
-                hc_Cpu const* const cpu = _debuggerIf->system->v1.cpus[i];
+            for (unsigned i = 0; i < _debuggerIf->v1.system->v1.num_cpus; i++) {
+                hc_Cpu const* const cpu = _debuggerIf->v1.system->v1.cpus[i];
 
-                if (HC_CPU_API_VERSION(_debuggerIf->system->v1.cpus[i]->v1.type) <= HC_API_VERSION) {
+                if (HC_CPU_API_VERSION(_debuggerIf->v1.system->v1.cpus[i]->v1.type) <= HC_API_VERSION) {
                     _cpus.emplace_back(cpu);
 
-                    DebugMemory* memory = new DebugMemory(_debuggerIf, cpu->v1.memory_region);
+                    DebugMemory* memory = new DebugMemory(cpu->v1.memory_region);
                     _memorySelector->add(memory);
                 }
                 else {
@@ -184,7 +180,7 @@ void hc::Debugger::onDraw() {
         return;
     }
 
-    ImGui::Text("%s, interface version %u", _debuggerIf->system->v1.description, _debuggerIf->core_api_version);
+    ImGui::Text("%s, interface version %u", _debuggerIf->v1.system->v1.description, _debuggerIf->core_api_version);
 
     static auto const getter = [](void* const data, int idx, char const** const text) -> bool {
         auto const cpus = static_cast<std::vector<hc_Cpu const*> const*>(data);
@@ -192,7 +188,7 @@ void hc::Debugger::onDraw() {
         return true;
     };
 
-    int const count = static_cast<int>(_debuggerIf->system->v1.num_cpus);
+    int const count = static_cast<int>(_debuggerIf->v1.system->v1.num_cpus);
 
     ImGui::Combo("##Cpus", &_selectedCpu, getter, &_cpus, count);
     ImGui::SameLine();
@@ -200,7 +196,7 @@ void hc::Debugger::onDraw() {
     ImVec2 const rest = ImVec2(ImGui::GetContentRegionAvail().x, 0.0f);
 
     if (ImGui::Button(ICON_FA_EYE " View", rest)) {
-        Cpu* const cpu = Cpu::create(_desktop, _debuggerIf, _debuggerIf->system->v1.cpus[_selectedCpu]);
+        Cpu* const cpu = Cpu::create(_desktop, _debuggerIf->v1.system->v1.cpus[_selectedCpu]);
         _desktop->addView(cpu, false, true);
     }
 }

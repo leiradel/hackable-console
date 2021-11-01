@@ -7,7 +7,7 @@
 namespace hc {
     class Z80 : public Cpu {
     public:
-        Z80(Desktop* desktop, hc_DebuggerIf const* debuggerIf, hc_Cpu const* cpu);
+        Z80(Desktop* desktop, hc_Cpu const* cpu);
         ~Z80() {}
 
         // hc::Cpu

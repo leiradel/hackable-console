@@ -13,7 +13,7 @@ extern "C" {
 namespace hc {
     class DebugMemory : public Memory {
     public:
-        DebugMemory(hc_DebuggerIf const* debuggerIf, hc_Memory const* memory) : _debuggerIf(debuggerIf), _memory(memory) {}
+        DebugMemory(hc_Memory const* memory) : _memory(memory) {}
         virtual ~DebugMemory() {}
 
         // Memory
@@ -22,13 +22,12 @@ namespace hc {
         unsigned alignment() const { return _memory->v1.alignment; }
         virtual uint64_t base() const override { return _memory->v1.base_address; }
         virtual uint64_t size() const override { return _memory->v1.size; }
-        virtual uint8_t peek(uint64_t address) const override { return _debuggerIf->v1.peek(_memory, address); }
-        virtual void poke(uint64_t address, uint8_t value) override { _debuggerIf->v1.poke(_memory, address, value); }
+        virtual uint8_t peek(uint64_t address) const override { return _memory->v1.peek(address); }
+        virtual void poke(uint64_t address, uint8_t value) override { _memory->v1.poke(address, value); }
 
         virtual bool readonly() const override { return false; }
 
     protected:
-        hc_DebuggerIf const* const _debuggerIf;
         hc_Memory const* const _memory;
     };
 
@@ -36,7 +35,7 @@ namespace hc {
     public:
         ~Cpu() {}
         
-        static Cpu* create(Desktop* desktop, hc_DebuggerIf const* debuggerIf, hc_Cpu const* cpu);
+        static Cpu* create(Desktop* desktop, hc_Cpu const* cpu);
 
         char const* name() const { return _cpu->v1.description; }
         unsigned type() const { return _cpu->v1.type; }
@@ -44,7 +43,7 @@ namespace hc {
 
         Memory* mainMemory() const { return _memory; }
 
-        uint64_t getRegister(unsigned reg) const { return _debuggerIf->v1.get_register(_cpu, reg); }
+        uint64_t getRegister(unsigned reg) const { return _cpu->v1.get_register(reg); }
 
         void drawRegister(unsigned reg, char const* name, unsigned width, bool highlight);
         void drawFlags(unsigned reg, char const* name, char const* const* flags, unsigned width, bool highlight);
@@ -57,9 +56,8 @@ namespace hc {
         virtual void onGameUnloaded() override;
 
     protected:
-        Cpu(Desktop* desktop, hc_DebuggerIf const* debuggerIf, hc_Cpu const* cpu);
+        Cpu(Desktop* desktop, hc_Cpu const* cpu);
 
-        hc_DebuggerIf const* const _debuggerIf;
         hc_Cpu const* const _cpu;
         bool _valid;
         std::string _title;
