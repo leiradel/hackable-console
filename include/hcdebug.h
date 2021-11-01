@@ -230,4 +230,19 @@ typedef void (*hc_Set)(hc_DebuggerIf* const debugger_if);
 
 #define HC_6502_NUM_REGISTERS 6
 
+#define HC_CPU_65816 HC_MAKE_CPU_TYPE(2, 1)
+
+#define HC_65816_A 0
+#define HC_65816_X 1
+#define HC_65816_Y 2
+#define HC_65816_S 3
+#define HC_65816_PC 4
+#define HC_65816_P 5
+#define HC_65816_DB 6
+#define HC_65816_D 7
+#define HC_65816_PB 8
+#define HC_65816_EMU 9 /* 'hidden' 1-bit register, set to 1 in emulation mode, 0 in native mode */
+
+#define HC_65816_NUM_REGISTERS 10
+
 #endif /* HC_DEBUG__ */
