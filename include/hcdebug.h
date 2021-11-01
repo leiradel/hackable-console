@@ -14,13 +14,16 @@
 #define HC_IO_WRITE (1 << 1)
 
 /* Event types */
-#define HC_EVENT_TICK 0
-#define HC_EVENT_EXECUTION 1
-#define HC_EVENT_INTERRUPT 2
-#define HC_EVENT_MEMORY 3
-#define HC_EVENT_REG 4
-#define HC_EVENT_IO 5
-#define HC_EVENT_GENERIC 6
+typedef enum {
+    HC_EVENT_TICK = 0,
+    HC_EVENT_EXECUTION = 1,
+    HC_EVENT_INTERRUPT = 2,
+    HC_EVENT_MEMORY = 3,
+    HC_EVENT_REG = 4,
+    HC_EVENT_IO = 5,
+    HC_EVENT_GENERIC = 6
+}
+hc_EventType;
 
 typedef struct hc_GenericBreakpoint {
     struct {
@@ -151,7 +154,7 @@ typedef struct hc_Breakpoint {
 hc_Breakpoint;
 
 typedef struct hc_Event {
-    unsigned type;
+    hc_EventType type;
     void* user_data;
 
     union {
