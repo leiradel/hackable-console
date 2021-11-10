@@ -6,7 +6,7 @@ else ifneq ($(findstring MINGW,$(shell uname -a)),)
 else ifneq ($(findstring Darwin,$(shell uname -a)),)
 	LIBS=-framework OpenGL
 else
-	LIBS=-lGL -ldl
+	LIBS=-lGL -ldl -lpthread
 endif
 
 # Debug

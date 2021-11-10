@@ -8,6 +8,8 @@
 #include <SDL_opengl.h>
 
 #include <stdint.h>
+#include <atomic>
+#include <vector>
 
 namespace hc {
     class Video: public View, public lrcpp::Video {
@@ -16,6 +18,8 @@ namespace hc {
         virtual ~Video() {}
 
         void init();
+        void flush();
+
         double getCoreFps() const;
         bool getMousePos(int* const x, int* const y) const;
 
@@ -58,8 +62,10 @@ namespace hc {
         unsigned _textureWidth;
         unsigned _textureHeight;
         float _aspectRatio;
-        unsigned _width;
-        unsigned _height;
+        std::atomic<unsigned> _width;
+        std::atomic<unsigned> _height;
+        std::atomic<size_t> _pitch;
+        std::vector<uint8_t> _pixels;
 
         ImVec2 _texturePos;
         ImVec2 _mousePos;

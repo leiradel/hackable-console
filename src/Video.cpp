@@ -21,6 +21,39 @@ void hc::Video::init() {
     _width = _height = 0;
 }
 
+void hc::Video::flush() {
+    if (_pixels.size() == 0) {
+        return;
+    }
+
+    GLint previous_texture;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &previous_texture);
+    glBindTexture(GL_TEXTURE_2D, _texture);
+
+    switch (_pixelFormat) {
+        case RETRO_PIXEL_FORMAT_XRGB8888:
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, _pitch / 4);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _width, _height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, _pixels.data());
+            break;
+
+        case RETRO_PIXEL_FORMAT_RGB565:
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, _pitch / 2);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _width, _height, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, _pixels.data());
+            break;
+
+        case RETRO_PIXEL_FORMAT_0RGB1555:
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, _pitch / 2);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _width, _height, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, _pixels.data());
+            break;
+
+        case RETRO_PIXEL_FORMAT_UNKNOWN:
+            break;
+    }
+
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    glBindTexture(GL_TEXTURE_2D, previous_texture);
+}
+
 double hc::Video::getCoreFps() const {
     return _coreFps;
 }
@@ -191,39 +224,18 @@ bool hc::Video::getPreferredHwRender(unsigned* preferred) {
 }
 
 void hc::Video::refresh(void const* data, unsigned width, unsigned height, size_t pitch) {
+    _pixels.clear();
+
     if (data == nullptr || data == RETRO_HW_FRAME_BUFFER_VALID) {
         return;
     }
 
-    GLint previous_texture;
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, &previous_texture);
-    glBindTexture(GL_TEXTURE_2D, _texture);
-
-    switch (_pixelFormat) {
-        case RETRO_PIXEL_FORMAT_XRGB8888:
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / 4);
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, data);
-            break;
-
-        case RETRO_PIXEL_FORMAT_RGB565:
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / 2);
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, data);
-            break;
-
-        case RETRO_PIXEL_FORMAT_0RGB1555:
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / 2);
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, data);
-            break;
-
-        case RETRO_PIXEL_FORMAT_UNKNOWN:
-            break;
-    }
-
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-    glBindTexture(GL_TEXTURE_2D, previous_texture);
+    _pixels.resize(height * pitch);
+    memcpy(_pixels.data(), data, height * pitch);
 
     _width = width;
     _height = height;
+    _pitch = pitch;
 }
 
 uintptr_t hc::Video::getCurrentFramebuffer() {

@@ -20,6 +20,7 @@
 #include "Debugger.h"
 
 #include "Fifo.h"
+#include "thread/Semaphore.h"
 
 #include <SDL.h>
 #include <SDL_opengl.h>
@@ -30,7 +31,6 @@ extern "C" {
 
 #include <stdarg.h>
 #include <thread>
-#include <semaphore>
 
 namespace hc {
     class Application : public Desktop, public Scriptable {
@@ -97,9 +97,9 @@ namespace hc {
         Timer _runningTime;
         uint64_t _nextFrameTime;
         uint64_t _coreUsPerFrame;
+        Semaphore _coreRun;
+        Semaphore _appRun;
         std::thread _coreThread;
-        std::binary_semaphore _coreRun;
-        std::binary_semaphore _appRun;
 
         retro_perf_counter _runPerf;
 

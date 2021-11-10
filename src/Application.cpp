@@ -78,6 +78,7 @@ hc::Application::Application()
     , _repl(this, &_logger)
     , _debugger(this, &_config, &_memorySelector)
     , _coreRun(0)
+    , _appRun(0)
     , _coreThread(runFrame, this)
 {}
 
@@ -400,7 +401,6 @@ void hc::Application::destroy() {
 
 void hc::Application::run() {
     bool done = false;
-    lrcpp::Frontend& frontend = lrcpp::Frontend::getInstance();
 
     do {
         SDL_Event event;
@@ -418,11 +418,11 @@ void hc::Application::run() {
             if (_runningTime.getTimeUs() >= _nextFrameTime) {
                 _nextFrameTime += _coreUsPerFrame;
 
-                _perf.start(&_runPerf);
-                frontend.run();
-                _perf.stop(&_runPerf);
+                _coreRun.release();
+                _appRun.acquire();
 
                 _audio.flush();
+                _video.flush();
                 onFrame();
             }
         }
@@ -743,13 +743,12 @@ void hc::Application::runFrame(Application* self) {
     lrcpp::Frontend& frontend = lrcpp::Frontend::getInstance();
 
     for (;;) {
-        _coreRun.acquire();
+        self->_coreRun.acquire();
 
-        _perf.start(&_runPerf);
+        self->_perf.start(&self->_runPerf);
         frontend.run();
-        _perf.stop(&_runPerf);
+        self->_perf.stop(&self->_runPerf);
 
-        _appRun.release();
-        _coreRun.acquire();
+        self->_appRun.release();
     }
 }
