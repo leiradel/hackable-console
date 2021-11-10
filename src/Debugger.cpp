@@ -146,30 +146,33 @@ void hc::Debugger::onGameLoaded() {
 
     hc_Set setDebugger = (hc_Set)_config->getExtension("hc_set_debugger");
 
-    if (setDebugger != nullptr) {
-        _debuggerIf = (hc_DebuggerIf*)malloc(sizeof(*_debuggerIf));
+    if (setDebugger == nullptr) {
+        _desktop->warn("Core doesn't expose the debugger extension");
+        return;
+    }
 
-        if (_debuggerIf != nullptr) {
-            memcpy(static_cast<void*>(_debuggerIf), &templ, sizeof(*_debuggerIf));
-            setDebugger(_debuggerIf);
+    _debuggerIf = (hc_DebuggerIf*)malloc(sizeof(*_debuggerIf));
 
-            for (unsigned i = 0; i < _debuggerIf->v1.system->v1.num_memory_regions; i++) {
-                DebugMemory* memory = new DebugMemory(_debuggerIf->v1.system->v1.memory_regions[i]);
+    if (_debuggerIf != nullptr) {
+        memcpy(static_cast<void*>(_debuggerIf), &templ, sizeof(*_debuggerIf));
+        setDebugger(_debuggerIf);
+
+        for (unsigned i = 0; i < _debuggerIf->v1.system->v1.num_memory_regions; i++) {
+            DebugMemory* memory = new DebugMemory(_debuggerIf->v1.system->v1.memory_regions[i]);
+            _memorySelector->add(memory);
+        }
+
+        for (unsigned i = 0; i < _debuggerIf->v1.system->v1.num_cpus; i++) {
+            hc_Cpu const* const cpu = _debuggerIf->v1.system->v1.cpus[i];
+
+            if (HC_CPU_API_VERSION(_debuggerIf->v1.system->v1.cpus[i]->v1.type) <= HC_API_VERSION) {
+                _cpus.emplace_back(cpu);
+
+                DebugMemory* memory = new DebugMemory(cpu->v1.memory_region);
                 _memorySelector->add(memory);
             }
-
-            for (unsigned i = 0; i < _debuggerIf->v1.system->v1.num_cpus; i++) {
-                hc_Cpu const* const cpu = _debuggerIf->v1.system->v1.cpus[i];
-
-                if (HC_CPU_API_VERSION(_debuggerIf->v1.system->v1.cpus[i]->v1.type) <= HC_API_VERSION) {
-                    _cpus.emplace_back(cpu);
-
-                    DebugMemory* memory = new DebugMemory(cpu->v1.memory_region);
-                    _memorySelector->add(memory);
-                }
-                else {
-                    _desktop->warn(TAG "Unsupported CPU \"%s\"", cpu->v1.description);
-                }
+            else {
+                _desktop->warn(TAG "Unsupported CPU \"%s\"", cpu->v1.description);
             }
         }
     }
