@@ -21,7 +21,11 @@ fsm LifeCycle {
             }
         }
 
-        quit() => Quit;
+        quit() => Quit {
+            if (!ctx.quit()) {
+                forbid;
+            }
+        }
     }
 
     Quit {}

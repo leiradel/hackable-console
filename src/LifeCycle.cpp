@@ -185,7 +185,7 @@ bool LifeCycle::loadGame(const_cstr path) {
                 return false;
             }
 
-//#line 34 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+//#line 38 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
             if (!ctx.loadGame(path)) {
                 return false;
@@ -236,7 +236,7 @@ bool LifeCycle::pauseGame() {
                 return false;
             }
 
-//#line 86 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+//#line 90 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
             if (!ctx.pauseGame()) {
                 return false;
@@ -463,6 +463,12 @@ bool LifeCycle::quit() {
                 return false;
             }
 
+//#line 24 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+
+            if (!ctx.quit()) {
+                return false;
+            }
+        
             __state = State::Quit;
             after(__state);
             after();
@@ -508,7 +514,7 @@ bool LifeCycle::resetGame() {
                 return false;
             }
 
-//#line 66 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+//#line 70 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
             if (!ctx.resetGame()) {
                 return false;
@@ -551,7 +557,7 @@ bool LifeCycle::resetGame() {
                 return false;
             }
 
-//#line 92 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+//#line 96 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
             ctx.resetGame();
         
@@ -600,7 +606,7 @@ bool LifeCycle::resumeGame() {
                 return false;
             }
 
-//#line 60 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+//#line 64 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
             if (!ctx.resumeGame()) {
                 return false;
@@ -651,7 +657,7 @@ bool LifeCycle::startGame() {
                 return false;
             }
 
-//#line 44 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+//#line 48 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
             if (!ctx.startGame()) {
                 return false;
@@ -702,7 +708,7 @@ bool LifeCycle::step() {
                 return false;
             }
 
-//#line 72 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+//#line 76 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
             ctx.step();
         
@@ -751,7 +757,7 @@ bool LifeCycle::unloadCore() {
                 return false;
             }
 
-//#line 30 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+//#line 34 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
             ctx.unloadCore();
         
@@ -800,7 +806,7 @@ bool LifeCycle::unloadGame() {
                 return false;
             }
 
-//#line 50 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+//#line 54 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
             if (!ctx.unloadGame()) {
                 return false;
@@ -843,7 +849,7 @@ bool LifeCycle::unloadGame() {
                 return false;
             }
 
-//#line 76 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+//#line 80 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
             if (!ctx.unloadGame()) {
                 return false;
@@ -886,7 +892,7 @@ bool LifeCycle::unloadGame() {
                 return false;
             }
 
-//#line 96 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
+//#line 100 "/home/leiradel/Develop/hackable-console/src/LifeCycle.fsm"
 
             if (!ctx.unloadGame()) {
                 return false;
