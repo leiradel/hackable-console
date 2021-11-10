@@ -30,6 +30,7 @@ extern "C" {
 }
 
 #include <stdarg.h>
+#include <atomic>
 #include <thread>
 
 namespace hc {
@@ -99,6 +100,7 @@ namespace hc {
         uint64_t _coreUsPerFrame;
         Semaphore _coreRun;
         Semaphore _appRun;
+        std::atomic<bool> _exit;
         std::thread _coreThread;
 
         retro_perf_counter _runPerf;

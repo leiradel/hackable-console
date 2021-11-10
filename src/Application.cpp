@@ -79,6 +79,7 @@ hc::Application::Application()
     , _debugger(this, &_config, &_memorySelector)
     , _coreRun(0)
     , _appRun(0)
+    , _exit(false)
     , _coreThread(runFrame, this)
 {}
 
@@ -539,6 +540,14 @@ bool hc::Application::pauseGame() {
 }
 
 bool hc::Application::quit() {
+    info(TAG "Asking the core frame run thread to exit");
+    _exit = true;
+    _coreRun.release();
+
+    info(TAG "Waiting the core frame run thread to exit");
+    _coreThread.join();
+    info(TAG "Core frame run thread exited");
+
     onQuit();
     return true;
 }
@@ -744,6 +753,11 @@ void hc::Application::runFrame(Application* self) {
 
     for (;;) {
         self->_coreRun.acquire();
+
+        if (self->_exit) {
+            self->info(TAG "Core frame run thread exiting");
+            return;
+        }
 
         self->_perf.start(&self->_runPerf);
         frontend.run();
