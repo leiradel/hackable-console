@@ -35,11 +35,12 @@ LIBS+=`sdl2-config --libs`
 
 # hackable-console
 HC_OBJS=\
-	src/main.o src/Application.o src/LifeCycle.o src/Fifo.o src/LuaRepl.o src/LuaUtil.o \
-	src/Audio.o src/Config.o src/Control.o src/Logger.o src/Memory.o src/Video.o \
-	src/Led.o src/Input.o src/Perf.o src/Desktop.o src/Timer.o src/Devices.o \
-	src/dynlib/dynlib.o src/fnkdat/fnkdat.o src/speex/resample.o src/Debugger.o \
-	src/Cpu.o src/cpus/Z80.o src/cpus/M6502.o \
+	src/main.o src/Application.o src/Debugger.o src/Fifo.o src/LifeCycle.o src/LuaRepl.o src/LuaUtil.o \
+	src/Control.o src/Cpu.o src/Desktop.o src/Devices.o src/Memory.o src/Timer.o \
+	src/dynlib/dynlib.o src/fnkdat/fnkdat.o src/speex/resample.o \
+	src/components/Audio.o src/components/Config.o src/components/Input.o src/components/Led.o \
+	src/components/Logger.o src/components/Perf.o src/components/Video.o \
+	src/cpus/Z80.o src/cpus/M6502.o \
 	src/cheats/Set.o src/cheats/Snapshot.o src/cheats/Filter.o src/cheats/Cheats.o
 
 # lrcpp

@@ -1,5 +1,5 @@
 #include "Memory.h"
-#include "Logger.h"
+#include "components/Logger.h"
 #include "cheats/Snapshot.h"
 
 #include <imguial_button.h>

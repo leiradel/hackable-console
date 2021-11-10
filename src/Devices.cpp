@@ -1,6 +1,6 @@
 #include "Devices.h"
-#include "Perf.h"
-#include "Video.h"
+#include "components/Perf.h"
+#include "components/Video.h"
 
 #include <IconsFontAwesome4.h>
 #include <imgui.h>

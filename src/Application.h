@@ -3,13 +3,13 @@
 #include "Desktop.h"
 #include "Scriptable.h"
 
-#include "Logger.h"
-#include "Config.h"
-#include "Audio.h"
-#include "Video.h"
-#include "Led.h"
-#include "Input.h"
-#include "Perf.h"
+#include "components/Logger.h"
+#include "components/Config.h"
+#include "components/Audio.h"
+#include "components/Video.h"
+#include "components/Led.h"
+#include "components/Input.h"
+#include "components/Perf.h"
 
 #include "LifeCycle.h"
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Desktop.h"
-#include "Config.h"
+#include "components/Config.h"
 #include "Cpu.h"
 #include "Memory.h"
 

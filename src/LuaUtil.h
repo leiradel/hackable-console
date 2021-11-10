@@ -1,8 +1,6 @@
 #pragma once
 
-#include "Logger.h"
-
-#include <lrcpp/Frontend.h>
+#include "components/Logger.h"
 
 extern "C" {
     #include "lua.h"

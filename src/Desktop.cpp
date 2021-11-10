@@ -1,12 +1,12 @@
 #include "Desktop.h"
 
-#include "Logger.h"
-#include "Config.h"
-#include "Video.h"
-#include "Led.h"
-#include "Audio.h"
-#include "Input.h"
-#include "Perf.h"
+#include "components/Logger.h"
+#include "components/Config.h"
+#include "components/Video.h"
+#include "components/Led.h"
+#include "components/Audio.h"
+#include "components/Input.h"
+#include "components/Perf.h"
 
 #include <imguial_button.h>
 #include <IconsFontAwesome4.h>

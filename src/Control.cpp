@@ -1,5 +1,5 @@
 #include "Control.h"
-#include "Logger.h"
+#include "components/Logger.h"
 
 #include "LuaUtil.h"
 
