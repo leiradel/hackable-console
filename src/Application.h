@@ -29,6 +29,8 @@ extern "C" {
 }
 
 #include <stdarg.h>
+#include <thread>
+#include <semaphore>
 
 namespace hc {
     class Application : public Desktop, public Scriptable {
@@ -69,6 +71,7 @@ namespace hc {
         static void sdlPrint(void* userdata, int category, SDL_LogPriority priority, char const* message);
         static void lifeCycleVprintf(void* ud, char const* fmt, va_list args);
         static void audioCallback(void* const udata, Uint8* const stream, int const len);
+        static void runFrame(Application* self);
 
         SDL_Window* _window;
         SDL_GLContext _glContext;
@@ -94,6 +97,9 @@ namespace hc {
         Timer _runningTime;
         uint64_t _nextFrameTime;
         uint64_t _coreUsPerFrame;
+        std::thread _coreThread;
+        std::binary_semaphore _coreRun;
+        std::binary_semaphore _appRun;
 
         retro_perf_counter _runPerf;
 

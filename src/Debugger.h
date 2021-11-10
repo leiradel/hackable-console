@@ -39,7 +39,7 @@ namespace hc {
             , _memorySelector(memorySelector)
             , _debuggerIf(nullptr)
             , _selectedCpu(0)
-            , _paused(true)
+            , _paused(false)
         {}
 
         virtual ~Debugger() {}

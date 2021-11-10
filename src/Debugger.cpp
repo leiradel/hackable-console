@@ -202,6 +202,23 @@ void hc::Debugger::onDraw() {
         Cpu* const cpu = Cpu::create(_desktop, _debuggerIf->v1.system->v1.cpus[_selectedCpu]);
         _desktop->addView(cpu, false, true);
     }
+
+    if (_paused) {
+        if (ImGui::Button(ICON_FA_PLAY " Resume")) {
+            {
+                std::unique_lock<std::mutex> lock(_mutex);
+                _paused = false;
+            }
+
+            _gate.notify_all();
+        }
+    }
+    else {
+        if (ImGui::Button(ICON_FA_PAUSE " Break")) {
+            std::unique_lock<std::mutex> lock(_mutex);
+            _paused = true;
+        }
+    }
 }
 
 void hc::Debugger::onGameUnloaded() {
@@ -218,11 +235,15 @@ void hc::Debugger::tick() {
     }
 }
 
-void hc::Debugger::executionBreakpoint(hc_ExecutionBreakpoint const* event) {}
+void hc::Debugger::executionBreakpoint(hc_ExecutionBreakpoint const* event) {
+    tick();
+}
 
 void hc::Debugger::interruptBreakpoint(hc_InterruptBreakpoint const* event) {}
 
-void hc::Debugger::memoryWatchpoint(hc_MemoryWatchpoint const* event) {}
+void hc::Debugger::memoryWatchpoint(hc_MemoryWatchpoint const* event) {
+    tick();
+}
 
 void hc::Debugger::registerWatchpoint(hc_RegisterWatchpoint const* event) {}
 

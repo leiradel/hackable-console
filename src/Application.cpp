@@ -77,6 +77,8 @@ hc::Application::Application()
     , _devices(this)
     , _repl(this, &_logger)
     , _debugger(this, &_config, &_memorySelector)
+    , _coreRun(0)
+    , _coreThread(runFrame, this)
 {}
 
 bool hc::Application::init(std::string const& title, int const width, int const height) {
@@ -734,5 +736,20 @@ void hc::Application::audioCallback(void* const udata, Uint8* const stream, int 
     }
     else {
         self->_fifo.read(static_cast<void*>(stream), len);
+    }
+}
+
+void hc::Application::runFrame(Application* self) {
+    lrcpp::Frontend& frontend = lrcpp::Frontend::getInstance();
+
+    for (;;) {
+        _coreRun.acquire();
+
+        _perf.start(&_runPerf);
+        frontend.run();
+        _perf.stop(&_runPerf);
+
+        _appRun.release();
+        _coreRun.acquire();
     }
 }
