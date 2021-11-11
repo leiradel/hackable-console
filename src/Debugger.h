@@ -9,6 +9,7 @@ extern "C" {
     #include "hcdebug.h"
 }
 
+#include <string>
 #include <vector>
 #include <mutex>
 #include <condition_variable>
@@ -33,15 +34,8 @@ namespace hc {
 
     class Debugger : public View {
     public:
-        Debugger(Desktop* desktop, Config* config, MemorySelector* memorySelector)
-            : View(desktop)
-            , _config(config)
-            , _memorySelector(memorySelector)
-            , _debuggerIf(nullptr)
-            , _selectedCpu(0)
-            , _paused(false)
-        {}
 
+        Debugger(Desktop* desktop, Config* config, MemorySelector* memorySelector, ReleaseEventLoop&& releaser);
         virtual ~Debugger() {}
 
         void init();

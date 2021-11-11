@@ -127,6 +127,15 @@ void hc::Disasm::onDraw() {
     ImGui::EndChild();
 }
 
+hc::Debugger::Debugger(Desktop* desktop, Config* config, MemorySelector* memorySelector, ReleaseEventLoop&& releaser)
+    : View(desktop)
+    , _config(config)
+    , _memorySelector(memorySelector)
+    , _debuggerIf(nullptr)
+    , _selectedCpu(0)
+    , _paused(false)
+{}
+
 void hc::Debugger::init() {}
 
 char const* hc::Debugger::getTitle() {
@@ -225,7 +234,7 @@ void hc::Debugger::onGameUnloaded() {
     _debuggerIf = nullptr;
     _cpus.clear();
     _selectedCpu = 0;
-    _paused = true;
+    _paused = false;
 }
 
 void hc::Debugger::tick() {
