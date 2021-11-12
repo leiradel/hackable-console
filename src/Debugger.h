@@ -34,8 +34,7 @@ namespace hc {
 
     class Debugger : public View {
     public:
-
-        Debugger(Desktop* desktop, Config* config, MemorySelector* memorySelector, ReleaseEventLoop&& releaser);
+        Debugger(Desktop* desktop, Config* config, MemorySelector* memorySelector);
         virtual ~Debugger() {}
 
         void init();

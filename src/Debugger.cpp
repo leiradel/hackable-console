@@ -127,7 +127,7 @@ void hc::Disasm::onDraw() {
     ImGui::EndChild();
 }
 
-hc::Debugger::Debugger(Desktop* desktop, Config* config, MemorySelector* memorySelector, ReleaseEventLoop&& releaser)
+hc::Debugger::Debugger(Desktop* desktop, Config* config, MemorySelector* memorySelector)
     : View(desktop)
     , _config(config)
     , _memorySelector(memorySelector)
