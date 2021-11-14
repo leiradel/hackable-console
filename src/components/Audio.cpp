@@ -32,7 +32,7 @@ void hc::Audio::init() {
 }
 
 void hc::Audio::flush() {
-    if (_device != 0 && SDL_QueueAudio(_device, _samples.data(), _samples.size() * 2) != 0) {
+    if (_device != 0 && !_mute && SDL_QueueAudio(_device, _samples.data(), _samples.size() * 2) != 0) {
         _desktop->error("SDL_QueueAudio() failed: %s", SDL_GetError());
     }
 
