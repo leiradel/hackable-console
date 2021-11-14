@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Desktop.h"
+#include "Queue.h"
 
 #include <lrcpp/Components.h>
 
@@ -8,8 +9,8 @@
 #include <SDL_opengl.h>
 
 #include <stdint.h>
-#include <atomic>
 #include <vector>
+#include <mutex>
 
 namespace hc {
     class Video: public View, public lrcpp::Video {
@@ -52,20 +53,30 @@ namespace hc {
         virtual retro_proc_address_t getProcAddress(char const* symbol) override;
 
     protected:
-        void setupTexture(unsigned const width, unsigned const height);
+        struct Data {
+            unsigned maxWidth, maxHeight;
+            unsigned width, height;
+            size_t pitch;
+            float aspect;
+            retro_pixel_format format;
+            std::vector<uint8_t> pixels;
+        };
+
+        void setupTexture(unsigned const width, unsigned const height, retro_pixel_format const format);
+
+        Data _data;
+        std::mutex _mutex;
 
         unsigned _rotation;
-        retro_pixel_format _pixelFormat;
         double _coreFps;
 
         GLuint _texture;
+        unsigned _width;
+        unsigned _height;
+        float _aspect;
         unsigned _textureWidth;
         unsigned _textureHeight;
-        float _aspectRatio;
-        std::atomic<unsigned> _width;
-        std::atomic<unsigned> _height;
-        std::atomic<size_t> _pitch;
-        std::vector<uint8_t> _pixels;
+        Queue<Data> _queue;
 
         ImVec2 _texturePos;
         ImVec2 _mousePos;

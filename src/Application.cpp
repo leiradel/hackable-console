@@ -394,7 +394,6 @@ void hc::Application::run() {
                 _coreRun.release();
                 _appRun.acquire();
 
-                _video.flush();
                 onFrame();
             }
         }
