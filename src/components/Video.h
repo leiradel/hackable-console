@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Desktop.h"
-#include "Queue.h"
 
 #include <lrcpp/Components.h>
 
@@ -21,7 +20,7 @@ namespace hc {
         void init();
         void flush();
 
-        double getCoreFps() const;
+        double getCoreFps();
         bool getMousePos(int* const x, int* const y) const;
 
         // hc::View
@@ -53,30 +52,24 @@ namespace hc {
         virtual retro_proc_address_t getProcAddress(char const* symbol) override;
 
     protected:
-        struct Data {
-            unsigned maxWidth, maxHeight;
-            unsigned width, height;
-            size_t pitch;
-            float aspect;
-            retro_pixel_format format;
-            std::vector<uint8_t> pixels;
-        };
-
         void setupTexture(unsigned const width, unsigned const height, retro_pixel_format const format);
 
-        Data _data;
+        unsigned _width;
+        unsigned _height;
+        unsigned _maxWidth;
+        unsigned _maxHeight;
+        float _aspect;
+        retro_pixel_format _format;
+        size_t _pitch;
+        double _coreFps;
+        std::vector<uint8_t> _pixels;
         std::mutex _mutex;
 
         unsigned _rotation;
-        double _coreFps;
 
         GLuint _texture;
-        unsigned _width;
-        unsigned _height;
-        float _aspect;
         unsigned _textureWidth;
         unsigned _textureHeight;
-        Queue<Data> _queue;
 
         ImVec2 _texturePos;
         ImVec2 _mousePos;

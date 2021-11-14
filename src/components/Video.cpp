@@ -12,22 +12,27 @@ extern "C" {
 hc::Video::Video(Desktop* desktop) : View(desktop), _mouseOnTexture(false) {}
 
 void hc::Video::init() {
-    _rotation = 0;
-    _coreFps = 0.0;
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
 
-    _data.maxWidth = _data.maxHeight = 0;
-    _data.width = _data.height = 0;
-    _data.pitch = 0;
-    _data.aspect = 0.0f;
-    _data.format = RETRO_PIXEL_FORMAT_UNKNOWN;
+        _width = _height = 0;
+        _maxWidth = _maxHeight = 0;
+        _aspect = 0.0f;
+        _format = RETRO_PIXEL_FORMAT_UNKNOWN;
+        _pitch = 0;
+        _coreFps = 0.0;
+
+        _pixels.clear();
+    }
+
+    _rotation = 0;
 
     _texture = 0;
-    _width = _height = 0;
-    _aspect = 0.0f;
     _textureWidth = _textureHeight = 0;
 }
 
-double hc::Video::getCoreFps() const {
+double hc::Video::getCoreFps() {
+    std::lock_guard<std::mutex> lock(_mutex);
     return _coreFps;
 }
 
@@ -42,47 +47,38 @@ char const* hc::Video::getTitle() {
 }
 
 void hc::Video::onDraw() {
-    Data data;
+    std::lock_guard<std::mutex> lock(_mutex);
 
-    if (_queue.count() != 0) {
+    setupTexture(_maxWidth, _maxHeight, _format);
 
-        while (_queue.count() != 0) {
-            _queue.get(&data);
+    if (_texture != 0 && _pixels.size() != 0) {
+        GLint previous_texture;
+        glGetIntegerv(GL_TEXTURE_BINDING_2D, &previous_texture);
+        glBindTexture(GL_TEXTURE_2D, _texture);
+
+        switch (_format) {
+            case RETRO_PIXEL_FORMAT_XRGB8888:
+                glPixelStorei(GL_UNPACK_ROW_LENGTH, _pitch / 4);
+                glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _width, _height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, _pixels.data());
+                break;
+
+            case RETRO_PIXEL_FORMAT_RGB565:
+                glPixelStorei(GL_UNPACK_ROW_LENGTH, _pitch / 2);
+                glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _width, _height, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, _pixels.data());
+                break;
+
+            case RETRO_PIXEL_FORMAT_0RGB1555:
+                glPixelStorei(GL_UNPACK_ROW_LENGTH, _pitch / 2);
+                glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _width, _height, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, _pixels.data());
+                break;
+
+            case RETRO_PIXEL_FORMAT_UNKNOWN:
+                break;
         }
 
-        setupTexture(data.maxWidth, data.maxHeight, data.format);
-        _width = data.width;
-        _height = data.height;
-        _aspect = data.aspect;
-
-        if (_texture != 0) {
-            GLint previous_texture;
-            glGetIntegerv(GL_TEXTURE_BINDING_2D, &previous_texture);
-            glBindTexture(GL_TEXTURE_2D, _texture);
-
-            switch (data.format) {
-                case RETRO_PIXEL_FORMAT_XRGB8888:
-                    glPixelStorei(GL_UNPACK_ROW_LENGTH, data.pitch / 4);
-                    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, data.width, data.height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, data.pixels.data());
-                    break;
-
-                case RETRO_PIXEL_FORMAT_RGB565:
-                    glPixelStorei(GL_UNPACK_ROW_LENGTH, data.pitch / 2);
-                    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, data.width, data.height, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, data.pixels.data());
-                    break;
-
-                case RETRO_PIXEL_FORMAT_0RGB1555:
-                    glPixelStorei(GL_UNPACK_ROW_LENGTH, data.pitch / 2);
-                    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, data.width, data.height, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, data.pixels.data());
-                    break;
-
-                case RETRO_PIXEL_FORMAT_UNKNOWN:
-                    break;
-            }
-
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-            glBindTexture(GL_TEXTURE_2D, previous_texture);
-        }
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+        glBindTexture(GL_TEXTURE_2D, previous_texture);
+        _pixels.clear();
     }
 
     if (_texture != 0) {
@@ -119,19 +115,30 @@ void hc::Video::onDraw() {
 void hc::Video::onGameUnloaded() {
     {
         std::lock_guard<std::mutex> lock(_mutex);
-        _data.maxWidth = _data.maxHeight = 0;
+
+        _width = _height = 0;
+        _maxWidth = _maxHeight = 0;
+        _aspect = 0.0f;
+        _format = RETRO_PIXEL_FORMAT_UNKNOWN;
+        _pitch = 0;
+        _coreFps = 0.0;
+
+        _pixels.clear();
     }
 
-    glDeleteTextures(1, &_texture);
+    _rotation = 0;
+
+    if (_texture != 0) {
+        glDeleteTextures(1, &_texture);
+    }
+
     _texture = 0;
-    _width = _height = 0;
-    _aspect = 0.0f;
     _textureWidth = _textureHeight = 0;
 }
 
 void hc::Video::onCoreUnloaded() {
     std::lock_guard<std::mutex> lock(_mutex);
-    _data.format = RETRO_PIXEL_FORMAT_UNKNOWN;
+    _format = RETRO_PIXEL_FORMAT_UNKNOWN;
 }
 
 bool hc::Video::setRotation(unsigned rotation) {
@@ -158,11 +165,6 @@ bool hc::Video::showMessage(retro_message const* message) {
 }
 
 bool hc::Video::setPixelFormat(retro_pixel_format format) {
-    {
-        std::lock_guard<std::mutex> lock(_mutex);
-        _data.format = format;
-    }
-
     switch (format) {
         case RETRO_PIXEL_FORMAT_0RGB1555: _desktop->info(TAG "Set pixel format to RETRO_PIXEL_FORMAT_0RGB1555"); break;
         case RETRO_PIXEL_FORMAT_XRGB8888: _desktop->info(TAG "Set pixel format to RETRO_PIXEL_FORMAT_XRGB8888"); break;
@@ -173,6 +175,8 @@ bool hc::Video::setPixelFormat(retro_pixel_format format) {
             return false;
     }
 
+    std::lock_guard<std::mutex> lock(_mutex);
+    _format = format;
     return true;
 }
 
@@ -187,38 +191,35 @@ bool hc::Video::setFrameTimeCallback(retro_frame_time_callback const* callback) 
 }
 
 bool hc::Video::setSystemAvInfo(retro_system_av_info const* info) {
-    _coreFps = info->timing.fps;
-
     _desktop->info(TAG "Setting timing");
-
     _desktop->info(TAG "    fps         = %f", info->timing.fps);
     _desktop->info(TAG "    sample_rate = %f", info->timing.sample_rate);
+
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        _coreFps = info->timing.fps;
+    }
 
     return setGeometry(&info->geometry);
 }
 
 bool hc::Video::setGeometry(retro_game_geometry const* geometry) {
     _desktop->info(TAG "Setting geometry");
-
     _desktop->info(TAG "    base_width   = %u", geometry->base_width);
     _desktop->info(TAG "    base_height  = %u", geometry->base_height);
     _desktop->info(TAG "    max_width    = %u", geometry->max_width);
     _desktop->info(TAG "    max_height   = %u", geometry->max_height);
     _desktop->info(TAG "    aspect_ratio = %f", geometry->aspect_ratio);
 
-    {
-        std::lock_guard<std::mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
+    _aspect = geometry->aspect_ratio;
 
-        _data.aspect = geometry->aspect_ratio;
-
-        if (_data.aspect <= 0) {
-            _data.aspect = (float)geometry->base_width / (float)geometry->base_height;
-        }
-
-        _data.maxWidth = geometry->max_width;
-        _data.maxHeight = geometry->max_height;
+    if (_aspect <= 0) {
+        _aspect = (float)geometry->base_width / (float)geometry->base_height;
     }
 
+    _maxWidth = geometry->max_width;
+    _maxHeight = geometry->max_height;
     return true;
 }
 
@@ -255,26 +256,18 @@ bool hc::Video::getPreferredHwRender(unsigned* preferred) {
     return true;
 }
 
-void hc::Video::refresh(void const* pixels, unsigned width, unsigned height, size_t pitch) {
-    if (pixels == nullptr || pixels == RETRO_HW_FRAME_BUFFER_VALID) {
+void hc::Video::refresh(void const* data, unsigned width, unsigned height, size_t pitch) {
+    if (data == nullptr || data == RETRO_HW_FRAME_BUFFER_VALID) {
         return;
     }
 
-    Data data;
+    std::lock_guard<std::mutex> lock(_mutex);
+    _width = width;
+    _height = height;
+    _pitch = pitch;
 
-    {
-        std::lock_guard<std::mutex> lock(_mutex);
-        data = _data;
-    }
-
-    data.width = width;
-    data.height = height;
-    data.pitch = pitch;
-
-    data.pixels.resize(height * pitch);
-    memcpy(data.pixels.data(), pixels, height * pitch);
-
-    _queue.put(&data);
+    _pixels.resize(height * pitch);
+    memcpy(_pixels.data(), data, height * pitch);
 }
 
 uintptr_t hc::Video::getCurrentFramebuffer() {
