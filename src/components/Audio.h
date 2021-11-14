@@ -6,6 +6,7 @@
 #include <lrcpp/Components.h>
 
 #include <vector>
+#include <mutex>
 
 namespace hc {
     class Audio: public View, public lrcpp::Audio {
@@ -25,7 +26,10 @@ namespace hc {
 
         // hc::View
         virtual char const* getTitle() override;
+        virtual void onGamePaused() override;
+        virtual void onGameResumed() override;
         virtual void onGameReset() override;
+        virtual void onDraw() override;
         virtual void onGameUnloaded() override;
 
         // lrcpp::Audio
@@ -37,8 +41,13 @@ namespace hc {
 
     protected:
         double _rate;
+        bool _mute;
+        bool _wasMuted;
 
         std::vector<int16_t> _samples;
         Queue<Data> _queue;
+
+        std::vector<int16_t> _draw;
+        std::mutex _mutex;
     };
 }
