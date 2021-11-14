@@ -12,11 +12,6 @@
 namespace hc {
     class Audio: public View, public lrcpp::Audio {
     public:
-        struct Data {
-            std::vector<int16_t> samples;
-            double rate;
-        };
-
         Audio(Desktop* desktop);
         virtual ~Audio();
 
