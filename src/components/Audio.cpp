@@ -39,11 +39,11 @@ void hc::Audio::onGameUnloaded() {
 }
 
 bool hc::Audio::setSystemAvInfo(retro_system_av_info const* info) {
-    _rate = info->timing.sample_rate;
-
     _desktop->info(TAG "Setting timing");
-    _desktop->info(TAG "    sample_rate = %f", _rate);
+    _desktop->info(TAG "    fps         = %f", info->timing.fps);
+    _desktop->info(TAG "    sample_rate = %f", info->timing.sample_rate);
 
+    _rate = info->timing.sample_rate;
     return true;
 }
 
