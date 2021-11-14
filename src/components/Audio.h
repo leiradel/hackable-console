@@ -1,9 +1,10 @@
 #pragma once
 
 #include "Desktop.h"
-#include "Queue.h"
 
 #include <lrcpp/Components.h>
+
+#include <SDL.h>
 
 #include <vector>
 #include <mutex>
@@ -17,12 +18,10 @@ namespace hc {
         };
 
         Audio(Desktop* desktop);
-        virtual ~Audio() {}
+        virtual ~Audio();
 
         void init();
         void flush();
-
-        Queue<Data>& queue() { return _queue; }
 
         // hc::View
         virtual char const* getTitle() override;
@@ -40,13 +39,13 @@ namespace hc {
         virtual void sample(int16_t left, int16_t right) override;
 
     protected:
+        SDL_AudioDeviceID _device;
+
         double _rate;
         bool _mute;
         bool _wasMuted;
 
         std::vector<int16_t> _samples;
-        Queue<Data> _queue;
-
         std::vector<int16_t> _draw;
         std::mutex _mutex;
     };

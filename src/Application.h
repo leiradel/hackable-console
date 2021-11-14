@@ -75,9 +75,6 @@ namespace hc {
         SDL_Window* _window;
         SDL_GLContext _glContext;
 
-        SDL_AudioDeviceID _audioDev;
-        double _sampleRate;
-
         LifeCycle _fsm;
 
         Logger _logger;
