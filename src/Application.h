@@ -19,7 +19,6 @@
 #include "LuaRepl.h"
 #include "Debugger.h"
 
-#include "Fifo.h"
 #include "thread/Semaphore.h"
 
 #include <SDL.h>
@@ -71,13 +70,13 @@ namespace hc {
     protected:
         static void sdlPrint(void* userdata, int category, SDL_LogPriority priority, char const* message);
         static void lifeCycleVprintf(void* ud, char const* fmt, va_list args);
-        static void audioCallback(void* const udata, Uint8* const stream, int const len);
         static void runFrame(Application* self);
 
         SDL_Window* _window;
         SDL_GLContext _glContext;
-        SDL_AudioSpec _audioSpec;
+
         SDL_AudioDeviceID _audioDev;
+        double _sampleRate;
 
         LifeCycle _fsm;
 
@@ -105,7 +104,6 @@ namespace hc {
 
         retro_perf_counter _runPerf;
 
-        Fifo _fifo;
         lua_State* _L;
     };
 }

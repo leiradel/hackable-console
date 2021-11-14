@@ -1,31 +1,31 @@
 #pragma once
 
 #include "Desktop.h"
+#include "Queue.h"
 
 #include <lrcpp/Components.h>
-#include <Fifo.h>
-
-#include <speex_resampler.h>
 
 #include <vector>
-#include <mutex>
 
 namespace hc {
     class Audio: public View, public lrcpp::Audio {
     public:
+        struct Data {
+            std::vector<int16_t> samples;
+            double rate;
+        };
+
         Audio(Desktop* desktop);
         virtual ~Audio() {}
 
-        void init(double const sampleRate, Fifo* const fifo);
+        void init();
         void flush();
+
+        Queue<Data>& queue() { return _queue; }
 
         // hc::View
         virtual char const* getTitle() override;
-        virtual void onGameLoaded() override;
-        virtual void onGamePaused() override;
-        virtual void onGameResumed() override;
         virtual void onGameReset() override;
-        virtual void onDraw() override;
         virtual void onGameUnloaded() override;
 
         // lrcpp::Audio
@@ -36,22 +36,9 @@ namespace hc {
         virtual void sample(int16_t left, int16_t right) override;
 
     protected:
-        double _sampleRate;
-        Fifo* _fifo;
+        double _rate;
 
         std::vector<int16_t> _samples;
-        std::mutex _mutex;
-
-        retro_system_timing _timing;
-        bool _mute;
-        bool _wasMuted;
-
-        double _rateControlDelta;
-        double _currentRatio;
-        double _originalRatio;
-        SpeexResamplerState* _resampler;
-
-        std::vector<int16_t> _previousSamples;
-        std::vector<int16_t> _drawSamples;
+        Queue<Data> _queue;
     };
 }

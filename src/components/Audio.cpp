@@ -13,174 +13,36 @@ extern "C" {
 
 hc::Audio::Audio(Desktop* desktop)
     : View(desktop)
-    , _sampleRate(0.0)
-    , _fifo(nullptr)
-    , _mute(false)
-    , _wasMuted(false)
-    , _rateControlDelta(0.0)
-    , _currentRatio(0.0)
-    , _originalRatio(0.0)
-    , _resampler(nullptr)
-{
-    memset(&_timing, 0, sizeof(_timing));
-}
+    , _rate(0.0)
+{}
 
-void hc::Audio::init(double const sampleRate, Fifo* const fifo) {
-    _sampleRate = sampleRate;
-    _fifo = fifo;
-}
+void hc::Audio::init() {}
 
 void hc::Audio::flush() {
-    if (_resampler == nullptr) {
-        return;
-    }
+    Data data;
+    data.samples = std::move(_samples);
+    data.rate = _rate;
 
-    _mutex.lock();
-    _previousSamples.swap(_samples);
-    _mutex.unlock();
-    _samples.clear();
-
-    int16_t const* const data = _previousSamples.data();
-    size_t const frames = _previousSamples.size() / 2;
-
-    size_t const avail = _fifo->free();
-
-    // Readjust the audio input rate
-    int const halfSize = (int)_fifo->size() / 2;
-    int const deltaMid = (int)avail - halfSize;
-    double const direction = (double)deltaMid / (double)halfSize;
-    double const adjust = 1.0 + _rateControlDelta * direction;
-
-    _currentRatio = _originalRatio * adjust;
-
-    spx_uint32_t inLen = frames * 2;
-    spx_uint32_t outLen = (spx_uint32_t)(inLen * _currentRatio);
-    outLen += outLen & 1; // request an even number of samples (stereo)
-    int16_t* const output = (int16_t*)alloca(outLen * 2);
-
-    if (output == NULL) {
-        _desktop->error(TAG "Error allocating temporary output buffer");
-        return;
-    }
-
-    if (_mute) {
-        memset(output, 0, outLen * 2);
-    }
-    else {
-        int const error = speex_resampler_process_int(_resampler, 0, data, &inLen, output, &outLen);
-
-        if (error != RESAMPLER_ERR_SUCCESS) {
-            memset(output, 0, outLen * 2);
-            _desktop->error(TAG "Error resampling: %s", speex_resampler_strerror(error));
-        }
-    }
-
-    outLen &= ~1; // don't send incomplete audio frames
-    size_t const size = outLen * 2;
-    _fifo->write(output, size <= avail ? size : avail);
+    _queue.put(&data);
 }
 
 char const* hc::Audio::getTitle() {
     return ICON_FA_VOLUME_UP " Audio";
 }
 
-void hc::Audio::onGameLoaded() {
-    // setSystemAvInfo has been called by now
-    _currentRatio = _originalRatio = _sampleRate / _timing.sample_rate;
-    _rateControlDelta = 0.005;
-
-    int error;
-    _resampler = speex_resampler_init(2, _timing.sample_rate, _sampleRate, SPEEX_RESAMPLER_QUALITY_DEFAULT, &error);
-
-    if (_resampler == nullptr) {
-        _desktop->error(TAG "speex_resampler_init: %s", speex_resampler_strerror(error));
-    }
-    else {
-        _desktop->info(TAG "Resampler initialized to convert from %f to %f", _timing.sample_rate, _sampleRate);
-    }
-}
-
-void hc::Audio::onGamePaused() {
-    _wasMuted = _mute;
-    _mute = true;
-}
-
-void hc::Audio::onGameResumed() {
-    _mute = _wasMuted;
-}
-
 void hc::Audio::onGameReset() {
-    _mutex.lock();
     _samples.clear();
-    _previousSamples.clear();
-    _drawSamples.clear();
-    _mutex.unlock();
-}
-
-void hc::Audio::onDraw() {
-    ImGui::Checkbox("Mute", &_mute);
-    ImGui::SameLine();
-
-    static auto const left = [](void* const data, int const idx) -> float {
-        auto const self = static_cast<Audio*>(data);
-        return self->_drawSamples[idx * 2];
-    };
-
-    static auto const right = [](void* data, int idx) -> float {
-        auto const self = static_cast<Audio*>(data);
-        return self->_drawSamples[idx * 2 + 1];
-    };
-
-    ImVec2 avail = ImGui::GetContentRegionAvail();
-
-    if (avail.y > 0.0f) {
-        avail.x /= 2;
-
-        _mutex.lock();
-        _drawSamples = _previousSamples;
-        _mutex.unlock();
-
-        int16_t min = INT16_MAX;
-        int16_t max = INT16_MIN;
-
-        size_t const count = _drawSamples.size();
-
-        for (size_t i = 0; i < count; i++) {
-            int16_t const sample = _drawSamples[i];
-            min = std::min(min, sample);
-            max = std::max(max, sample);
-        }
-
-        size_t const size = count / 2;
-
-        ImGui::PlotLines("", left, this, size, 0, nullptr, min, max, avail);
-        ImGui::SameLine(0.0f, 0.0f);
-        ImGui::PlotLines("", right, this, size, 0, nullptr, min, max, avail);
-
-        _drawSamples.clear();
-    }
 }
 
 void hc::Audio::onGameUnloaded() {
-    if (_resampler != nullptr) {
-        speex_resampler_destroy(_resampler);
-        _resampler = nullptr;
-    }
-
-    _mutex.lock();
     _samples.clear();
-    _previousSamples.clear();
-    _drawSamples.clear();
-    _mutex.unlock();
 }
 
 bool hc::Audio::setSystemAvInfo(retro_system_av_info const* info) {
-    _timing = info->timing;
+    _rate = info->timing.sample_rate;
 
     _desktop->info(TAG "Setting timing");
-
-    _desktop->info(TAG "    fps         = %f", _timing.fps);
-    _desktop->info(TAG "    sample_rate = %f", _timing.sample_rate);
+    _desktop->info(TAG "    sample_rate = %f", _rate);
 
     return true;
 }
@@ -191,8 +53,6 @@ bool hc::Audio::setAudioCallback(retro_audio_callback const* callback) {
 }
 
 size_t hc::Audio::sampleBatch(int16_t const* data, size_t frames) {
-    std::lock_guard<std::mutex> lock(_mutex);
-
     size_t const size = _samples.size();
     _samples.resize(size + frames * 2);
     memcpy(_samples.data() + size, data, frames * 4);

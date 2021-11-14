@@ -23,10 +23,9 @@ INCLUDES=\
 	-Isrc -Isrc/deps/imgui -Isrc/deps/imgui/backends -Isrc/deps/ImGuiAl/term -Isrc/deps/ImGuiAl/fonts \
 	-Isrc/deps/ImGuiAl/button -Isrc/deps/ImGuiAl/sparkline -Isrc/deps/IconFontCppHeaders \
 	-Isrc/deps/ImGui-Addons/addons/imguifilesystem -Isrc/dynlib -Iinclude \
-	-Isrc/fnkdat -Isrc/speex -Isrc/deps/lrcpp/include -Isrc/deps/lua -Isrc/deps/luafilesystem/src \
+	-Isrc/fnkdat -Isrc/deps/lrcpp/include -Isrc/deps/lua -Isrc/deps/luafilesystem/src \
 	-Isrc/deps/imgui_club/imgui_memory_editor -Isrc/deps/chips/util
 DEFINES=-DIMGUI_DISABLE_WIN32_DEFAULT_IME_FUNCS -D"IM_ASSERT(x)=do{(void)(x);}while(0)"
-DEFINES+=-DOUTSIDE_SPEEX -DRANDOM_PREFIX=speex -DEXPORT= -D_USE_SSE -D_USE_SSE2 -DFLOATING_POINT
 DEFINES+=-DPACKAGE=\"hackable-console\" -DDEBUG_FSM
 CFLAGS+=$(INCLUDES) $(DEFINES) `sdl2-config --cflags`
 CXXFLAGS=$(CFLAGS) -std=c++11
@@ -35,9 +34,9 @@ LIBS+=`sdl2-config --libs`
 
 # hackable-console
 HC_OBJS=\
-	src/main.o src/Application.o src/Debugger.o src/Fifo.o src/LifeCycle.o src/LuaRepl.o src/LuaUtil.o \
-	src/Control.o src/Cpu.o src/Desktop.o src/Devices.o src/Memory.o src/Timer.o \
-	src/dynlib/dynlib.o src/fnkdat/fnkdat.o src/speex/resample.o \
+	src/main.o src/Application.o src/Debugger.o src/LifeCycle.o src/LuaRepl.o src/LuaUtil.o src/Control.o \
+	src/Cpu.o src/Desktop.o src/Devices.o src/Memory.o src/Timer.o \
+	src/dynlib/dynlib.o src/fnkdat/fnkdat.o \
 	src/components/Audio.o src/components/Config.o src/components/Input.o src/components/Led.o \
 	src/components/Logger.o src/components/Perf.o src/components/Video.o \
 	src/cpus/Z80.o src/cpus/M6502.o \

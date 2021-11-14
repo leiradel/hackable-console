@@ -266,7 +266,6 @@ Some technology that is used:
     * [ImGuiAl](https://github.com/leiradel/ImGuiAl) for some widgets
     * [IconFontCppHeaders](https://github.com/juliettef/IconFontCppHeaders) for macros that make it easy to use the icons provided by [Font Awesome](https://fontawesome.com/)
 * [lrcpp](https://github.com/leiradel/lrcpp) to make it easier to write a fully functional Libretro front-end
-* [Speex](https://www.speex.org/) to resample the audio output from the cores to the sample rate required by the host system
 * [fnkdat](https://savannah.nongnu.org/projects/fnkdat) to provide a platform-independent way of computing and creating some folders needed by the front-end
     * This library is old so I'm open to ideas for replacements
 * `dynlib` for a platform-independent way of loading shared objects and getting their symbols

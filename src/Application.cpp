@@ -64,7 +64,8 @@ static void const* readAll(hc::Logger* logger, char const* const path, size_t* c
 }
 
 hc::Application::Application()
-    : _fsm(*this, lifeCycleVprintf, this)
+    : _sampleRate(0.0)
+    , _fsm(*this, lifeCycleVprintf, this)
     , _logger(this)
     , _config(this, &_memorySelector)
     , _video(this)
@@ -159,37 +160,6 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
         SDL_GL_MakeCurrent(_window, _glContext);
         SDL_GL_SetSwapInterval(1);
-
-        // Init audio
-        SDL_AudioSpec want;
-        memset(&want, 0, sizeof(want));
-
-        want.freq = 44100;
-        want.format = AUDIO_S16SYS;
-        want.channels = 2;
-        want.samples = 1024;
-        want.callback = audioCallback;
-        want.userdata = this;
-
-        _audioDev = SDL_OpenAudioDevice(
-            nullptr, 0,
-            &want, &_audioSpec,
-            SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_CHANNELS_CHANGE
-        );
-
-        if (_audioDev == 0) {
-            error(TAG "Error in SDL_OpenAudioDevice: %s", SDL_GetError());
-            return false;
-        }
-
-        undo.add([this]() { SDL_CloseAudioDevice(_audioDev); });
-
-        if (!_fifo.init(_audioSpec.size * 2)) {
-            error(TAG "Error in audio FIFO init");
-            return false;
-        }
-
-        undo.add([this]() { _fifo.destroy(); });
 
         SDL_PauseAudioDevice(_audioDev, 0);
 
@@ -333,7 +303,7 @@ bool hc::Application::init(std::string const& title, int const width, int const 
 
         _video.init();
         _led.init();
-        _audio.init(_audioSpec.freq, &_fifo);
+        _audio.init();
         _input.init(&frontend);
         _perf.init();
 
@@ -392,8 +362,10 @@ void hc::Application::destroy() {
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
 
-    SDL_CloseAudioDevice(_audioDev);
-    _fifo.destroy();
+    if (_audioDev != 0) {
+        SDL_CloseAudioDevice(_audioDev);
+        _audioDev = 0;
+    }
 
     SDL_GL_DeleteContext(_glContext);
     SDL_DestroyWindow(_window);
@@ -422,9 +394,67 @@ void hc::Application::run() {
                 _coreRun.release();
                 _appRun.acquire();
 
-                _audio.flush();
                 _video.flush();
                 onFrame();
+            }
+        }
+
+        auto& audioQueue = _audio.queue();
+
+        while (audioQueue.count() != 0) {
+            Audio::Data data;
+            audioQueue.get(&data);
+
+            if (data.rate != _sampleRate) {
+                _sampleRate = data.rate;
+
+                if (_audioDev != 0) {
+                    SDL_CloseAudioDevice(_audioDev);
+                }
+
+                SDL_AudioSpec desired, obtained;
+                memset(&desired, 0, sizeof(desired));
+                memset(&obtained, 0, sizeof(obtained));
+
+                desired.freq = _sampleRate;
+                desired.format = AUDIO_S16SYS;
+                desired.channels = 2;
+                desired.samples = 1024;
+                desired.callback = nullptr;
+                desired.userdata = nullptr;
+
+                _audioDev = SDL_OpenAudioDevice(
+                    nullptr, 0,
+                    &desired, &obtained,
+                    SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_CHANNELS_CHANGE
+                );
+
+                if (_audioDev != 0) {
+                    SDL_PauseAudioDevice(_audioDev, 0);
+
+                    info(TAG "Opened audio driver %s", SDL_GetCurrentAudioDriver());
+                    info(TAG "    %d Hz", obtained.freq);
+                    info(TAG "    %u channels", obtained.channels);
+                    info(TAG "    %u bits per sample", SDL_AUDIO_BITSIZE(obtained.format));
+
+                    info(
+                        TAG "    %s %s",
+                        SDL_AUDIO_ISSIGNED(obtained.format) ? "signed" : "unsigned",
+                        SDL_AUDIO_ISFLOAT(obtained.format) ? "float" : "integer"
+                    );
+
+                    info(TAG "    %s endian", SDL_AUDIO_ISBIGENDIAN(obtained.format) ? "big" : "little");
+                }
+                else {
+                    error(TAG "Error in SDL_OpenAudioDevice: %s", SDL_GetError());
+                }
+            }
+
+            if (_audioDev != 0) {
+                if (SDL_QueueAudio(_audioDev, data.samples.data(), data.samples.size() * 2) != 0) {
+                    error("SDL_QueueAudio() failed: %s", SDL_GetError());
+                    return;
+                }
             }
         }
 
@@ -735,19 +765,6 @@ void hc::Application::lifeCycleVprintf(void* ud, char const* fmt, va_list args) 
     self->vprintf(RETRO_LOG_DEBUG, fmt, args);
 }
 
-void hc::Application::audioCallback(void* const udata, Uint8* const stream, int const len) {
-    auto const self = static_cast<Application*>(udata);
-    size_t const avail = self->_fifo.occupied();
-
-    if (avail < (size_t)len) {
-        self->_fifo.read(static_cast<void*>(stream), avail);
-        memset(static_cast<void*>(stream + avail), 0, len - avail);
-    }
-    else {
-        self->_fifo.read(static_cast<void*>(stream), len);
-    }
-}
-
 void hc::Application::runFrame(Application* self) {
     lrcpp::Frontend& frontend = lrcpp::Frontend::getInstance();
 
@@ -761,6 +778,7 @@ void hc::Application::runFrame(Application* self) {
 
         self->_perf.start(&self->_runPerf);
         frontend.run();
+        self->_audio.flush();
         self->_perf.stop(&self->_runPerf);
 
         self->_appRun.release();
