@@ -92,19 +92,16 @@ void hc::Control::onDraw() {
 
     ImVec2 const available = ImGui::GetContentRegionAvail();
     ImVec2 const spacing = ImGui::GetStyle().ItemSpacing;
-    float const width = (available.x - spacing.x * 2) / 3.0f;
+    float const width = (available.x - spacing.x * 3) / 4.0f;
     ImVec2 const size = ImVec2(width, 0.0f);
 
     int const count = static_cast<int>(_consoles.size());
 
-    ImGui::Combo("##Consoles", &_selected, getter, &_consoles, count);
-    ImGui::SameLine();
+    ImGui::Combo("Consoles", &_selected, getter, &_consoles, count);
 
     bool const loadConsoleEnabled = _fsm->currentState() == LifeCycle::State::Start && _selected < count;
 
-    ImVec2 const rest = ImVec2(ImGui::GetContentRegionAvail().x, 0.0f);
-
-    if (ImGuiAl::Button(ICON_FA_FOLDER_OPEN " Load Console", loadConsoleEnabled, rest)) {
+    if (ImGuiAl::Button(ICON_FA_FOLDER_OPEN " Load Console", loadConsoleEnabled, size)) {
         _opened = _selected;
         Console const& cb = _consoles[_selected];
 
@@ -113,6 +110,7 @@ void hc::Control::onDraw() {
         lua_pop(cb.L, 1);
     }
 
+    ImGui::SameLine();
     bool loadGamePressed = false;
 
     if (ImGuiAl::Button(ICON_FA_ROCKET " Load Game", _fsm->canTransitionTo(LifeCycle::State::GameLoaded), size)) {
@@ -145,32 +143,11 @@ void hc::Control::onDraw() {
             char temp[ImGuiFs::MAX_PATH_BYTES];
             ImGuiFs::PathGetDirectoryName(path, temp);
             _lastGameFolder = temp;
-        }
-    }
-
-    ImGui::SameLine();
-
-    if (_fsm->currentState() == LifeCycle::State::GameRunning) {
-        if (ImGuiAl::Button(ICON_FA_PAUSE " Pause", true, size)) {
-            _fsm->pauseGame();
-        }
-    }
-    else if (_fsm->currentState() == LifeCycle::State::GamePaused) {
-        if (ImGuiAl::Button(ICON_FA_PLAY " Resume", true, size)) {
-            _fsm->resumeGame();
-        }
-    }
-    else {
-        if (ImGuiAl::Button(ICON_FA_PLAY " Start", _fsm->canTransitionTo(LifeCycle::State::GameRunning), size)) {
             _fsm->startGame();
         }
     }
 
     ImGui::SameLine();
-
-    if (ImGuiAl::Button(ICON_FA_STEP_FORWARD " Frame Step", _fsm->currentState() == LifeCycle::State::GamePaused, size)) {
-        _fsm->step();
-    }
 
     bool const gameLoaded = _fsm->currentState() == LifeCycle::State::GameLoaded ||
                             _fsm->currentState() == LifeCycle::State::GameRunning ||
@@ -182,13 +159,8 @@ void hc::Control::onDraw() {
 
     ImGui::SameLine();
 
-    if (ImGuiAl::Button(ICON_FA_EJECT " Unload Game", gameLoaded, size)) {
+    if (ImGuiAl::Button(ICON_FA_EJECT " Unload", !loadConsoleEnabled, size)) {
         _fsm->unloadGame();
-    }
-
-    ImGui::SameLine();
-
-    if (ImGuiAl::Button(ICON_FA_POWER_OFF " Unload Console", _fsm->canTransitionTo(LifeCycle::State::Start), size)) {
         _fsm->unloadCore();
     }
 }
