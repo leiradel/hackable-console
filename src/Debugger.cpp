@@ -133,7 +133,7 @@ hc::Debugger::Debugger(Desktop* desktop, Config* config, MemorySelector* memoryS
     , _memorySelector(memorySelector)
     , _debuggerIf(nullptr)
     , _selectedCpu(0)
-    , _paused(false)
+    , _paused(true)
 {}
 
 void hc::Debugger::init() {}
@@ -161,6 +161,7 @@ void hc::Debugger::onGameLoaded() {
 
     if (setDebugger == nullptr) {
         _desktop->warn("Core doesn't expose the debugger extension");
+        _paused = false;
         return;
     }
 
