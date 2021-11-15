@@ -39,6 +39,8 @@ namespace hc {
 
         void init();
 
+        bool paused() const;
+
         // hc::View
         virtual char const* getTitle() override;
         virtual void onGameLoaded() override;

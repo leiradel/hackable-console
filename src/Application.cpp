@@ -379,9 +379,11 @@ void hc::Application::run() {
         }
 
         if (_fsm.currentState() == LifeCycle::State::GameRunning) {
-            if (_runningTime.getTimeUs() >= _nextFrameTime) {
+            if (_debugger.paused()) {
+                _nextFrameTime = _runningTime.getTimeUs();
+            }
+            else if (_runningTime.getTimeUs() >= _nextFrameTime) {
                 _nextFrameTime += _coreUsPerFrame;
-
                 _coreRun.release();
                 onFrame();
             }

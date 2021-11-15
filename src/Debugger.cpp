@@ -138,6 +138,10 @@ hc::Debugger::Debugger(Desktop* desktop, Config* config, MemorySelector* memoryS
 
 void hc::Debugger::init() {}
 
+bool hc::Debugger::paused() const {
+    return _paused;
+}
+
 char const* hc::Debugger::getTitle() {
     return ICON_FA_BUG " Debugger";
 }
