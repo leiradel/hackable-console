@@ -78,7 +78,6 @@ hc::Application::Application()
     , _repl(this, &_logger)
     , _debugger(this, &_config, &_memorySelector)
     , _coreRun(0)
-    , _appRun(0)
     , _exit(false)
     , _coreThread(runFrame, this)
 {}
@@ -384,8 +383,6 @@ void hc::Application::run() {
                 _nextFrameTime += _coreUsPerFrame;
 
                 _coreRun.release();
-                _appRun.acquire();
-
                 onFrame();
             }
         }
@@ -710,9 +707,8 @@ void hc::Application::runFrame(Application* self) {
 
         self->_perf.start(&self->_runPerf);
         frontend.run();
-        self->_audio.flush();
         self->_perf.stop(&self->_runPerf);
 
-        self->_appRun.release();
+        self->_audio.flush();
     }
 }

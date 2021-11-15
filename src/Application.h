@@ -95,7 +95,6 @@ namespace hc {
         uint64_t _nextFrameTime;
         uint64_t _coreUsPerFrame;
         Semaphore _coreRun;
-        Semaphore _appRun;
         std::atomic<bool> _exit;
         std::thread _coreThread;
 
