@@ -47,29 +47,47 @@ char const* hc::Video::getTitle() {
 }
 
 void hc::Video::onDraw() {
-    std::lock_guard<std::mutex> lock(_mutex);
+    unsigned width = 0, height = 0;
+    unsigned maxWidth = 0, maxHeight = 0;
+    float aspect = 0.0f;
+    retro_pixel_format format = RETRO_PIXEL_FORMAT_UNKNOWN;
+    size_t pitch = 0;
+    std::vector<uint8_t> pixels;
 
-    setupTexture(_maxWidth, _maxHeight, _format);
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
 
-    if (_texture != 0 && _pixels.size() != 0) {
+        width = _width;
+        height = _height;
+        maxWidth = _maxWidth;
+        maxHeight = _maxHeight;
+        aspect = _aspect;
+        format = _format;
+        pitch = _pitch;
+        pixels.swap(_pixels);
+    }
+
+    setupTexture(maxWidth, maxHeight, format);
+
+    if (_texture != 0 && pixels.size() != 0) {
         GLint previous_texture;
         glGetIntegerv(GL_TEXTURE_BINDING_2D, &previous_texture);
         glBindTexture(GL_TEXTURE_2D, _texture);
 
-        switch (_format) {
+        switch (format) {
             case RETRO_PIXEL_FORMAT_XRGB8888:
-                glPixelStorei(GL_UNPACK_ROW_LENGTH, _pitch / 4);
-                glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _width, _height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, _pixels.data());
+                glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / 4);
+                glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, pixels.data());
                 break;
 
             case RETRO_PIXEL_FORMAT_RGB565:
-                glPixelStorei(GL_UNPACK_ROW_LENGTH, _pitch / 2);
-                glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _width, _height, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, _pixels.data());
+                glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / 2);
+                glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, pixels.data());
                 break;
 
             case RETRO_PIXEL_FORMAT_0RGB1555:
-                glPixelStorei(GL_UNPACK_ROW_LENGTH, _pitch / 2);
-                glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _width, _height, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, _pixels.data());
+                glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / 2);
+                glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, pixels.data());
                 break;
 
             case RETRO_PIXEL_FORMAT_UNKNOWN:
@@ -78,7 +96,6 @@ void hc::Video::onDraw() {
 
         glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
         glBindTexture(GL_TEXTURE_2D, previous_texture);
-        _pixels.clear();
     }
 
     if (_texture != 0) {
@@ -88,11 +105,11 @@ void hc::Video::onDraw() {
         ImVec2 const max = ImGui::GetWindowContentRegionMax();
 
         float height = max.y - min.y;
-        float width = height * _aspect;
+        float width = height * aspect;
 
         if (width > max.x - min.x) {
             width = max.x - min.x;
-            height = width / _aspect;
+            height = width / aspect;
         }
 
         ImVec2 const size = ImVec2(width, height);
@@ -105,7 +122,7 @@ void hc::Video::onDraw() {
 
         if (_mouseOnTexture) {
             ImVec2 const mouse = ImGui::GetMousePos();
-            _mousePos = ImVec2((mouse.x - _texturePos.x) * _width / size.x, (mouse.y - _texturePos.y) * _height / size.y);
+            _mousePos = ImVec2((mouse.x - _texturePos.x) * width / size.x, (mouse.y - _texturePos.y) * height / size.y);
 
             ImGui::SetMouseCursor(ImGuiMouseCursor_None);
         }
