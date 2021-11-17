@@ -8,7 +8,7 @@
 #include <imgui.h>
 #include <imguial_button.h>
 
-hc::Z80::Z80(Desktop* desktop, hc_Cpu const* cpu) : Cpu(desktop, cpu), _hasChanged(0) {
+hc::Z80::Z80(Desktop* desktop, Debugger* debugger, hc_Cpu const* cpu) : Cpu(desktop, debugger, cpu), _hasChanged(0) {
     for (unsigned i = 0; i < HC_Z80_NUM_REGISTERS; i++) {
         _previousValue[i] = _cpu->v1.get_register(i);
     }
@@ -37,7 +37,7 @@ void hc::Z80::onDraw() {
 
     for (unsigned i = 0; i < HC_Z80_NUM_REGISTERS; i++) {
         static char const* const names[HC_Z80_NUM_REGISTERS] = {
-            "A", "F", "BC", "DE", "HL", "IX", "IY", "AF2", "BC2", "DE2", "HL2", "I", "R", "SP", "PC", "IFF", "IM", "WZ"
+            "A", "F", "BC", "DE", "HL", "IX", "IY", "AF'", "BC'", "DE'", "HL'", "I", "R", "SP", "PC", "IFF", "IM", "WZ"
         };
 
         static uint8_t const width[HC_Z80_NUM_REGISTERS] = {
@@ -67,9 +67,7 @@ void hc::Z80::onDraw() {
         }
     }
 
-    if (ImGui::Button(ICON_FA_CODE " Disassembly")) {
-        _desktop->addView(new Disasm(_desktop, this, mainMemory(), HC_Z80_PC), false, true);
-    }
+    Cpu::onDraw();
 }
 
 uint64_t hc::Z80::disasm(uint64_t address, Memory const* memory, char* buffer, size_t size) {
@@ -100,4 +98,8 @@ uint64_t hc::Z80::disasm(uint64_t address, Memory const* memory, char* buffer, s
     ud.buffer[ud.position] = 0;
 
     return ud.address - address;
+}
+
+uint64_t hc::Z80::programCounter() const {
+    return _cpu->v1.get_register(HC_Z80_PC);
 }

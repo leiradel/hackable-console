@@ -5,14 +5,17 @@
 #include <stdint.h>
 
 namespace hc {
+    class Debugger;
+
     class M6502 : public Cpu {
     public:
-        M6502(Desktop* desktop, hc_Cpu const* cpu);
+        M6502(Desktop* desktop, Debugger* debugger, hc_Cpu const* cpu);
         ~M6502() {}
 
         // hc::Cpu
         virtual uint64_t instructionLength(uint64_t address, Memory const* memory) override;
         virtual void disasm(uint64_t address, Memory const* memory, char* buffer, size_t size, char* tooltip, size_t ttsz) override;
+        virtual uint64_t programCounter() const override;
 
         // hc::View
         virtual void onFrame() override;

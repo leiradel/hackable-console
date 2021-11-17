@@ -17,13 +17,7 @@ static void renderFrame(ImVec2 const min, ImVec2 const max, ImU32 const color) {
     draw_list->AddRectFilled(min, max, color, false);
 }
 
-hc::Disasm::Disasm(Desktop* desktop, Cpu* cpu, Memory* memory, unsigned reg)
-    : View(desktop)
-    , _valid(true)
-    , _cpu(cpu)
-    , _memory(memory)
-    , _register(reg)
-{
+hc::Disasm::Disasm(Desktop* desktop, Cpu* cpu) : View(desktop), _valid(true), _cpu(cpu) {
     static std::atomic<unsigned> counter;
 
     _title = ICON_FA_CODE " ";
@@ -45,8 +39,10 @@ void hc::Disasm::onDraw() {
         return;
     }
 
+    Memory* const memory = _cpu->mainMemory();
+
     char format[32];
-    snprintf(format, sizeof(format), "%%0%u" PRIx64 ":  %%-11s  %%s", _memory->requiredDigits());
+    snprintf(format, sizeof(format), "%%0%u" PRIx64 ":  %%-11s  %%s", memory->requiredDigits());
 
     float const lineHeight = ImGui::GetTextLineHeightWithSpacing();
 
@@ -61,7 +57,7 @@ void hc::Disasm::onDraw() {
     std::vector<uint64_t> addresses;
     addresses.reserve(numItems + numItems / 2);
 
-    uint64_t const address = _cpu->getRegister(_register);
+    uint64_t const address = _cpu->programCounter();
     uint64_t addr = address >= numItems * 4 ? address - numItems * 4 : 0;
     size_t addrLine = 0;
 
@@ -73,7 +69,7 @@ void hc::Disasm::onDraw() {
             break;
         }
 
-        addr += _cpu->instructionLength(addr, _memory);
+        addr += _cpu->instructionLength(addr, memory);
     }
 
     size_t const firstLine = addrLine >= numItems / 2 ? addrLine - numItems / 2 : 0;
@@ -87,16 +83,16 @@ void hc::Disasm::onDraw() {
 
         char opcodes[12];
 
-        uint64_t const length = _cpu->instructionLength(addr, _memory);
+        uint64_t const length = _cpu->instructionLength(addr, memory);
 
         switch (length) {
-            case 1: snprintf(opcodes, sizeof(opcodes), "%02x", _memory->peek(addr)); break;
-            case 2: snprintf(opcodes, sizeof(opcodes), "%02x %02x", _memory->peek(addr), _memory->peek(addr + 1)); break;
+            case 1: snprintf(opcodes, sizeof(opcodes), "%02x", memory->peek(addr)); break;
+            case 2: snprintf(opcodes, sizeof(opcodes), "%02x %02x", memory->peek(addr), memory->peek(addr + 1)); break;
 
             case 3:
                 snprintf(
                     opcodes, sizeof(opcodes),
-                    "%02x %02x %02x", _memory->peek(addr), _memory->peek(addr + 1), _memory->peek(addr + 2)
+                    "%02x %02x %02x", memory->peek(addr), memory->peek(addr + 1), memory->peek(addr + 2)
                 );
 
                 break;
@@ -104,14 +100,14 @@ void hc::Disasm::onDraw() {
             case 4:
                 snprintf(opcodes, sizeof(opcodes),
                     "%02x %02x %02x %02x",
-                    _memory->peek(addr), _memory->peek(addr + 1), _memory->peek(addr + 2), _memory->peek(addr + 3)
+                    memory->peek(addr), memory->peek(addr + 1), memory->peek(addr + 2), memory->peek(addr + 3)
                 );
 
                 break;
         }
 
         char buffer[64], tooltip[64];
-        _cpu->disasm(addr, _memory, buffer, sizeof(buffer), tooltip, sizeof(tooltip));
+        _cpu->disasm(addr, memory, buffer, sizeof(buffer), tooltip, sizeof(tooltip));
 
         ImGui::Text(format, addr, opcodes, buffer);
 
@@ -134,12 +130,25 @@ hc::Debugger::Debugger(Desktop* desktop, Config* config, MemorySelector* memoryS
     , _debuggerIf(nullptr)
     , _selectedCpu(0)
     , _paused(true)
+    , _step(false)
 {}
 
 void hc::Debugger::init() {}
 
 bool hc::Debugger::paused() const {
     return _paused;
+}
+
+void hc::Debugger::step() {
+    if (_paused) {
+        {
+            std::unique_lock<std::mutex> lock(_mutex);
+            _paused = false;
+            _step = true;
+        }
+
+        _gate.notify_all();
+    }
 }
 
 char const* hc::Debugger::getTitle() {
@@ -213,7 +222,7 @@ void hc::Debugger::onDraw() {
     ImVec2 const rest = ImVec2(ImGui::GetContentRegionAvail().x, 0.0f);
 
     if (ImGui::Button(ICON_FA_EYE " View", rest)) {
-        Cpu* const cpu = Cpu::create(_desktop, _debuggerIf->v1.system->v1.cpus[_selectedCpu]);
+        Cpu* const cpu = Cpu::create(_desktop, this, _debuggerIf->v1.system->v1.cpus[_selectedCpu]);
         _desktop->addView(cpu, false, true);
     }
 
@@ -222,6 +231,7 @@ void hc::Debugger::onDraw() {
             {
                 std::unique_lock<std::mutex> lock(_mutex);
                 _paused = false;
+                _step = false;
             }
 
             _gate.notify_all();
@@ -231,6 +241,7 @@ void hc::Debugger::onDraw() {
         if (ImGui::Button(ICON_FA_PAUSE " Break")) {
             std::unique_lock<std::mutex> lock(_mutex);
             _paused = true;
+            _step = false;
         }
     }
 }
@@ -246,6 +257,7 @@ void hc::Debugger::tick() {
     if (_paused) {
         std::unique_lock<std::mutex> lock(_mutex);
         _gate.wait(lock, [this]{return !_paused;});
+        _paused = _step.load();
     }
 }
 
@@ -253,17 +265,25 @@ void hc::Debugger::executionBreakpoint(hc_ExecutionBreakpoint const* event) {
     tick();
 }
 
-void hc::Debugger::interruptBreakpoint(hc_InterruptBreakpoint const* event) {}
+void hc::Debugger::interruptBreakpoint(hc_InterruptBreakpoint const* event) {
+    tick();
+}
 
 void hc::Debugger::memoryWatchpoint(hc_MemoryWatchpoint const* event) {
     tick();
 }
 
-void hc::Debugger::registerWatchpoint(hc_RegisterWatchpoint const* event) {}
+void hc::Debugger::registerWatchpoint(hc_RegisterWatchpoint const* event) {
+    tick();
+}
 
-void hc::Debugger::ioWatchpoint(hc_IoWatchpoint const* event) {}
+void hc::Debugger::ioWatchpoint(hc_IoWatchpoint const* event) {
+    tick();
+}
 
-void hc::Debugger::genericBreakpoint(hc_Breakpoint const* event) {}
+void hc::Debugger::genericBreakpoint(hc_Breakpoint const* event) {
+    tick();
+}
 
 void hc::Debugger::handleEvent(void* frontend_user_data, hc_Event const* event) {
     switch (event->type) {

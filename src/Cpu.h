@@ -11,6 +11,8 @@ extern "C" {
 #include <string>
 
 namespace hc {
+    class Debugger;
+
     class DebugMemory : public Memory {
     public:
         DebugMemory(hc_Memory const* memory) : _memory(memory) {}
@@ -35,7 +37,7 @@ namespace hc {
     public:
         ~Cpu() {}
         
-        static Cpu* create(Desktop* desktop, hc_Cpu const* cpu);
+        static Cpu* create(Desktop* desktop, Debugger* debugger, hc_Cpu const* cpu);
 
         char const* name() const { return _cpu->v1.description; }
         unsigned type() const { return _cpu->v1.type; }
@@ -50,14 +52,17 @@ namespace hc {
 
         virtual uint64_t instructionLength(uint64_t address, Memory const* memory) = 0;
         virtual void disasm(uint64_t address, Memory const* memory, char* buffer, size_t size, char* tooltip, size_t ttsz) = 0;
+        virtual uint64_t programCounter() const = 0;
 
         // hc::View
         virtual char const* getTitle() override;
         virtual void onGameUnloaded() override;
+        virtual void onDraw() override;
 
     protected:
-        Cpu(Desktop* desktop, hc_Cpu const* cpu);
+        Cpu(Desktop* desktop, Debugger* debugger, hc_Cpu const* cpu);
 
+        Debugger* const _debugger;
         hc_Cpu const* const _cpu;
         bool _valid;
         std::string _title;

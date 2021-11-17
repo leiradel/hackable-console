@@ -1,4 +1,6 @@
 #include "Cpu.h"
+#include "Debugger.h"
+
 #include "cpus/Z80.h"
 #include "cpus/M6502.h"
 
@@ -7,6 +9,8 @@
 #include <imguial_button.h>
 
 #include <inttypes.h>
+#include <math.h>
+#include <ctype.h>
 #include <atomic>
 
 static void renderFrame(ImVec2 const min, ImVec2 const max, ImU32 const color) {
@@ -14,16 +18,21 @@ static void renderFrame(ImVec2 const min, ImVec2 const max, ImU32 const color) {
     draw_list->AddRectFilled(min, max, color, false);
 }
 
-hc::Cpu* hc::Cpu::create(Desktop* desktop, hc_Cpu const* cpu) {
+hc::Cpu* hc::Cpu::create(Desktop* desktop, Debugger* debugger, hc_Cpu const* cpu) {
     switch (cpu->v1.type) {
-        case HC_CPU_Z80: return new Z80(desktop, cpu);
-        case HC_CPU_6502: return new M6502(desktop, cpu);
+        case HC_CPU_Z80: return new Z80(desktop, debugger, cpu);
+        case HC_CPU_6502: return new M6502(desktop, debugger, cpu);
     }
 
     return nullptr;
 }
 
-hc::Cpu::Cpu(Desktop* desktop, hc_Cpu const* cpu) : View(desktop), _cpu(cpu), _valid(true) {
+hc::Cpu::Cpu(Desktop* desktop, Debugger* debugger, hc_Cpu const* cpu)
+    : View(desktop)
+    , _debugger(debugger)
+    , _cpu(cpu)
+    , _valid(true) {
+
     _title = ICON_FA_MICROCHIP " ";
     _title += _cpu->v1.description;
 
@@ -107,7 +116,7 @@ void hc::Cpu::drawFlags(unsigned reg, char const* name, char const* const* flags
         }
     }
 
-    _cpu->v1.set_register(reg, value);
+    //_cpu->v1.set_register(reg, value);
     ImGui::NewLine();
 }
 
@@ -117,4 +126,14 @@ char const* hc::Cpu::getTitle() {
 
 void hc::Cpu::onGameUnloaded() {
     _valid = false;
+}
+
+void hc::Cpu::onDraw() {
+    if (ImGui::Button(ICON_FA_CODE " Disassembly")) {
+        _desktop->addView(new Disasm(_desktop, this), false, true);
+    }
+
+    if (ImGuiAl::Button(ICON_FA_STEP_FORWARD " Step", _debugger->paused())) {
+        _debugger->step();
+    }
 }

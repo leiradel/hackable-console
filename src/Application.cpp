@@ -504,6 +504,7 @@ bool hc::Application::quit() {
     info(TAG "Asking the core frame run thread to exit");
     _exit = true;
     _coreRun.release();
+    _debugger.step();
 
     info(TAG "Waiting the core frame run thread to exit");
     _coreThread.join();
@@ -700,17 +701,22 @@ void hc::Application::runFrame(Application* self) {
     lrcpp::Frontend& frontend = lrcpp::Frontend::getInstance();
 
     for (;;) {
-        self->_coreRun.acquire();
-
         if (self->_exit) {
             self->info(TAG "Core frame run thread exiting");
             return;
         }
 
-        self->_perf.start(&self->_runPerf);
-        frontend.run();
-        self->_perf.stop(&self->_runPerf);
+        if (self->_runningTime.getTimeUs() >= self->_nextFrameTime) {
+            self->_nextFrameTime += self->_coreUsPerFrame;
+            //self->onFrame();
 
-        self->_audio.flush();
+            self->_perf.start(&self->_runPerf);
+            frontend.run();
+            self->_perf.stop(&self->_runPerf);
+
+            self->_audio.flush();
+        }
+
+        SDL_Delay(1);
     }
 }

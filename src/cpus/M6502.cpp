@@ -8,7 +8,7 @@
 #include <imgui.h>
 #include <imguial_button.h>
 
-hc::M6502::M6502(Desktop* desktop, hc_Cpu const* cpu) : Cpu(desktop, cpu), _hasChanged(0) {
+hc::M6502::M6502(Desktop* desktop, Debugger* debugger, hc_Cpu const* cpu) : Cpu(desktop, debugger, cpu), _hasChanged(0) {
     for (unsigned i = 0; i < HC_6502_NUM_REGISTERS; i++) {
         _previousValue[i] = _cpu->v1.get_register(i);
     }
@@ -62,10 +62,6 @@ void hc::M6502::onDraw() {
             drawRegister(i, names[i], width[i], highlight);
         }
     }
-
-    if (ImGui::Button(ICON_FA_CODE " Disassembly")) {
-        _desktop->addView(new Disasm(_desktop, this, mainMemory(), HC_6502_PC), false, true);
-    }
 }
 
 uint64_t hc::M6502::disasm(uint64_t address, hc::Memory const* memory, char* buffer, size_t size) {
@@ -96,4 +92,8 @@ uint64_t hc::M6502::disasm(uint64_t address, hc::Memory const* memory, char* buf
     ud.buffer[ud.position] = 0;
 
     return ud.address - address;
+}
+
+uint64_t hc::M6502::programCounter() const {
+    return _cpu->v1.get_register(HC_6502_PC);
 }

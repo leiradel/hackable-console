@@ -13,11 +13,12 @@ extern "C" {
 #include <vector>
 #include <mutex>
 #include <condition_variable>
+#include <atomic>
 
 namespace hc {
     class Disasm : public View {
     public:
-        Disasm(Desktop* desktop, Cpu* cpu, Memory* memory, unsigned reg);
+        Disasm(Desktop* desktop, Cpu* cpu);
 
         // hc::View
         virtual char const* getTitle() override;
@@ -27,8 +28,6 @@ namespace hc {
     protected:
         bool _valid;
         Cpu* _cpu;
-        Memory* _memory;
-        unsigned _register;
         std::string _title;
     };
 
@@ -40,6 +39,7 @@ namespace hc {
         void init();
 
         bool paused() const;
+        void step();
 
         // hc::View
         virtual char const* getTitle() override;
@@ -68,6 +68,7 @@ namespace hc {
 
         std::mutex _mutex;
         std::condition_variable _gate;
-        volatile bool _paused;
+        std::atomic<bool> _paused;
+        std::atomic<bool> _step;
     };
 }
