@@ -17,13 +17,31 @@
 typedef enum {
     HC_EVENT_TICK = 0,
     HC_EVENT_EXECUTION = 1,
-    HC_EVENT_INTERRUPT = 2,
-    HC_EVENT_MEMORY = 3,
-    HC_EVENT_REG = 4,
-    HC_EVENT_IO = 5,
-    HC_EVENT_GENERIC = 6
+    HC_EVENT_RETURN = 2,
+    HC_EVENT_INTERRUPT = 3,
+    HC_EVENT_MEMORY = 4,
+    HC_EVENT_REG = 5,
+    HC_EVENT_IO = 6,
+    HC_EVENT_GENERIC = 7
 }
 hc_EventType;
+
+/* Subscription ID. Helps identify subscriber, and also allows unsubscribing from an event. A negative ID indicates an error.
+   IDs are not necessarily consecutive, and an ID may be re-used only after unsubscribing. Otherwise, IDs are unique, even
+   between different event types. (The core might implement this by using some bits of the event ID to indicate the event type.) */
+typedef int64_t hc_SubscriptionID;
+
+typedef enum {
+    /* Report all execution events */
+    HC_STEP,
+    
+    /* As above, but if an interrupt occurs, temporarily disable until returned from interrupt */
+    HC_STEP_SKIP_INTERRUPT,
+    
+    /* As above, but if a subroutine is invoked, temporarily disable until returned from subroutine */
+    HC_STEP_CURRENT_SUBROUTINE,
+}
+hc_ExecutionType;
 
 typedef struct hc_GenericBreakpoint {
     struct {
@@ -106,31 +124,50 @@ typedef struct hc_System {
 hc_System;
 
 /* Informs the front-end that a CPU is about to execute an instruction at the given address */
-typedef struct hc_Execution {
+typedef struct hc_ExecutionEvent {
     hc_Cpu const* cpu;
     uint64_t address;
 }
-hc_ExecutionBreakpoint;
+hc_ExecutionEvent;
+
+/* Informs the front-end that a CPU has just returned from a subroutine */
+typedef struct hc_ExecutionReturnEvent {
+    hc_Cpu const* cpu;
+    
+    /* address of the return instruction */
+    uint64_t previous_address;
+    
+    /* address returned to */
+    uint64_t return_address;
+}
+hc_ExecutionReturnEvent;
 
 /* Informs the front-end that an interrupt was served */
-typedef struct hc_Interrupt {
+typedef struct hc_InterruptEvent {
     hc_Cpu const* cpu;
+    
+    /* Identifies the type of interrupt. Meaning depends on CPU model */
     unsigned kind;
-    uint64_t address;
+    
+    /* Address of the next instruction to be executed when returning from interrupt */
+    uint64_t return_address;
+    
+    /* New value of the program counter (in general, the start of the interrupt vector) */
+    uint64_t vector_address;
 }
-hc_InterruptBreakpoint;
+hc_InterruptEvent;
 
 /* Informs the front-end that a memory location is about to be read from or written to */
-typedef struct hc_MemoryWatchpoint {
+typedef struct hc_MemoryWatchpointEvent {
     hc_Memory const* memory;
     uint64_t address;
-    unsigned operation;
-    uint8_t new_value;
+    uint8_t operation;
+    uint8_t value;
 }
 hc_MemoryWatchpoint;
 
 /* Informs the front-end that a register is about to have its value changed */
-typedef struct hc_RegisterWatchpoint {
+typedef struct hc_RegisterWatchpointEvent {
     hc_Cpu const* cpu;
     unsigned reg;
     uint64_t new_value;
@@ -138,37 +175,117 @@ typedef struct hc_RegisterWatchpoint {
 hc_RegisterWatchpoint;
 
 /* Informs the front-end that an IO port is about to be read from or written to */
-typedef struct hc_IoWatchpoint {
+typedef struct hc_IoWatchpointEvent {
     hc_Cpu const* cpu;
     uint64_t address;
-    unsigned operation;
+    uint8_t operation;
     uint64_t value;
 }
 hc_IoWatchpoint;
 
 /* Informs the front-end that a generic breakpoint was hit */
-typedef struct hc_Breakpoint {
+typedef struct hc_GenericBreakpointEvent {
     hc_GenericBreakpoint const* breakpoint;
     uint64_t args[4];
 }
 hc_Breakpoint;
 
+/* Tagged union over all hc Event types */
 typedef struct hc_Event {
     hc_EventType type;
-    void* user_data;
+    hc_SubscriptionID subscribtion_id;
 
     union {
-        hc_ExecutionBreakpoint execution;
-        hc_InterruptBreakpoint interrupt;
-        hc_MemoryWatchpoint memory;
-        hc_RegisterWatchpoint reg;
-        hc_IoWatchpoint io;
-        hc_Breakpoint generic;
+        hc_ExecutionEvent execution;
+        hc_ExecutionReturnEvent execution_return;
+        hc_InterruptEvent interrupt;
+        hc_MemoryWatchpointEvent memory;
+        hc_RegisterWatchpointEvent reg;
+        hc_IoWatchpointEvent io;
+        hc_GenericBreakpointEvent generic;
     }
     event;
 }
 hc_Event;
 
+/* Tells the core to report certain execution events. Note that the core should implicitly include the
+   current stack depth and/or subroutine being executed in the context of this subscription */
+typedef struct hc_ExecutionSubscription {
+    hc_Cpu const* cpu;
+    hc_ExecutionType type;
+    uint64_t address_range_begin;
+    uint64_t address_range_end;
+}
+hc_ExecutionSubscription;
+
+/* Tells the core to report after returning from the current subroutine.
+   Note:
+    - The core should implicitly include the current stack depth and/or subroutine
+      being executed in the context of this subscription.
+    - This event is only reported once per subscription, so the front-end should
+      immediately unsubscribe any time this event is reported.
+*/
+typedef struct hc_ExecutionReturnSubscription {
+    hc_Cpu const* cpu;
+}
+hc_ExecutionReturnSubscription;
+
+/* Tells the core to report certain interrupt events */
+typedef struct hc_InterruptSubscription {
+    hc_Cpu const* cpu;
+    unsigned kind;
+}
+hc_InterruptSubscription;
+
+/* Tells the core to report certain memory access events */
+typedef struct hc_MemoryWatchpointSubscription {
+    hc_Memory const* memory;
+    uint64_t address_range_begin;
+    uint64_t address_range_end;
+    uint8_t operation;
+}
+hc_MemoryWatchpointSubscription;
+
+/* Tells the core to report certain register change events */
+typedef struct hc_RegisterWatchpointSubscription {
+    hc_Cpu const cpu;
+    unsigned reg;
+}
+hc_RegisterWatchpointSubscription;
+
+/* Tells the core to report when an IO port is accessed  */
+typedef struct hc_IoWatchpointSubscription {
+    hc_Cpu const* cpu;
+    uint64_t address_range_begin;
+    uint64_t address_range_end;
+    uint8_t operation;
+}
+hc_IoWatchpointSubscription;
+
+/* Tells the core to report a generic breakpoint event */
+typedef struct hc_GenericBreakpointSubscription {
+    hc_GenericBreakpoint const* breakpoint;
+}
+hc_GenericBreakpointSubscription;
+
+/* Informs the core that a particular type of event should be reported (via handle_event()) */
+typedef struct hc_Subscription {
+    hc_EventType type;
+    
+    union {
+        hc_ExecutionSubscription execution;
+        hc_ExecutionReturnSubscription execution_return;
+        hc_InterruptSubscription interrupt;
+        hc_MemoryWatchpointSubscription memory;
+        hc_RegisterWatchpointSubscription reg;
+        hc_IoWatchpointSubscription io;
+        hc_GenericBreakpointSubscription generic;
+    }
+    subscription;
+}
+hc_Subscription;
+
+/* Debug interface. Shared between the core and frontend. Members which are const are initialized by the frontend */
 typedef struct hc_DebuggerIf {
     unsigned const frontend_api_version;
     unsigned core_api_version;
@@ -182,6 +299,10 @@ typedef struct hc_DebuggerIf {
 
         /* Handles an event from the core */
         void (* const handle_event)(void* frontend_user_data, hc_Event const* event);
+        
+        /* Tells the core to report certain events. Returns negative value if not supported or if an error occurred */
+        hc_SubscriptionID (* subscribe)(hc_Subscription);
+        void (* unsubscribe)(hc_SubscriptionID);
     }
     v1;
 }
