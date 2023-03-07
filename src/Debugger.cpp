@@ -215,9 +215,11 @@ void hc::Debugger::tick() {
     }
 }
 
-void hc::Debugger::executionBreakpoint(hc_ExecutionBreakpoint const* event) {}
+void hc::Debugger::executionBreakpoint(hc_ExecutionEvent const* event) {}
 
-void hc::Debugger::interruptBreakpoint(hc_InterruptBreakpoint const* event) {}
+void hc::Debugger::returnBreakpoint(hc_ExecutionReturnEvent const* event) {}
+
+void hc::Debugger::interruptBreakpoint(hc_InterruptEvent const* event) {}
 
 void hc::Debugger::memoryWatchpoint(hc_MemoryWatchpoint const* event) {}
 
@@ -231,6 +233,7 @@ void hc::Debugger::handleEvent(void* frontend_user_data, hc_Event const* event) 
     switch (event->type) {
         case HC_EVENT_TICK: static_cast<Debugger*>(frontend_user_data)->tick(); break;
         case HC_EVENT_EXECUTION: static_cast<Debugger*>(frontend_user_data)->executionBreakpoint(&event->event.execution); break;
+        case HC_EVENT_RETURN: static_cast<Debugger*>(frontend_user_data)->returnBreakpoint(&event->event.execution_return); break;
         case HC_EVENT_INTERRUPT: static_cast<Debugger*>(frontend_user_data)->interruptBreakpoint(&event->event.interrupt); break;
         case HC_EVENT_MEMORY: static_cast<Debugger*>(frontend_user_data)->memoryWatchpoint(&event->event.memory); break;
         case HC_EVENT_REG: static_cast<Debugger*>(frontend_user_data)->registerWatchpoint(&event->event.reg); break;

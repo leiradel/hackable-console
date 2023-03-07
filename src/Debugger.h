@@ -54,8 +54,9 @@ namespace hc {
 
     protected:
         void tick();
-        void executionBreakpoint(hc_ExecutionBreakpoint const* event);
-        void interruptBreakpoint(hc_InterruptBreakpoint const* event);
+        void executionBreakpoint(hc_ExecutionEvent const* event);
+        void returnBreakpoint(hc_ExecutionReturnEvent const* event);
+        void interruptBreakpoint(hc_InterruptEvent const* event);
         void memoryWatchpoint(hc_MemoryWatchpoint const* event);
         void registerWatchpoint(hc_RegisterWatchpoint const* event);
         void ioWatchpoint(hc_IoWatchpoint const* event);
