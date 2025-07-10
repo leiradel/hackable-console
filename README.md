@@ -341,3 +341,7 @@ Some notes about the code:
 * The rest
     * `LifeCycle.fsm`: May appear small and unnecessary, but is central in making sure the application is always in a consistent state. One of the biggest challenges and source of bugs in any medium-sized application IMO.
     * `LuaUtil.h`: Some utility stuff to use with Lua
+
+## License
+
+MIT, enjoy!
